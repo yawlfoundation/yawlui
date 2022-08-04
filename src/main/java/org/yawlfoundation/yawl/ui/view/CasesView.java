@@ -1,23 +1,28 @@
 package org.yawlfoundation.yawl.ui.view;
 
-import com.vaadin.flow.component.ClickEvent;
-import com.vaadin.flow.component.ComponentEventListener;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.grid.FooterRow;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.GridVariant;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.dom.Element;
+import com.vaadin.flow.server.InputStreamFactory;
+import com.vaadin.flow.server.StreamResource;
 import org.yawlfoundation.yawl.engine.YSpecificationID;
 import org.yawlfoundation.yawl.engine.interfce.SpecificationData;
+import org.yawlfoundation.yawl.ui.announce.Announcement;
+import org.yawlfoundation.yawl.ui.dialog.DelayedStartDialog;
+import org.yawlfoundation.yawl.ui.dialog.SpecInfoDialog;
+import org.yawlfoundation.yawl.ui.dialog.UploadDialog;
+import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
+import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.service.RunningCase;
-import org.yawlfoundation.yawl.util.StringUtil;
+import org.yawlfoundation.yawl.ui.util.UiUtil;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
@@ -25,63 +30,53 @@ import java.util.List;
  * @author Michael Adams
  * @date 9/11/20
  */
-public class CasesView extends VerticalLayout
-        implements ComponentEventListener<ClickEvent<Button>> {
+public class CasesView extends AbstractView {
 
-    private final ResourceClient _resClient;
-    private final EngineClient _engClient;
     private List<SpecificationData> _specs;
     private List<RunningCase> _cases;
 
+    private H4 _specHeader;
+    private H4 _casesHeader;
     private Grid<SpecificationData> _specsGrid;
     private Grid<RunningCase> _casesGrid;
 
 
     public CasesView(ResourceClient resClient, EngineClient engClient) {
-        _resClient = resClient;
-        _engClient = engClient;
+        super(resClient, engClient);
         _specs = getLoadedSpecifications();
         _cases = getRunningCases();
-        add(createSpecsPanel());
-        add(createCasesPanel());
+        add(createSplitView(createSpecsPanel(), createCasesPanel()));
         setSizeFull();
     }
 
 
-    // event occurs when upload dialog closes
-    @Override
-    public void onComponentEvent(ClickEvent<Button> dialogCloseEvent) {
-        _specs = getLoadedSpecifications();     // refresh
-        _specsGrid.setItems(_specs);
-        _specsGrid.getDataProvider().refreshAll();
+    private UnpaddedVerticalLayout createSpecsPanel() {
+        _specHeader = new H4("Specifications (" + _specs.size() + ")");
+        return createGridPanel(_specHeader, createSpecsGrid());
     }
 
 
-    private VerticalLayout createSpecsPanel() {
-        VerticalLayout panel = new VerticalLayout();
-        panel.add(new H3("Loaded Specifications"));
-        panel.add(createSpecsGrid());
-        return panel;
-    }
-
-
-    private VerticalLayout createCasesPanel() {
-        VerticalLayout panel = new VerticalLayout();
-        panel.add(new H3("Running Cases"));
-        panel.add(createCasesGrid());
-        return panel;
+    private UnpaddedVerticalLayout createCasesPanel() {
+        _casesHeader = new H4("Cases (" + _cases.size() + ")");
+        return createGridPanel(_casesHeader, createCasesGrid());
     }
 
 
     private Grid<SpecificationData> createSpecsGrid() {
         _specsGrid = new Grid<>();
         _specsGrid.setItems(_specs);
-        _specsGrid.addColumn(SpecificationData::getSpecURI).setHeader("Name");
-        _specsGrid.addColumn(SpecificationData::getSpecVersion).setHeader("Version");
-        _specsGrid.addColumn(SpecificationData::getDocumentation).setHeader("Description");
-        addSpecGridComponentColumns();
+        _specsGrid.setSelectionMode(Grid.SelectionMode.MULTI);
+        _specsGrid.addColumn(SpecificationData::getSpecURI).setHeader(
+                UiUtil.bold("Name"));
+        _specsGrid.addColumn(SpecificationData::getSpecVersion).setHeader(
+                UiUtil.bold("Version"));
+        _specsGrid.addColumn(SpecificationData::getDocumentation).setHeader(
+                UiUtil.bold("Description"));
+        Grid.Column<SpecificationData> actionColumn = _specsGrid.addComponentColumn(
+                this::createSpecActions);
         configureGrid(_specsGrid);
-        createSpecsFooter();
+        configureActionColumn(actionColumn);
+        addGridFooter(_specsGrid, createSpecFooterActions());
         return _specsGrid;
     }
 
@@ -89,101 +84,142 @@ public class CasesView extends VerticalLayout
     private Grid<RunningCase> createCasesGrid() {
         _casesGrid = new Grid<>();
         _casesGrid.setItems(_cases);
-        _casesGrid.addColumn(RunningCase::getCaseID).setHeader("Case ID");
-        _casesGrid.addColumn(RunningCase::getSpecName).setHeader("Specification");
-        _casesGrid.addColumn(RunningCase::getSpecVersion).setHeader("Version");
-        Grid.Column<RunningCase> cancelColumn = _casesGrid.addComponentColumn(
-                item -> createCancelCaseButton(_casesGrid, item));
-        GridUtil.configureComponentColumn(cancelColumn);
+        _casesGrid.setSelectionMode(Grid.SelectionMode.MULTI);
+        _casesGrid.addColumn(RunningCase::getCaseID).setHeader(
+                UiUtil.bold("Case ID"));
+        _casesGrid.addColumn(RunningCase::getSpecName).setHeader(
+                UiUtil.bold("Specification"));
+        _casesGrid.addColumn(RunningCase::getSpecVersion).setHeader(
+                UiUtil.bold("Version"));
+        Grid.Column<RunningCase> actionColumn = _casesGrid.addComponentColumn(
+                this::createCancelCaseAction);
         configureGrid(_casesGrid);
+        configureActionColumn(actionColumn);
+        addGridFooter(_casesGrid, createCaseFooterActions());
         return _casesGrid;
     }
+    
 
-
-    private void addSpecGridComponentColumns() {
-        Grid.Column<SpecificationData> launchColumn = _specsGrid.addComponentColumn(
-                this::createLaunchSpecButton);
-        GridUtil.configureComponentColumn(launchColumn);
-        Grid.Column<SpecificationData> removeColumn = _specsGrid.addComponentColumn(
-                this::createRemoveSpecButton);
-        GridUtil.configureComponentColumn(removeColumn);
-    }
-
-    private <T> void configureGrid(Grid<T> grid) {
-        grid.setHeightByRows(true);
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
-        GridUtil.initialSort(grid, 0);
-    }
-
-
-    private void createSpecsFooter() {
-        FooterRow footerRow = _specsGrid.appendFooterRow();
-        footerRow.getCell(_specsGrid.getColumns().get(0)).setComponent(createAddButton());
-    }
-
-
-    private Button createAddButton() {
-        return new Button("Add ...", event -> {
-            new UploadDialog(_engClient, _specs, this).open();
+    private ActionRibbon createSpecFooterActions() {
+        ActionRibbon ribbon = new ActionRibbon();
+        ribbon.add(VaadinIcon.PLUS, "#009926", "Add", event -> {
+            new UploadDialog(_engClient, _specs,
+                    e -> refreshSpecifications()).open();
+            ribbon.reset();
         });
 
+        ribbon.add(VaadinIcon.REFRESH, "#0066FF", "Refresh", event ->
+                refreshSpecifications());
+
+        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Unload Selected",
+                event -> {
+                    _specsGrid.getSelectedItems().forEach(this::unloadSpecification);
+                    refreshSpecifications();
+                });
+
+        return ribbon;
     }
 
 
-    private Button createCancelCaseButton(Grid<RunningCase> grid, RunningCase runningCase) {
-        Icon icon = new Icon(VaadinIcon.CLOSE_SMALL);
-        icon.setColor("red");
-        return new Button(icon, event -> {
+    private ActionRibbon createCaseFooterActions() {
+        ActionRibbon ribbon = new ActionRibbon();
+        
+        ribbon.add(VaadinIcon.REFRESH, "#0066FF", "Refresh", event ->
+                refreshCases());
+
+        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Cancel Selected",
+                event -> {
+                    _casesGrid.getSelectedItems().forEach(this::cancelCase);
+                    refreshCases();
+                });
+
+        return ribbon;
+    }
+
+
+    private ActionRibbon createCancelCaseAction(RunningCase runningCase) {
+        ActionRibbon ribbon = new ActionRibbon();
+        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Cancel", event -> {
             cancelCase(runningCase);
-            refreshRunningCases();
+            refreshCases();
         });
+        return ribbon;
     }
 
 
-    private Button createRemoveSpecButton(SpecificationData spec) {
-        Icon icon = new Icon(VaadinIcon.CLOSE_SMALL);
-        icon.setColor("red");
-        return new Button(icon, event -> {
-            if (unloadSpecification(spec.getID())) {
-                refreshLoadedSpecifications();
-            }
-        });
-    }
-
-
-    private Button createLaunchSpecButton(SpecificationData spec) {
-        Icon icon = new Icon(VaadinIcon.CHEVRON_CIRCLE_RIGHT);
-        icon.setColor("gray");
-        return new Button(icon, event -> {
+    private ActionRibbon createSpecActions(SpecificationData spec) {
+        ActionRibbon ribbon = new ActionRibbon();
+        ribbon.add(VaadinIcon.CARET_RIGHT, "#009926", "Start", event -> {
             if (launchCase(spec)) {
-                refreshRunningCases();
+                refreshCases();
+             }
+        });
+        ribbon.add(VaadinIcon.CLOCK, "#009926", "Start later", event -> {
+            delayedStart(spec);
+            ribbon.reset();
+        });
+        ribbon.add(VaadinIcon.INFO, "#0066FF", "Info", event -> {
+            showInfo(spec);
+            ribbon.reset();
+        });
+        ribbon.add(VaadinIcon.DOWNLOAD_ALT, "#D66EE6", "Download log", event -> {
+            downloadLog(spec);
+            ribbon.reset();
+         });
+        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Unload", event -> {
+            if (unloadSpecification(spec)) {
+                refreshSpecifications();
             }
         });
+        return ribbon;
     }
 
 
-    private void refreshRunningCases() {
+    private boolean unloadSpecification(SpecificationData spec) {
+        boolean success = unloadSpecification(spec.getID());
+        if (success) {
+             Announcement.success("Specification " +
+                     spec.getID().toString() + " unloaded");
+        }
+        return success;
+    }
+    
+
+    private void refreshCases() {
         _cases = getRunningCases();
         _casesGrid.setItems(_cases);
         _casesGrid.getDataProvider().refreshAll();
+        _casesGrid.recalculateColumnWidths();
+        refreshHeader(_casesHeader, "Cases", _cases.size());
     }
 
 
-    private void refreshLoadedSpecifications() {
+    private void refreshSpecifications() {
         _specs = getLoadedSpecifications();
         _specsGrid.setItems(_specs);
         _specsGrid.getDataProvider().refreshAll();
+        _specsGrid.recalculateColumnWidths();
+        refreshHeader(_specHeader, "Specifications", _specs.size());
     }
 
 
     private boolean launchCase(SpecificationData spec) {
-        return true;
+        try {
+            String caseID = _engClient.launchCase(spec.getID(), null);
+            Announcement.success("Case " + caseID + " cancelled");
+            return true;
+        }
+        catch (IOException ioe) {
+            showErrorMsg(ioe.getMessage());
+            return false;
+        }
     }
 
 
     private void cancelCase(RunningCase runningCase) {
         try {
             _engClient.cancelCase(runningCase.getCaseID());
+            Announcement.success("Case " + runningCase.getCaseID() + " cancelled");
         }
         catch (IOException ioe) {
             showErrorMsg(ioe.getMessage());
@@ -224,8 +260,65 @@ public class CasesView extends VerticalLayout
     }
 
 
-    private void showErrorMsg(String msg) {
-        new MessageDialog("ERROR: " + StringUtil.unwrap(msg)).open();
+    private void showInfo(SpecificationData specData) {
+        new SpecInfoDialog(specData).open();
+    }
+
+
+    private void downloadLog(SpecificationData specData) {
+        try {
+            String log = _resClient.getMergedXESLog(specData.getID(), true);
+            if (log.isEmpty()) {
+                Announcement.highlight("No cases for selected specification");
+                return;
+            }
+
+            String fileName = String.format("%s_v%s.xes", specData.getSpecURI(),
+                                        specData.getSpecVersion());
+            InputStreamFactory isFactory = () -> new ByteArrayInputStream(
+                    log.getBytes(StandardCharsets.UTF_8));
+            StreamResource resource = new StreamResource(fileName, isFactory);
+            resource.setContentType("text/xml");
+            resource.setCacheTime(0);
+            resource.setHeader("Content-Disposition",
+                    "attachment;filename=\"" + fileName + "\"");
+
+            Anchor downloadAnchor = new Anchor(resource, "");
+            Element element = downloadAnchor.getElement();
+            element.setAttribute("download", true);
+            element.getStyle().set("display", "none");
+            add(downloadAnchor);
+
+            // simulate a click & remove anchor after file downloaded
+            element.executeJs("return new Promise(resolve =>{this.click(); " +
+                    "setTimeout(() => resolve(true), 150)})", element)
+                    .then(jsonValue -> {
+                        remove(downloadAnchor);
+                        Announcement.success("XES log downloaded");
+                    });
+
+         }
+        catch (IOException ioe) {
+            showErrorMsg(ioe.getMessage());
+        }
+    }
+
+
+    private void delayedStart(SpecificationData spec) {
+        DelayedStartDialog dialog = new DelayedStartDialog();
+        dialog.addOkClickListener(e -> {
+            long delay = dialog.getDelay();
+            if (delay > -1) {
+                try {
+                    _engClient.launchCase(spec.getID(), null, delay);
+                }
+                catch (IOException ioe) {
+                    showErrorMsg(ioe.getMessage());
+                }
+                dialog.close();
+            }
+        });
+        dialog.open();
     }
 
 }

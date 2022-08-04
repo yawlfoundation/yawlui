@@ -75,20 +75,29 @@ public class EngineClient {
         return true;
     }
 
+
+    public String launchCase(YSpecificationID specID, String caseData) throws IOException {
+        String msg = _ibClient.launchCase(specID, caseData, null, getHandle());
+        if (!_iaClient.successful(msg)) {
+            throw new IOException(StringUtil.unwrap(msg));
+        }
+        return msg;
+    }
+
+
+    public String launchCase(YSpecificationID specID, String caseData, long msecs) throws IOException {
+        String msg = _ibClient.launchCase(specID, caseData, getHandle(), null, null, msecs);
+        if (!_iaClient.successful(msg)) {
+            throw new IOException(StringUtil.unwrap(msg));
+        }
+        return msg;
+    }
+
     public void cancelCase(String caseID) throws IOException {
         _ibClient.cancelCase(caseID, getHandle());
     }
 
 
-    private List<YSpecificationID> toSpecIDList(String xml) throws IOException {
-        XNode node = new XNodeParser().parse(xml);
-        if (node == null) throw new IOException("Upload failed: unable to parse result");
-        List<YSpecificationID> idList = new ArrayList<>();
-        for (XNode child : node.getChildren()) {
-            idList.add(new YSpecificationID(child));
-        }
-        return idList;
-    }
 
     private String getHandle() throws IOException {
         connect();

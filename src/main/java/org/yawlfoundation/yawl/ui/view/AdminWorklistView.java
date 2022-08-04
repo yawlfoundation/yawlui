@@ -5,6 +5,7 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
+import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 
 import java.io.IOException;
@@ -31,7 +32,7 @@ public class AdminWorklistView extends VerticalLayout {
             return client.getParticipants();
         }
         catch (IOException | ResourceGatewayException e) {
-            new MessageDialog("ERROR: " + e.getMessage()).open();
+            Announcement.error(e.getMessage());
             return Collections.emptyList();
         }
     }

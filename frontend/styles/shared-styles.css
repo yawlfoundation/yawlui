@@ -1,5 +1,5 @@
 /*
-   CSS styling examples for the Vaadin app.
+   CSS styling for the Vaadin app.
    Visit https://vaadin.com/docs/flow/theme/theming-overview.html and
    https://vaadin.com/themes/lumo for more information.
 */
@@ -9,4 +9,6 @@
   margin: 0 auto;
   max-width: 250px;
 }
+
+
 

@@ -4,15 +4,20 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
-import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.page.AppShellConfigurator;
+import com.vaadin.flow.component.page.Inline;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.InitialPageSettings;
-import com.vaadin.flow.server.PageConfigurator;
+import com.vaadin.flow.server.AppShellSettings;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
+import org.yawlfoundation.yawl.ui.form.LoginPanel;
+import org.yawlfoundation.yawl.ui.listener.AuthenticationSuccessListener;
+import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
+import org.yawlfoundation.yawl.ui.menu.DrawerMenu;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 
@@ -21,11 +26,11 @@ import java.io.IOException;
 
 @Route("")
 //@PWA(name = "Project Base for Vaadin", shortName = "Project Base", enableInstallPrompt = false)
-@CssImport("./styles/shared-styles.css")
+@JsModule("@vaadin/vaadin-lumo-styles/presets/compact.js")
 //@Theme(value = Lumo.class)
 //@CssImport(value = "./styles/vaadin-text-field-styles.css", themeFor = "vaadin-text-field")
 public class MainView extends AppLayout implements AuthenticationSuccessListener,
-        ComponentEventListener<Tabs.SelectedChangeEvent>, PageConfigurator {
+        ComponentEventListener<Tabs.SelectedChangeEvent>, AppShellConfigurator {
 
     private final ResourceClient _resClient = new ResourceClient();
     private final EngineClient _engClient = new EngineClient();
@@ -36,14 +41,15 @@ public class MainView extends AppLayout implements AuthenticationSuccessListener
 
     public MainView() {
 //        _footer = createFooter();
-        showLoginPanel();
+ //       showLoginPanel();
+        userAuthenticated(null);
     }
 
 
     // called on startup to set the app's favicon
     @Override
-    public void configurePage(InitialPageSettings settings) {
-        settings.addFavIcon(InitialPageSettings.Position.PREPEND,
+    public void configurePage(AppShellSettings settings) {
+        settings.addFavIcon(Inline.Position.PREPEND,
                 "icon", "icons/yawlLogo.png", "32x32");
     }
 
@@ -66,7 +72,7 @@ public class MainView extends AppLayout implements AuthenticationSuccessListener
         String label = tab.getElement().getChild(0).getChild(1).getText();
         switch (label) {
             case "My Worklist" : setContent(new UserMgtView(_resClient)); break;
-            case "My Profile" : setContent(null); break;
+            case "My Profile" : setContent(new ActionRibbon()); break;
             case "My Team's Worklist" : setContent(null); break;
             case "Case Mgt" : setContent(new CasesView(_resClient, _engClient)); break;
             case "Admin Worklist" : setContent(null); break;
@@ -74,9 +80,9 @@ public class MainView extends AppLayout implements AuthenticationSuccessListener
             case "Org Data" : setContent(null); break;
             case "Non-Human Resources" : setContent(null); break;
             case "Calendar" : setContent(null); break;
-            case "Clients"   : setContent(new ServicesView(_resClient, _engClient)); break;
+            case "Services / Clients"   : setContent(new ServicesView(_resClient, _engClient)); break;
             case "About" : setContent(null); break;
-            case "Exit" : event.getSource().setSelectedIndex(0); exit();
+            case "Logout" : event.getSource().setSelectedIndex(0); exit();
         }
     }
 

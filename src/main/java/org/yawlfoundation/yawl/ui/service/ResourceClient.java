@@ -3,10 +3,12 @@ package org.yawlfoundation.yawl.ui.service;
 import org.yawlfoundation.yawl.authentication.YClient;
 import org.yawlfoundation.yawl.authentication.YExternalClient;
 import org.yawlfoundation.yawl.elements.YAWLServiceReference;
+import org.yawlfoundation.yawl.engine.YSpecificationID;
 import org.yawlfoundation.yawl.engine.interfce.SpecificationData;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayClientAdapter;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
+import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceLogGatewayClient;
 import org.yawlfoundation.yawl.resourcing.rsInterface.WorkQueueGatewayClientAdapter;
 import org.yawlfoundation.yawl.util.PasswordEncryptor;
 
@@ -22,6 +24,10 @@ public class ResourceClient {
 
     private final WorkQueueGatewayClientAdapter _wqAdapter = new WorkQueueGatewayClientAdapter(
             "http://localhost:8080/resourceService/workqueuegateway");
+
+    private final ResourceLogGatewayClient _logClient = new ResourceLogGatewayClient(
+            "http://localhost:8080/resourceService/logGateway");
+
 
     private String _handle;
 
@@ -82,6 +88,12 @@ public class ResourceClient {
 
     public List<SpecificationData> getLoadedSpecificationData() throws IOException {
         return new ArrayList<>(_wqAdapter.getSpecList(_handle));
+    }
+
+
+    public String getMergedXESLog(YSpecificationID specID, boolean withData) throws IOException {
+        return _logClient.getMergedXESLog(specID.getIdentifier(),
+                specID.getVersionAsString(), specID.getUri(), withData, getHandle());
     }
 
 

@@ -1,162 +1,265 @@
 package org.yawlfoundation.yawl.ui.view;
 
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.grid.FooterRow;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.GridVariant;
-import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import org.yawlfoundation.yawl.authentication.YClient;
 import org.yawlfoundation.yawl.authentication.YExternalClient;
 import org.yawlfoundation.yawl.elements.YAWLServiceReference;
+import org.yawlfoundation.yawl.ui.announce.Announcement;
+import org.yawlfoundation.yawl.ui.dialog.ClientDetailsDialog;
+import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.util.UiUtil;
+import org.yawlfoundation.yawl.util.HttpUtil;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static org.yawlfoundation.yawl.ui.dialog.ClientDetailsDialog.ItemType;
 
 /**
  * @author Michael Adams
  * @date 9/11/20
  */
-public class ServicesView extends VerticalLayout {
+public class ServicesView extends AbstractView {
 
-    private final ResourceClient _resClient;
-    private final EngineClient _engClient;
-    private final List<YAWLServiceReference> _services;
-    private final List<YExternalClient> _clients;
+    private List<YAWLServiceReference> _services;
+    private List<YExternalClient> _clients;
     
+    private H4 _servicesHeader;
+    private H4 _clientsHeader;
     private Grid<YAWLServiceReference> _servicesGrid;
     private Grid<YExternalClient> _clientsGrid;
 
 
     public ServicesView(ResourceClient resClient, EngineClient engClient) {
-        _resClient = resClient;
-        _engClient = engClient;
-        _services = getRegisteredServices();
-        _clients = getClientApplications();
-        add(createServicesPanel());
-        add(createClientsPanel());
+        super(resClient, engClient);
+        _services = getServices();
+        _clients = getClientApps();
+        add(createSplitView(createServicesPanel(),createClientsPanel()));
         setSizeFull();
     }
 
 
-    public void addClient(YClient client) {
-        try {
-            _resClient.addClient(client);
-            if (client instanceof YAWLServiceReference) {
-                _services.add((YAWLServiceReference) client);
-                _servicesGrid.getDataProvider().refreshAll();
-            }
-            else {
-                _clients.add((YExternalClient) client);
-                _clientsGrid.getDataProvider().refreshAll();
-            }
-        }
-        catch (IOException ioe) {
-            new MessageDialog("ERROR: " + ioe.getMessage()).open();
-        }
-    }
-
-
     private VerticalLayout createServicesPanel() {
-        VerticalLayout panel = new VerticalLayout();
-        panel.add(new H3("Registered Custom Services"));
-        panel.add(createServicesGrid());
-        return panel;
+        _servicesHeader = new H4("Services (" + _services.size() + ")");
+        return createGridPanel(_servicesHeader, createServicesGrid());
     }
 
 
     private VerticalLayout createClientsPanel() {
-        VerticalLayout panel = new VerticalLayout();
-        panel.add(new H3("Client Applications"));
-        panel.add(createClientsGrid());
-        return panel;
+        _clientsHeader = new H4("Client Apps (" + _clients.size() + ")");
+        return createGridPanel(_clientsHeader, createClientsGrid());
     }
 
 
     private Grid<YAWLServiceReference> createServicesGrid() {
-        _servicesGrid = new Grid<>(YAWLServiceReference.class);
+        _servicesGrid = new Grid<>();
         _servicesGrid.setItems(_services);
-        _servicesGrid.setColumns("_serviceName", "_documentation", "_yawlServiceID");
-        _servicesGrid.getColumnByKey("_serviceName").setHeader("Name");
-        _servicesGrid.getColumnByKey("_documentation").setHeader("Description");
-        _servicesGrid.getColumnByKey("_yawlServiceID").setHeader("URI");
+        _servicesGrid.setSelectionMode(Grid.SelectionMode.MULTI);
+        Grid.Column<YAWLServiceReference> connectedColumn = _servicesGrid.addComponentColumn(
+                this::connectedIndicator);
+        _servicesGrid.addColumn(YAWLServiceReference::getServiceName).setHeader(
+                UiUtil.bold("Name"));
+        _servicesGrid.addColumn(YAWLServiceReference::get_documentation).setHeader(
+                UiUtil.bold("Description"));
+        _servicesGrid.addColumn(YAWLServiceReference::getURI).setHeader(
+                UiUtil.bold("URI"));
+        Grid.Column<YAWLServiceReference> actionColumn = _servicesGrid.addComponentColumn(
+                this::createServicesActions);
         configureGrid(_servicesGrid);
+        configureActionColumn(connectedColumn);
+        configureActionColumn(actionColumn);
+        addGridFooter(_servicesGrid, createFooterActions(_servicesGrid, _services,
+                ItemType.Service));
         return _servicesGrid;
     }
 
 
     private Grid<YExternalClient> createClientsGrid() {
-        _clientsGrid = new Grid<>(YExternalClient.class);
+        _clientsGrid = new Grid<>();
         _clientsGrid.setItems(_clients);
-        _clientsGrid.setColumns("_userid", "_documentation");
-        _clientsGrid.getColumnByKey("_userid").setHeader("Name");
-        _clientsGrid.getColumnByKey("_documentation").setHeader("Description");
+        _clientsGrid.setSelectionMode(Grid.SelectionMode.MULTI);
+        _clientsGrid.addColumn(YExternalClient::get_userid).setHeader(
+                UiUtil.bold("Name"));
+        _clientsGrid.addColumn(YExternalClient::get_documentation).setHeader(
+                UiUtil.bold("Description"));
+        Grid.Column<YExternalClient> actionColumn = _clientsGrid.addComponentColumn(
+                this::createClientActions);
         configureGrid(_clientsGrid);
+        configureActionColumn(actionColumn);
+        addGridFooter(_clientsGrid, createFooterActions(_clientsGrid, _clients,
+                ItemType.Client));
         return _clientsGrid;
     }
 
 
-    private void configureGrid(Grid<? extends YClient> grid) {
-        Grid.Column<? extends YClient> delColumn = grid.addComponentColumn(
-                item -> createDeleteButton(grid, item));
-        GridUtil.configureComponentColumn(delColumn);
-        grid.setHeightByRows(true);
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
-        GridUtil.initialSort(grid, 0);
-        createFooter(grid);
-    }
-
-
-    private void createFooter(Grid<? extends YClient> grid) {
-        Button addButton = new Button("Add ...", event -> {
-            new ClientDetailsForm(this, grid, null).open();
-        });
-
-        FooterRow footerRow = grid.appendFooterRow();
-        footerRow.getCell(grid.getColumns().get(0)).setComponent(addButton);
-    }
-
-
-    private Button createDeleteButton(Grid<? extends YClient> grid, YClient client) {
-        Icon icon = new Icon(VaadinIcon.CLOSE_SMALL);
-        icon.setColor("red");
-        Button b = new Button(icon, event -> {     
-            String caller = (client instanceof YExternalClient) ? "Client App " : "Service ";
-            String msg = "Delete " + caller + client.getUserName() + ". Are you sure?";
-            ConfirmDialog dialog = new ConfirmDialog(msg);
-            dialog.addOKClickListener(okEvent -> {
-                removeClient(client);
-                grid.getDataProvider().refreshAll();
+    private ActionRibbon createFooterActions(Grid<? extends YClient> grid,
+                                             List<? extends YClient> items,
+                                             ItemType itemType) {
+        ActionRibbon ribbon = new ActionRibbon();
+        ribbon.add(VaadinIcon.PLUS, "#009926", "Add", event -> {
+            ClientDetailsDialog dialog = new ClientDetailsDialog(items, null,
+                    itemType);
+            dialog.getSaveButton().addClickListener(e -> {
+                if (dialog.validate()) {
+                    YClient client = dialog.composeClient();
+                    if (addClient(client)) {
+                        refresh(itemType);
+                        dialog.close();
+                        announceSuccess(client, "added");
+                    }
+                }
             });
             dialog.open();
+            ribbon.reset();
         });
-        return b;
+
+        ribbon.add(VaadinIcon.REFRESH, "#0066FF", "Refresh", event ->
+                refresh(itemType));
+
+        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Remove Selected",
+                event -> {
+                    grid.getSelectedItems().forEach(item -> {
+                        if (removeClient(item)) {
+                            announceSuccess(item, "removed");
+                        }
+                    });
+                    refresh(itemType);
+                });
+
+        return ribbon;
     }
 
 
-    private void removeClient(YClient client) {
+    private Icon connectedIndicator(YAWLServiceReference service) {
+        Icon indicator = new Icon(VaadinIcon.CIRCLE);
+        indicator.setSize("10px");
+        indicator.getStyle().set("margin-left", "4px");
         try {
-            _resClient.removeClient(client);
-            if (client instanceof YAWLServiceReference) {
-                _services.remove(client);
+            URL serviceURL = new URL(service.getURI());
+            indicator.setColor(HttpUtil.isResponsive(serviceURL) ? "#009926" : "#E60026");
+        }
+        catch (MalformedURLException e) {
+            indicator.setColor("gray");
+        }
+        return indicator;
+    }
+
+
+    private ActionRibbon createServicesActions(YAWLServiceReference service) {
+        return createActions(_services, service);
+    }
+
+    
+    private ActionRibbon createClientActions(YExternalClient client) {
+        return createActions(_clients, client);
+    }
+
+    
+    private ActionRibbon createActions(List<? extends YClient> items, YClient client) {
+        ItemType itemType = (client instanceof YAWLServiceReference) ?
+                        ItemType.Service : ItemType.Client;
+        ActionRibbon ribbon = new ActionRibbon();
+        ribbon.add(VaadinIcon.PENCIL, "#0066FF", "Edit", event -> {
+            ClientDetailsDialog dialog = new ClientDetailsDialog(items, client, itemType);
+            dialog.getSaveButton().addClickListener(e -> {
+                if (dialog.validate()) {
+                    updateClient(client, dialog.composeClient());
+                    dialog.close();
+                    announceSuccess(client, "updated");
+                    refresh(itemType);
+                }
+            });
+            dialog.open();
+            ribbon.reset();
+        });
+        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Remove", event -> {
+            if (removeClient(client)) {
+                announceSuccess(client, "removed");
+                refresh(itemType);
             }
-            else if (client instanceof YExternalClient) {
-                _clients.remove(client);
-            }
+        });
+        
+        return ribbon;
+    }
+    
+
+    private void refresh(ItemType itemType) {
+        if (itemType == ItemType.Service) {
+            refreshServices();
+        }
+        else {
+            refreshClients();
+        }
+    }
+
+
+    private void refreshClients() {
+        _clients = getClientApps();
+        _clientsGrid.setItems(_clients);
+        _clientsGrid.getDataProvider().refreshAll();
+        _clientsGrid.recalculateColumnWidths();
+        refreshHeader(_clientsHeader, "Client Apps", _clients.size());
+    }
+
+
+    private void refreshServices() {
+        _services = getServices();
+        _servicesGrid.setItems(_services);
+        _servicesGrid.getDataProvider().refreshAll();
+        _servicesGrid.recalculateColumnWidths();
+        refreshHeader(_servicesHeader, "Services", _services.size());
+    }
+
+
+    private void announceSuccess(YClient client, String verb) {
+        String msg = String.format("%s %s %s", (
+                        client instanceof YAWLServiceReference ?
+                                "Service" : "Client App"),
+                client.getUserName(), verb);
+    }
+
+
+    private boolean addClient(YClient client) {
+        try {
+            _resClient.addClient(client);
+            return true;
         }
         catch (IOException ioe) {
-            new MessageDialog("ERROR: " + ioe.getMessage()).open();
+            Announcement.error(ioe.getMessage());
+            return false;
         }
     }
 
 
-    private List<YAWLServiceReference> getRegisteredServices() {
+    private void updateClient(YClient oldClient, YClient newClient) {
+        removeClient(oldClient);
+        addClient(newClient);
+    }
+
+
+    private boolean removeClient(YClient client) {
+        try {
+            _resClient.removeClient(client);
+            return true;
+        }
+        catch (IOException ioe) {
+            Announcement.error(ioe.getMessage());
+            return false;
+        }
+    }
+
+
+    private List<YAWLServiceReference> getServices() {
         try {
             List<YAWLServiceReference> services = _resClient.getRegisteredServices();
 
@@ -170,18 +273,18 @@ public class ServicesView extends VerticalLayout {
             return assignableServices;
         }
         catch (IOException e) {
-            new MessageDialog("ERROR: " + e.getMessage()).open();
+            Announcement.error(e.getMessage());
             return Collections.emptyList();
         }
     }
 
 
-    private List<YExternalClient> getClientApplications() {
+    private List<YExternalClient> getClientApps() {
         try {
             return _engClient.getClientApplications();
         }
         catch (IOException e) {
-            new MessageDialog("ERROR: " + e.getMessage()).open();
+            Announcement.error(e.getMessage());
             return Collections.emptyList();
         }
     }
