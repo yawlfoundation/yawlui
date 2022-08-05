@@ -16,9 +16,9 @@ import java.util.List;
  * @author Michael Adams
  * @date 2/11/20
  */
-public class WorklistView extends VerticalLayout {
+public class UserWorklistView extends VerticalLayout {
 
-    public WorklistView(final ResourceClient client) {
+    public UserWorklistView(final ResourceClient client) {
         Grid<Participant> grid = new Grid<>(Participant.class);
         grid.setItems(getParticipants(client));
         grid.setColumns("firstName", "lastName", "userID", "administrator");

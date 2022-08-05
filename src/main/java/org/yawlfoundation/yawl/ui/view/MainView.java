@@ -16,7 +16,6 @@ import com.vaadin.flow.server.AppShellSettings;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.ui.form.LoginPanel;
 import org.yawlfoundation.yawl.ui.listener.AuthenticationSuccessListener;
-import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.menu.DrawerMenu;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
@@ -71,11 +70,11 @@ public class MainView extends AppLayout implements AuthenticationSuccessListener
         // tab's element's root has two children: an icon and a span (i.e. the label)
         String label = tab.getElement().getChild(0).getChild(1).getText();
         switch (label) {
-            case "My Worklist" : setContent(new UserMgtView(_resClient)); break;
-            case "My Profile" : setContent(new ActionRibbon()); break;
+            case "My Worklist" : setContent(new UserWorklistView(_resClient)); break;
+            case "My Profile" : setContent(null); break;
             case "My Team's Worklist" : setContent(null); break;
             case "Case Mgt" : setContent(new CasesView(_resClient, _engClient)); break;
-            case "Admin Worklist" : setContent(null); break;
+            case "Admin Worklist" : setContent(new AdminWorklistView(_resClient)); break;
             case "Resources" : setContent(null); break;
             case "Org Data" : setContent(null); break;
             case "Non-Human Resources" : setContent(null); break;
@@ -121,7 +120,7 @@ public class MainView extends AppLayout implements AuthenticationSuccessListener
 
 
     private Component getLandingPage(Participant p) {
-        return p == null ? new AdminWorklistView(_resClient) : new WorklistView(_resClient);
+        return p == null ? new AdminWorklistView(_resClient) : new UserWorklistView(_resClient);
     }
 
 

@@ -16,9 +16,9 @@ import java.util.List;
  * @author Michael Adams
  * @date 2/11/20
  */
-public class UserMgtView extends VerticalLayout {
+public class ResourceMgtView extends VerticalLayout {
 
-    public UserMgtView(final ResourceClient client) {
+    public ResourceMgtView(final ResourceClient client) {
         Grid<Participant> grid = new Grid<>(Participant.class);
         grid.setItems(getParticipants(client));
         grid.setColumns("firstName", "lastName", "userID", "administrator");

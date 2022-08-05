@@ -5,6 +5,7 @@ import org.yawlfoundation.yawl.authentication.YExternalClient;
 import org.yawlfoundation.yawl.elements.YAWLServiceReference;
 import org.yawlfoundation.yawl.engine.YSpecificationID;
 import org.yawlfoundation.yawl.engine.interfce.SpecificationData;
+import org.yawlfoundation.yawl.resourcing.QueueSet;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayClientAdapter;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class ResourceClient {
 
@@ -36,6 +38,34 @@ public class ResourceClient {
 
     }
 
+
+    public QueueSet getAdminWorkQueues() throws IOException, ResourceGatewayException {
+        return _wqAdapter.getAdminQueues(getHandle());
+    }
+
+
+    public void offerItem(String itemID, Set<String> pidSet)
+            throws IOException, ResourceGatewayException {
+        _wqAdapter.offerItem(pidSet, itemID, getHandle());
+    }
+
+
+    public void allocateItem(String itemID, String pid)
+            throws IOException, ResourceGatewayException {
+        _wqAdapter.allocateItem(pid, itemID, getHandle());
+    }
+
+
+    public void startItem(String itemID, String pid)
+            throws IOException, ResourceGatewayException {
+        _wqAdapter.startItem(pid, itemID, getHandle());
+    }
+
+
+    public Set<Participant> getAssignedParticipants(String itemID, int queue)
+            throws IOException, ResourceGatewayException {
+        return _wqAdapter.getParticipantsAssignedWorkItem(itemID, queue, getHandle());
+    }
 
     public List<Participant> getParticipants() throws IOException, ResourceGatewayException {
         return _resAdapter.getParticipants(getHandle());
