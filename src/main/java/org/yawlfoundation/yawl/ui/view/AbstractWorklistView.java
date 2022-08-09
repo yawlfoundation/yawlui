@@ -2,6 +2,7 @@ package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
 import org.yawlfoundation.yawl.resourcing.WorkQueue;
@@ -26,15 +27,19 @@ public abstract class AbstractWorklistView extends AbstractView {
     private static final DateFormat DATE_FORMAT =
                 new SimpleDateFormat("MMM dd yyyy H:mm:ss");
 
-    private QueueSet _queueSet;
+    private final Grid<WorkItemRecord> _grid;
+    private HorizontalLayout _content;
+    private UnpaddedVerticalLayout _testContent;
     private H4 _header;
-    private Grid<WorkItemRecord> _grid;
+    
+    private QueueSet _queueSet;
 
     public AbstractWorklistView(ResourceClient resClient) {
         super(resClient, null);
         _queueSet = getQueueSet();
         _grid = createGrid();
-        add(createPanel());
+        _content = createPanel();
+        add(_content);
         setSizeFull();
     }
 
@@ -56,9 +61,25 @@ public abstract class AbstractWorklistView extends AbstractView {
     }
 
 
-    protected UnpaddedVerticalLayout createPanel() {
+    protected HorizontalLayout getContentPanel() {
+        return _content;
+    }
+
+
+    protected UnpaddedVerticalLayout getTestPanel() {
+        return _testContent;
+    }
+
+
+    protected HorizontalLayout createPanel() {
         _header = new H4(String.format("%s (%d)", getTitle(), getItemCount()));
-        return createGridPanel(_header, _grid);
+        UnpaddedVerticalLayout gridPanel = createGridPanel(_header, _grid);
+        _testContent = new UnpaddedVerticalLayout();
+        HorizontalLayout content = new HorizontalLayout();
+        content.add(gridPanel);
+        content.setFlexGrow(1, gridPanel);
+        content.setSizeFull();
+        return content;
     }
 
 

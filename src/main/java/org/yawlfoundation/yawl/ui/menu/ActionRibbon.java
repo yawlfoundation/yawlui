@@ -18,36 +18,55 @@ public class ActionRibbon extends HorizontalLayout {
     }
 
 
-    public void add(VaadinIcon iconName, String hoverColor, String tooltip,
+    public ActionIcon add(VaadinIcon iconName, String hoverColor, String tooltip,
                     ComponentEventListener<ClickEvent<Icon>> clickListener) {
-        this.add(buildIcon(iconName, hoverColor, tooltip, clickListener));
+        ActionIcon icon = new ActionIcon(iconName, hoverColor, tooltip, clickListener);
+        this.add(icon);
+        return icon;
     }
 
 
-    public void add(int index, VaadinIcon iconName, String hoverColor, String tooltip,
+    public ActionIcon add(int index, VaadinIcon iconName, String hoverColor, String tooltip,
                     ComponentEventListener<ClickEvent<Icon>> clickListener) {
-        this.addComponentAtIndex(index,
-                buildIcon(iconName, hoverColor, tooltip, clickListener));
+        ActionIcon icon = new ActionIcon(iconName, hoverColor, tooltip, clickListener);
+        this.addComponentAtIndex(index, icon);
+        return icon;
+    }
+
+
+    // adds a disabled icon
+    public ActionIcon add(VaadinIcon iconName) {
+        ActionIcon icon = new ActionIcon(iconName);
+        this.add(icon);
+        return icon;
+    }
+
+
+    // adds a disabled icon
+    public ActionIcon add(int index, VaadinIcon iconName) {
+        ActionIcon icon = new ActionIcon(iconName);
+        this.addComponentAtIndex(index, icon);
+        return icon;
     }
 
 
     public void reset() {
-        getChildren().forEach(i -> ((Icon) i).setColor("gray"));
+        getChildren().forEach(i -> ((ActionIcon) i).reset());
     }
 
 
-    private Icon buildIcon(VaadinIcon iconName, String hoverColor, String tooltip,
-                        ComponentEventListener<ClickEvent<Icon>> clickListener) {
-        Icon icon = new Icon(iconName);
-        icon.setSize("18px");
-        icon.setColor("gray");
-        icon.getStyle().set("cursor", "pointer");
-        icon.getStyle().set("margin-left", "4px");
-        icon.getElement().setAttribute("title", tooltip);
-        icon.getElement().addEventListener("mouseover", event -> icon.setColor(hoverColor));
-        icon.getElement().addEventListener("mouseout", event -> icon.setColor("gray"));
-        icon.addClickListener(clickListener);
-        return icon;
-    }
+//    private Icon buildIcon(VaadinIcon iconName, String hoverColor, String tooltip,
+//                        ComponentEventListener<ClickEvent<Icon>> clickListener) {
+//        Icon icon = new Icon(iconName);
+//        icon.setSize("18px");
+//        icon.setColor("gray");
+//        icon.getStyle().set("cursor", "pointer");
+//        icon.getStyle().set("margin-left", "4px");
+//        icon.getElement().setAttribute("title", tooltip);
+//        icon.getElement().addEventListener("mouseover", event -> icon.setColor(hoverColor));
+//        icon.getElement().addEventListener("mouseout", event -> icon.setColor("gray"));
+//        icon.addClickListener(clickListener);
+//        return icon;
+//    }
 
 }

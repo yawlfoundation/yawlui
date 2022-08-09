@@ -62,6 +62,24 @@ public class ResourceClient {
     }
 
 
+    public void reofferItem(String itemID, Set<String> pidSet)
+            throws IOException, ResourceGatewayException {
+        _wqAdapter.reofferItem(pidSet, itemID, getHandle());
+    }
+
+
+    public void reallocateItem(String itemID, String pid)
+            throws IOException, ResourceGatewayException {
+        _wqAdapter.reallocateItem(pid, itemID, getHandle());
+    }
+
+
+    public void restartItem(String itemID, String pid)
+            throws IOException, ResourceGatewayException {
+        _wqAdapter.restartItem(pid, itemID, getHandle());
+    }
+
+
     public Set<Participant> getAssignedParticipants(String itemID, int queue)
             throws IOException, ResourceGatewayException {
         return _wqAdapter.getParticipantsAssignedWorkItem(itemID, queue, getHandle());

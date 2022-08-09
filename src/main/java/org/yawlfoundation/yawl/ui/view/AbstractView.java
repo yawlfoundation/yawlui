@@ -48,7 +48,7 @@ abstract class AbstractView extends VerticalLayout {
         UnpaddedVerticalLayout layout = new UnpaddedVerticalLayout("t");
         layout.add(header);
         layout.add(grid);
-        layout.setSizeFull();
+//        layout.setSizeFull();
         return layout;
     }
 

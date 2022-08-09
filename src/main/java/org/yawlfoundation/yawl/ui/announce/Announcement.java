@@ -46,6 +46,12 @@ public class Announcement {
     }
 
 
+    public static Notification success(String formatMsg, Object... values) {
+        String msg = String.format(formatMsg, values);
+        return success(msg);
+    }
+
+
     public static Notification highlight(String msg) {
         return show(msg, NotificationVariant.LUMO_PRIMARY);
     }

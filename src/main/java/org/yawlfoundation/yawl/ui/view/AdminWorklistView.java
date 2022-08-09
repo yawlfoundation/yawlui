@@ -9,12 +9,18 @@ import org.yawlfoundation.yawl.resourcing.WorkQueue;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
+import org.yawlfoundation.yawl.ui.component.MultiSelectParticipantList;
+import org.yawlfoundation.yawl.ui.component.SingleSelectParticipantList;
+import org.yawlfoundation.yawl.ui.dialog.AdminWorklistOptionsDialog;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +28,9 @@ import java.util.stream.Collectors;
  * @date 2/11/20
  */
 public class AdminWorklistView extends AbstractWorklistView {
+
+    private boolean _directlyToMe = false;
+    private boolean _participantListIsVisible = false;
 
     public AdminWorklistView(ResourceClient client) {
         super(client);
@@ -51,7 +60,7 @@ public class AdminWorklistView extends AbstractWorklistView {
         ActionRibbon ribbon = new ActionRibbon();
         switch(wir.getResourceStatus()) {
             case "Unoffered" : {
-                ribbon.add(VaadinIcon.HANDSHAKE, "#0066FF", "Offer",
+                ribbon.add(VaadinIcon.HANDSHAKE, "#A37063", "Offer",
                         event -> offerItem(wir));
                 ribbon.add(VaadinIcon.INBOX, "#0066FF", "Allocate",
                         event -> allocateItem(wir));
@@ -60,22 +69,33 @@ public class AdminWorklistView extends AbstractWorklistView {
                 break;
             }
 
-            // the rest fall through deliberately
-            // todo ribbon insert empty icons to keep aligned (or maybe align right)
             // todo standardise colours with ActionRibbon constants
             case "Started" :
-            case "Suspended" :
-                ribbon.add(VaadinIcon.CARET_RIGHT, "#009926", "Restart",
-                    event -> restartItem(wir));
-            case "Allocated" :
-                ribbon.add(0, VaadinIcon.INBOX, "#0066FF", "Reallocate",
-                    event -> reallocateItem(wir));
-            case "Offered" :
-                ribbon.add(0, VaadinIcon.HANDSHAKE, "#0066FF", "Reoffer",
+            case "Suspended" : {
+                ribbon.add(VaadinIcon.HANDSHAKE, "#A37063", "Reoffer",
                         event -> reofferItem(wir));
+                ribbon.add(VaadinIcon.INBOX, "#0066FF", "Reallocate",
+                        event -> reallocateItem(wir));
+                ribbon.add(VaadinIcon.CARET_RIGHT, "#009926", "Restart",
+                        event -> restartItem(wir));
+                break;
+            }
+            case "Allocated" : {
+                ribbon.add(VaadinIcon.HANDSHAKE, "#A37063", "Reoffer",
+                        event -> reofferItem(wir));
+                ribbon.add(VaadinIcon.INBOX, "#0066FF", "Reallocate",
+                        event -> reallocateItem(wir));
+                ribbon.add(VaadinIcon.CARET_RIGHT);
+                break;
+            }
+            case "Offered" : {
+                ribbon.add(VaadinIcon.HANDSHAKE, "#A37063", "Reoffer",
+                        event -> reofferItem(wir));
+                ribbon.add(VaadinIcon.INBOX);
+                ribbon.add(VaadinIcon.CARET_RIGHT);
+                break;
+            }
         }
-        ribbon.add(VaadinIcon.COG_O, "#0066FF", "Settings",
-                event -> settings());
 
         return ribbon;
     }
@@ -87,9 +107,15 @@ public class AdminWorklistView extends AbstractWorklistView {
         ribbon.add(VaadinIcon.REFRESH, "#0066FF", "Refresh", event ->
                 refreshGrid());
 
-        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Unload", event -> {
-             Announcement.highlight("click");
-        });
+        ribbon.add(VaadinIcon.COG_O, "#0066FF", "Settings",
+                event -> {
+                    AdminWorklistOptionsDialog dialog = new AdminWorklistOptionsDialog();
+                    dialog.getOK().addClickListener(e -> {
+                        _directlyToMe = dialog.isChecked();
+                        dialog.close();
+                    });
+                    dialog.open();
+                });
         return ribbon;
     }
 
@@ -113,75 +139,175 @@ public class AdminWorklistView extends AbstractWorklistView {
         return new ParticipantCombo(wir);
     }
 
-    //todo next 2 methods: dialog for selecting participants (with filtering)
-    private Set<String> getSelectedParticipantIDs() {
-        return Collections.emptySet();
-    }
-
-
-    private String getSelectedParticipantID() {
-        return "";
-    }
-
 
     private void offerItem(WorkItemRecord wir) {
-        try {
-            _resClient.offerItem(wir.getID(), getSelectedParticipantIDs());
-        }
-        catch (IOException | ResourceGatewayException e) {
-            Announcement.error(e.getMessage());
+        MultiSelectParticipantList listPanel =
+                showMultiSelectParticipantList(wir, "Offer");
+        if (listPanel != null) {
+            listPanel.addOKListener(e -> {
+                getContentPanel().remove(listPanel);
+                try {
+                    Set<String> ids = listPanel.getSelectedIDs();
+                    _resClient.offerItem(wir.getID(), ids);
+                    refreshGrid();
+                    Announcement.success("Offered item '%s' to %d participants",
+                            wir.getID(), ids.size());
+                }
+                catch (IOException | ResourceGatewayException ex) {
+                    Announcement.error(ex.getMessage());
+                }
+            });
         }
     }
 
 
     private void allocateItem(WorkItemRecord wir) {
-        try {
-            _resClient.allocateItem(wir.getID(), getSelectedParticipantID());
-        }
-        catch (IOException | ResourceGatewayException e) {
-            Announcement.error(e.getMessage());
+        SingleSelectParticipantList listPanel =
+                showSingleSelectParticipantList(wir, "Allocate");
+        if (listPanel != null) {
+            listPanel.addOKListener(e -> {
+                getContentPanel().remove(listPanel);
+
+                try {
+                    _resClient.allocateItem(wir.getID(), listPanel.getSelectedID());
+                    refreshGrid();
+                    Announcement.success("Allocated item '%s'", wir.getID());
+                }
+                catch (IOException | ResourceGatewayException ex) {
+                    Announcement.error(ex.getMessage());
+                }
+            });
         }
     }
 
 
     private void startItem(WorkItemRecord wir) {
-        try {
-            _resClient.startItem(wir.getID(), getSelectedParticipantID());
-        }
-        catch (IOException | ResourceGatewayException e) {
-            Announcement.error(e.getMessage());
+        SingleSelectParticipantList listPanel =
+                showSingleSelectParticipantList(wir, "Start");
+        if (listPanel != null) {
+            listPanel.addOKListener(e -> {
+                getContentPanel().remove(listPanel);
+
+                try {
+                    _resClient.startItem(wir.getID(), listPanel.getSelectedID());
+                    refreshGrid();
+                    Announcement.success("Started item '%s'", wir.getID());
+                }
+                catch (IOException | ResourceGatewayException ex) {
+                    Announcement.error(ex.getMessage());
+                }
+            });
         }
     }
 
 
-    //TODO Add next three to resclient
     private void reofferItem(WorkItemRecord wir) {
-        try {
-            _resClient.offerItem(wir.getID(), getSelectedParticipantIDs());
-        }
-        catch (IOException | ResourceGatewayException e) {
-            Announcement.error(e.getMessage());
+        MultiSelectParticipantList listPanel =
+                showMultiSelectParticipantList(wir, "Reoffer");
+        if (listPanel != null) {
+            listPanel.addOKListener(e -> {
+                getContentPanel().remove(listPanel);
+                try {
+                    Set<String> ids = listPanel.getSelectedIDs();
+                    _resClient.reofferItem(wir.getID(), ids);
+                    refreshGrid();
+                    Announcement.success("Reoffered item '%s' to %d participants",
+                            wir.getID(), ids.size());
+                }
+                catch (IOException | ResourceGatewayException ex) {
+                    Announcement.error(ex.getMessage());
+                }
+            });
         }
     }
 
 
     private void reallocateItem(WorkItemRecord wir) {
-        try {
-            _resClient.allocateItem(wir.getID(), getSelectedParticipantID());
-        }
-        catch (IOException | ResourceGatewayException e) {
-            Announcement.error(e.getMessage());
+        SingleSelectParticipantList listPanel =
+                showSingleSelectParticipantList(wir, "Reallocate");
+        if (listPanel != null) {
+            listPanel.addOKListener(e -> {
+                getContentPanel().remove(listPanel);
+
+                try {
+                    _resClient.reallocateItem(wir.getID(), listPanel.getSelectedID());
+                    refreshGrid();
+                    Announcement.success("Reallocated item '%s'", wir.getID());
+                }
+                catch (IOException | ResourceGatewayException ex) {
+                    Announcement.error(ex.getMessage());
+                }
+            });
         }
     }
 
 
     private void restartItem(WorkItemRecord wir) {
+        SingleSelectParticipantList listPanel =
+                showSingleSelectParticipantList(wir, "Restart");
+        if (listPanel != null) {
+            listPanel.addOKListener(e -> {
+                getContentPanel().remove(listPanel);
+
+                try {
+                    _resClient.restartItem(wir.getID(), listPanel.getSelectedID());
+                    refreshGrid();
+                    Announcement.success("Restarted item '%s'", wir.getID());
+                }
+                catch (IOException | ResourceGatewayException ex) {
+                    Announcement.error(ex.getMessage());
+                }
+            });
+        }
+    }
+
+
+
+    // todo filtering of parts
+    private SingleSelectParticipantList showSingleSelectParticipantList(
+            WorkItemRecord wir, String action) {
+        if (getContentPanel().getChildren().count() > 1) {
+            Announcement.error("An admin action is already in progress.");
+            return null;
+        }
         try {
-            _resClient.startItem(wir.getID(), getSelectedParticipantID());
+            List<Participant> pList = getAllParticipants();
+            SingleSelectParticipantList listPanel =
+                    new SingleSelectParticipantList(pList, action, wir.getID());
+            listPanel.addCancelListener(e -> getContentPanel().remove(listPanel));
+            getContentPanel().add(listPanel);
+            return listPanel;
         }
         catch (IOException | ResourceGatewayException e) {
             Announcement.error(e.getMessage());
+            return null;
         }
+    }
+
+    
+    private MultiSelectParticipantList showMultiSelectParticipantList(
+            WorkItemRecord wir, String action) {
+        if (getContentPanel().getChildren().count() > 1) {
+            Announcement.error("An admin action is already in progress.");
+            return null;
+        }
+        try {
+            List<Participant> pList = getAllParticipants();
+            MultiSelectParticipantList listPanel =
+                    new MultiSelectParticipantList(pList, action, wir.getID());
+            listPanel.addCancelListener(e -> getContentPanel().remove(listPanel));
+            getContentPanel().add(listPanel);
+            return listPanel;
+        }
+        catch (IOException | ResourceGatewayException e) {
+            Announcement.error(e.getMessage());
+            return null;
+        }
+    }
+
+
+    private List<Participant> getAllParticipants() throws ResourceGatewayException, IOException {
+        return _resClient.getParticipants();
     }
 
 
