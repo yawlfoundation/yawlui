@@ -3,6 +3,7 @@ package org.yawlfoundation.yawl.ui.component;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.listbox.MultiSelectListBox;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
+import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.util.HashSet;
 import java.util.List;
@@ -39,9 +40,16 @@ public class MultiSelectParticipantList extends AbstractParticipantList {
         listbox = new MultiSelectListBox<>();
         listbox.setItems(pList);
         listbox.setItemLabelGenerator(Participant::getFullName);
-        listbox.setHeight("80vh");
+        UiUtil.setStyle(listbox, "overflow-y", "scroll");
+        UiUtil.setStyle(listbox, "flex-grow", "1");
         return listbox;
     }
 
+
+    @Override
+    void updateList(List<Participant> pList) {
+        listbox.setItems(pList);
+        listbox.getListDataView().refreshAll();
+    }
 
 }

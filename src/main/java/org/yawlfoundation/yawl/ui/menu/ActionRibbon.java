@@ -54,19 +54,4 @@ public class ActionRibbon extends HorizontalLayout {
         getChildren().forEach(i -> ((ActionIcon) i).reset());
     }
 
-
-//    private Icon buildIcon(VaadinIcon iconName, String hoverColor, String tooltip,
-//                        ComponentEventListener<ClickEvent<Icon>> clickListener) {
-//        Icon icon = new Icon(iconName);
-//        icon.setSize("18px");
-//        icon.setColor("gray");
-//        icon.getStyle().set("cursor", "pointer");
-//        icon.getStyle().set("margin-left", "4px");
-//        icon.getElement().setAttribute("title", tooltip);
-//        icon.getElement().addEventListener("mouseover", event -> icon.setColor(hoverColor));
-//        icon.getElement().addEventListener("mouseout", event -> icon.setColor("gray"));
-//        icon.addClickListener(clickListener);
-//        return icon;
-//    }
-
 }

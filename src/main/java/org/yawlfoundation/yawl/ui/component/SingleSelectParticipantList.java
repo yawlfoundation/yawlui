@@ -3,6 +3,7 @@ package org.yawlfoundation.yawl.ui.component;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.listbox.ListBox;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
+import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.util.List;
 
@@ -21,7 +22,8 @@ public class SingleSelectParticipantList extends AbstractParticipantList {
 
 
     public String getSelectedID() {
-        return listbox.getValue().getID();
+        Participant p = listbox.getValue();
+        return p != null ? p.getID() : null;
     }
 
 
@@ -35,9 +37,15 @@ public class SingleSelectParticipantList extends AbstractParticipantList {
         listbox = new ListBox<>();
         listbox.setItems(pList);
         listbox.setItemLabelGenerator(Participant::getFullName);
-        listbox.setHeight("80vh");
+        UiUtil.setStyle(listbox, "overflow-y", "scroll");
+        UiUtil.setStyle(listbox, "flex-grow", "1");
         return listbox;
     }
 
 
+    @Override
+    void updateList(List<Participant> pList) {
+        listbox.setItems(pList);
+        listbox.getListDataView().refreshAll();
+    }
 }

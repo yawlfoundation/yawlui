@@ -35,14 +35,9 @@ public class ActionIcon extends Icon {
         getElement().setAttribute("title", tooltip);
         addMouseOutListener(ENABLED_COLOR);
         addMouseOverListener(hoverColor);
-        addClickListener(clickListener);
-    }
-
-
-    private void init(String color) {
-        setSize("18px");
-        setColor(color);
-        getStyle().set("margin-left", "4px");
+        if (clickListener != null) {
+            addClickListener(clickListener);
+        }
     }
 
 
@@ -50,6 +45,13 @@ public class ActionIcon extends Icon {
 
 
     public void reset() { setColor(ENABLED_COLOR); }
+
+
+    private void init(String color) {
+        setSize("18px");
+        setColor(color);
+        getStyle().set("margin-left", "4px");
+    }
 
 
     private void addMouseOutListener(String color) {

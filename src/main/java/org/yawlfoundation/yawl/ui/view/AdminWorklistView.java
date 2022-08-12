@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 public class AdminWorklistView extends AbstractWorklistView {
 
     private boolean _directlyToMe = false;
-    private boolean _participantListIsVisible = false;
 
     public AdminWorklistView(ResourceClient client) {
         super(client);
@@ -148,10 +147,12 @@ public class AdminWorklistView extends AbstractWorklistView {
                 getContentPanel().remove(listPanel);
                 try {
                     Set<String> ids = listPanel.getSelectedIDs();
-                    _resClient.offerItem(wir.getID(), ids);
-                    refreshGrid();
-                    Announcement.success("Offered item '%s' to %d participants",
-                            wir.getID(), ids.size());
+                    if (! ids.isEmpty()) {
+                        _resClient.offerItem(wir.getID(), ids);
+                        refreshGrid();
+                        Announcement.success("Offered item '%s' to %d participant%s",
+                                wir.getID(), ids.size(), (ids.size() > 1 ? "s" : ""));
+                    }
                 }
                 catch (IOException | ResourceGatewayException ex) {
                     Announcement.error(ex.getMessage());
@@ -169,9 +170,12 @@ public class AdminWorklistView extends AbstractWorklistView {
                 getContentPanel().remove(listPanel);
 
                 try {
-                    _resClient.allocateItem(wir.getID(), listPanel.getSelectedID());
-                    refreshGrid();
-                    Announcement.success("Allocated item '%s'", wir.getID());
+                    String id = listPanel.getSelectedID();
+                    if (id != null) {
+                        _resClient.allocateItem(wir.getID(), id);
+                        refreshGrid();
+                        Announcement.success("Allocated item '%s'", wir.getID());
+                    }
                 }
                 catch (IOException | ResourceGatewayException ex) {
                     Announcement.error(ex.getMessage());
@@ -189,9 +193,12 @@ public class AdminWorklistView extends AbstractWorklistView {
                 getContentPanel().remove(listPanel);
 
                 try {
-                    _resClient.startItem(wir.getID(), listPanel.getSelectedID());
-                    refreshGrid();
-                    Announcement.success("Started item '%s'", wir.getID());
+                    String id = listPanel.getSelectedID();
+                    if (id != null) {
+                        _resClient.startItem(wir.getID(), id);
+                        refreshGrid();
+                        Announcement.success("Started item '%s'", wir.getID());
+                    }
                 }
                 catch (IOException | ResourceGatewayException ex) {
                     Announcement.error(ex.getMessage());
@@ -209,10 +216,12 @@ public class AdminWorklistView extends AbstractWorklistView {
                 getContentPanel().remove(listPanel);
                 try {
                     Set<String> ids = listPanel.getSelectedIDs();
-                    _resClient.reofferItem(wir.getID(), ids);
-                    refreshGrid();
-                    Announcement.success("Reoffered item '%s' to %d participants",
-                            wir.getID(), ids.size());
+                    if (! ids.isEmpty()) {
+                        _resClient.reofferItem(wir.getID(), ids);
+                        refreshGrid();
+                        Announcement.success("Reoffered item '%s' to %d participant%s",
+                                wir.getID(), ids.size(), (ids.size() > 1 ? "s" : ""));
+                    }
                 }
                 catch (IOException | ResourceGatewayException ex) {
                     Announcement.error(ex.getMessage());
@@ -230,9 +239,12 @@ public class AdminWorklistView extends AbstractWorklistView {
                 getContentPanel().remove(listPanel);
 
                 try {
-                    _resClient.reallocateItem(wir.getID(), listPanel.getSelectedID());
-                    refreshGrid();
-                    Announcement.success("Reallocated item '%s'", wir.getID());
+                    String id = listPanel.getSelectedID();
+                    if (id != null) {
+                        _resClient.reallocateItem(wir.getID(), id);
+                        refreshGrid();
+                        Announcement.success("Reallocated item '%s'", wir.getID());
+                    }
                 }
                 catch (IOException | ResourceGatewayException ex) {
                     Announcement.error(ex.getMessage());
@@ -250,9 +262,12 @@ public class AdminWorklistView extends AbstractWorklistView {
                 getContentPanel().remove(listPanel);
 
                 try {
-                    _resClient.restartItem(wir.getID(), listPanel.getSelectedID());
-                    refreshGrid();
-                    Announcement.success("Restarted item '%s'", wir.getID());
+                    String id = listPanel.getSelectedID();
+                    if (id != null) {
+                        _resClient.restartItem(wir.getID(), id);
+                        refreshGrid();
+                        Announcement.success("Restarted item '%s'", wir.getID());
+                    }
                 }
                 catch (IOException | ResourceGatewayException ex) {
                     Announcement.error(ex.getMessage());

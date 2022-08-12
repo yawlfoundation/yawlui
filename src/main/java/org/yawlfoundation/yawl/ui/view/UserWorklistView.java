@@ -1,39 +1,88 @@
 package org.yawlfoundation.yawl.ui.view;
 
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.GridVariant;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import org.yawlfoundation.yawl.resourcing.resource.Participant;
-import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
-import org.yawlfoundation.yawl.ui.announce.Announcement;
+import com.vaadin.flow.component.contextmenu.ContextMenu;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
+import org.yawlfoundation.yawl.resourcing.QueueSet;
+import org.yawlfoundation.yawl.ui.menu.ActionIcon;
+import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * @author Michael Adams
  * @date 2/11/20
  */
-public class UserWorklistView extends VerticalLayout {
+public class UserWorklistView extends AbstractWorklistView {
 
-    public UserWorklistView(final ResourceClient client) {
-        Grid<Participant> grid = new Grid<>(Participant.class);
-        grid.setItems(getParticipants(client));
-        grid.setColumns("firstName", "lastName", "userID", "administrator");
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
-        add(grid);
-        setSizeFull();
+    public UserWorklistView(ResourceClient client) {
+        super(client);
     }
 
-    private List<Participant> getParticipants(ResourceClient client) {
-        try {
-            return client.getParticipants();
-        }
-        catch (IOException | ResourceGatewayException e) {
-            Announcement.error(e.getMessage());
-            return Collections.emptyList();
-        }
+    @Override
+    protected QueueSet getQueueSet() {
+        return null;
     }
+
+    @Override
+    protected String getTitle() {
+        return "My Work List";
+    }
+
+    @Override
+    protected ActionRibbon createColumnActions(WorkItemRecord wir) {
+        ActionRibbon ribbon = new ActionRibbon();
+        switch(wir.getResourceStatus()) {
+            case "Offered" : {
+                ribbon.add(VaadinIcon.TAB_A, "#A37063", "Accept",
+                        e -> accept(wir));
+                ActionIcon icon =
+                ribbon.add(VaadinIcon.MENU, "#A37063", "Other Actions", null);
+                ContextMenu menu = new ContextMenu(icon);
+                menu.setOpenOnClick(true);
+                menu.addItem("Start");
+                menu.addItem("Chain");
+                break;
+            }
+            case "Allocated" : {
+                ribbon.add(VaadinIcon.CARET_RIGHT, "#009926", "Start",
+                        event -> start(wir));
+                break;
+            }
+            case "Started" : {
+                 ribbon.add(VaadinIcon.PENCIL, "#009926", "View/Edit",
+                         event -> edit(wir));
+                 break;
+            }
+            case "Suspended" : {
+                 ribbon.add(VaadinIcon.TIME_BACKWARD, "#009926", "Start",
+                         event -> unsuspend(wir));
+                 break;
+            }
+        }
+        return ribbon;
+    }
+
+    private void unsuspend(WorkItemRecord wir) {
+        
+    }
+
+    private void edit(WorkItemRecord wir) {
+
+    }
+
+    private void start(WorkItemRecord wir) {
+
+    }
+
+    private void accept(WorkItemRecord wir) {
+
+    }
+
+    @Override
+    protected ActionRibbon createFooterActions() {
+        return null;
+    }
+
+
+
 }
