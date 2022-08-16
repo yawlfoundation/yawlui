@@ -57,6 +57,11 @@ public class Announcement {
     }
 
 
+    public static Notification warn(String msg) {
+        return show(msg, NotificationVariant.LUMO_CONTRAST);
+    }
+
+
     public static void error(String msg) {
         new ErrorMsg(msg, DEFAULT_POSITION).open();
     }

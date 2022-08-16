@@ -6,6 +6,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
 import org.yawlfoundation.yawl.resourcing.WorkQueue;
+import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
@@ -28,22 +29,23 @@ public abstract class AbstractWorklistView extends AbstractView {
                 new SimpleDateFormat("MMM dd yyyy H:mm:ss");
 
     private final Grid<WorkItemRecord> _grid;
-    private HorizontalLayout _content;
-    private UnpaddedVerticalLayout _testContent;
+    private final HorizontalLayout _content;
     private H4 _header;
-    
+
+    private final Participant _user;
     private QueueSet _queueSet;
 
-    public AbstractWorklistView(ResourceClient resClient) {
+    public AbstractWorklistView(ResourceClient resClient, Participant p) {
         super(resClient, null);
-        _queueSet = getQueueSet();
+        _user = p;
+        _queueSet = getQueueSet(p);
         _grid = createGrid();
         _content = createPanel();
         add(_content);
         setSizeFull();
     }
 
-    protected abstract QueueSet getQueueSet();
+    protected abstract QueueSet getQueueSet(Participant p);
 
     protected abstract String getTitle();
 
@@ -53,7 +55,7 @@ public abstract class AbstractWorklistView extends AbstractView {
 
 
     protected void refreshGrid() {
-        _queueSet = getQueueSet();
+        _queueSet = getQueueSet(_user);
         _grid.setItems(getAllWorkItems());
         _grid.getDataProvider().refreshAll();
         _grid.recalculateColumnWidths();
@@ -66,15 +68,9 @@ public abstract class AbstractWorklistView extends AbstractView {
     }
 
 
-    protected UnpaddedVerticalLayout getTestPanel() {
-        return _testContent;
-    }
-
-
     protected HorizontalLayout createPanel() {
         _header = new H4(String.format("%s (%d)", getTitle(), getItemCount()));
         UnpaddedVerticalLayout gridPanel = createGridPanel(_header, _grid);
-        _testContent = new UnpaddedVerticalLayout();
         HorizontalLayout content = new HorizontalLayout();
         content.add(gridPanel);
         content.setFlexGrow(1, gridPanel);

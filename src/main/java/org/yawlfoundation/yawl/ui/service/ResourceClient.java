@@ -44,6 +44,11 @@ public class ResourceClient {
     }
 
 
+    public QueueSet getUserWorkQueues(String pid) throws IOException, ResourceGatewayException {
+        return _wqAdapter.getParticipantQueues(pid, getHandle());
+    }
+
+
     public void offerItem(String itemID, Set<String> pidSet)
             throws IOException, ResourceGatewayException {
         _wqAdapter.offerItem(pidSet, itemID, getHandle());

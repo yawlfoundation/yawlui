@@ -32,12 +32,12 @@ public class AdminWorklistView extends AbstractWorklistView {
     private boolean _directlyToMe = false;
 
     public AdminWorklistView(ResourceClient client) {
-        super(client);
+        super(client, null);
     }
 
 
     @Override
-    protected QueueSet getQueueSet() {
+    protected QueueSet getQueueSet(Participant p) {
         try {
             return getClient().getAdminWorkQueues();
         }
@@ -282,7 +282,7 @@ public class AdminWorklistView extends AbstractWorklistView {
     private SingleSelectParticipantList showSingleSelectParticipantList(
             WorkItemRecord wir, String action) {
         if (getContentPanel().getChildren().count() > 1) {
-            Announcement.error("An admin action is already in progress.");
+            Announcement.warn("An admin action is already in progress.");
             return null;
         }
         try {
@@ -303,7 +303,7 @@ public class AdminWorklistView extends AbstractWorklistView {
     private MultiSelectParticipantList showMultiSelectParticipantList(
             WorkItemRecord wir, String action) {
         if (getContentPanel().getChildren().count() > 1) {
-            Announcement.error("An admin action is already in progress.");
+            Announcement.warn("An admin action is already in progress.");
             return null;
         }
         try {

@@ -1,6 +1,5 @@
 package org.yawlfoundation.yawl.ui.view;
 
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -33,13 +32,13 @@ import java.security.NoSuchAlgorithmException;
 @JsModule("@vaadin/vaadin-lumo-styles/presets/compact.js")
 //@Theme(value = Lumo.class)
 //@CssImport(value = "./styles/vaadin-text-field-styles.css", themeFor = "vaadin-text-field")
-public class MainView extends AppLayout implements 
+public class MainView extends AppLayout implements
         ComponentEventListener<Tabs.SelectedChangeEvent>, AppShellConfigurator {
 
     private final ResourceClient _resClient = new ResourceClient();
     private final EngineClient _engClient = new EngineClient();
     private Participant _user;
-
+    private DrawerMenu _menu;
     private Div _footer;
 
 
@@ -65,7 +64,7 @@ public class MainView extends AppLayout implements
         // tab's element's root has two children: an icon and a span (i.e. the label)
         String label = tab.getElement().getChild(0).getChild(1).getText();
         switch (label) {
-            case "My Worklist" : setContent(new UserWorklistView(_resClient)); break;
+            case "My Worklist" : setContent(new UserWorklistView(_resClient, _user)); break;
             case "My Profile" : setContent(null); break;
             case "My Team's Worklist" : setContent(null); break;
             case "Case Mgt" : setContent(new CasesView(_resClient, _engClient)); break;
@@ -89,14 +88,15 @@ public class MainView extends AppLayout implements
         LoginForm login = new LoginForm();
         login.setForgotPasswordButtonVisible(false);
 
+        layout.add(login);
+
         login.addLoginListener(e -> {
             try {
                 if (_resClient.authenticate(e.getUsername(), e.getPassword())) {
                     _user = _resClient.getParticipant(e.getUsername());
                     createMenuBar(_user);
-                    setContent(getLandingPage(_user));
-
-                } else {
+                }
+                else {
                     setErrorMessage(login, null);        // sets default error msg
                     login.setError(true);                            // show the error
                 }
@@ -105,9 +105,10 @@ public class MainView extends AppLayout implements
                    NoSuchAlgorithmException ex) {
                 setErrorMessage(login, ex.getMessage());
                 login.setError(true);
-                ex.printStackTrace();
             }
         });
+
+        layout.setSizeFull();
         setContent(layout);
     }
 
@@ -129,9 +130,11 @@ public class MainView extends AppLayout implements
         Image img = new Image("icons/yawlLogo.png", "YAWL Logo");
         img.setHeight("44px");
         addToNavbar(new DrawerToggle(), img);
-        DrawerMenu menu = new DrawerMenu(p);
-        menu.addSelectedChangeListener(this);
-        addToDrawer(menu);
+        _menu = new DrawerMenu(p);
+        _menu.addSelectedChangeListener(this);
+        addToDrawer(_menu);
+        setDrawerOpened(false);
+        _menu.selectInitialItem();
     }
 
 
@@ -149,11 +152,6 @@ public class MainView extends AppLayout implements
     }
 
 
-    private Component getLandingPage(Participant p) {
-        return p == null ? new AdminWorklistView(_resClient) : new UserWorklistView(_resClient);
-    }
-
-
     private void exit() {
         try {
             _resClient.disconnect();
@@ -162,6 +160,7 @@ public class MainView extends AppLayout implements
         catch (IOException ioe) {
             // ignore
         }
+        getChildren().forEach(this::remove);                    // clear content
         showLoginForm();
     }
 

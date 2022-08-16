@@ -14,6 +14,9 @@ import org.yawlfoundation.yawl.resourcing.resource.Participant;
  */
 public class DrawerMenu extends Tabs {
 
+    private Tab initialItem;
+
+
     public DrawerMenu(Participant p) {
         setOrientation(Orientation.VERTICAL);
         addItems(p);
@@ -21,8 +24,9 @@ public class DrawerMenu extends Tabs {
 
 
     private void addItems(Participant p) {
-        if (p != null) {                                                 // normal user
-            add(createTab(VaadinIcon.INBOX, "My Worklist"));
+        if (p != null) {// normal user
+            initialItem = createTab(VaadinIcon.INBOX, "My Worklist");
+            add(initialItem);
             add(createTab(VaadinIcon.USER_CHECK, "My Profile"));
         }
 
@@ -34,8 +38,9 @@ public class DrawerMenu extends Tabs {
             add(createTab(VaadinIcon.AUTOMATION, "Case Mgt"));
         }
 
-        if (isAdmin(p)) {              
-            add(createTab(VaadinIcon.RECORDS, "Admin Worklist"));
+        if (isAdmin(p)) {
+            initialItem = createTab(VaadinIcon.RECORDS, "Admin Worklist");
+            add(initialItem);
             add(createTab(VaadinIcon.USER, "Resources"));
             add(createTab(VaadinIcon.GROUP, "Org Data"));
             add(createTab(VaadinIcon.CLUSTER, "Non-Human Resources"));
@@ -52,7 +57,6 @@ public class DrawerMenu extends Tabs {
         Icon icon = new Icon(vi);
         icon.setSize("12px");
         Span span = new Span(label);
-//        span.getStyle().set("fontSize", "75%");
         layout.add(icon, span);
         return new Tab(layout);
     }
@@ -73,5 +77,10 @@ public class DrawerMenu extends Tabs {
     private boolean canManageCases(Participant p) {
         return isAdmin(p) || p.getUserPrivileges().canManageCases();
     }
+
+
+    public void selectInitialItem() {
+        setSelectedTab(initialItem);
+     }
 
 }
