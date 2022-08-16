@@ -1,5 +1,6 @@
 package org.yawlfoundation.yawl.ui.form;
 
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.login.AbstractLogin;
 import com.vaadin.flow.component.login.LoginI18n;
 import com.vaadin.flow.component.login.LoginOverlay;
@@ -17,41 +18,50 @@ import java.util.Set;
  * @author Michael Adams
  * @date 3/11/20
  */
-public class LoginPanel extends LoginOverlay {
+//@Route("")
+public class LoginPanel extends Div {
+
+    private final LoginOverlay overlay = new LoginOverlay();
 
     // the main view wants to know when a user successfully logs in
     private final Set<AuthenticationSuccessListener> _successListeners = new HashSet<>();
 
-    public LoginPanel(final ResourceClient client) {
+    public LoginPanel() {
         super();
-        setForgotPasswordButtonVisible(false);
-        setTitle("YAWL");
-        setDescription(null);
-        setOpened(true);
+        LoginOverlay overlay = new LoginOverlay();
+        overlay.setForgotPasswordButtonVisible(false);
+        overlay.setTitle("YAWL");
+        overlay.setDescription(null);
 
-        addLoginListener(e -> {
-            try {
-                if (authenticate(client, e)) {
-                    Participant p = getLoggedInUser(client, e.getUsername());
-                    setOpened(false);
-                    announceAuthenticationSuccess(p);
-                } else {
-                    setErrorMessage(null);                     // sets default error msg
-                    setError(true);                            // show the error
-                }
-            }
-            catch (ResourceGatewayException | IOException | NoSuchAlgorithmException ex) {
-                setErrorMessage(ex.getMessage());
-                setError(true);
-                ex.printStackTrace();
-            }
-        });
+//        overlay.addLoginListener(e -> {
+//            try {
+//                if (authenticate(client, e)) {
+//                    Participant p = getLoggedInUser(client, e.getUsername());
+//                    overlay.setOpened(false);
+//                    announceAuthenticationSuccess(p);
+//                } else {
+//                    setErrorMessage(null);                     // sets default error msg
+//                    overlay.setError(true);                            // show the error
+//                }
+//            }
+//            catch (ResourceGatewayException | IOException | NoSuchAlgorithmException ex) {
+//                setErrorMessage(ex.getMessage());
+//                overlay.setError(true);
+//                ex.printStackTrace();
+//            }
+//        });
+
+        add(overlay);
+        overlay.setOpened(true);
     }
 
 
     public void addAuthenticationSuccessListener(AuthenticationSuccessListener asl) {
         _successListeners.add(asl);
     }
+
+
+    public void open() { overlay.setOpened(true); }
 
 
     private boolean authenticate(ResourceClient client, AbstractLogin.LoginEvent e)
@@ -79,6 +89,6 @@ public class LoginPanel extends LoginOverlay {
         if (message != null) {
             i18n.getErrorMessage().setMessage(message);
         }
-        setI18n(i18n);
+//        setI18n(i18n);
     }
 }
