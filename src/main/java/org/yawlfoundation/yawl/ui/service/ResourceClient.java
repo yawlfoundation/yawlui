@@ -4,9 +4,13 @@ import org.yawlfoundation.yawl.authentication.YClient;
 import org.yawlfoundation.yawl.authentication.YExternalClient;
 import org.yawlfoundation.yawl.elements.YAWLServiceReference;
 import org.yawlfoundation.yawl.engine.YSpecificationID;
+import org.yawlfoundation.yawl.engine.interfce.Marshaller;
 import org.yawlfoundation.yawl.engine.interfce.SpecificationData;
+import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
+import org.yawlfoundation.yawl.resourcing.TaskPrivileges;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
+import org.yawlfoundation.yawl.resourcing.resource.UserPrivileges;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayClientAdapter;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceLogGatewayClient;
@@ -34,9 +38,7 @@ public class ResourceClient {
     private String _handle;
 
 
-    public ResourceClient() {
-
-    }
+    public ResourceClient() { }
 
 
     public QueueSet getAdminWorkQueues() throws IOException, ResourceGatewayException {
@@ -46,6 +48,12 @@ public class ResourceClient {
 
     public QueueSet getUserWorkQueues(String pid) throws IOException, ResourceGatewayException {
         return _wqAdapter.getParticipantQueues(pid, getHandle());
+    }
+
+
+    public WorkItemRecord getItem(String itemID) throws IOException, ResourceGatewayException {
+        String xml = _wqAdapter.getWorkItem(itemID, getHandle());
+        return Marshaller.unmarshalWorkItem(xml);
     }
 
 
@@ -85,6 +93,72 @@ public class ResourceClient {
     }
 
 
+    public void acceptItem(String itemID, String pid)
+                throws IOException, ResourceGatewayException {
+        _wqAdapter.acceptOffer(pid, itemID, getHandle());
+    }
+
+
+    public void suspendItem(String itemID, String pid)
+                    throws IOException, ResourceGatewayException {
+        _wqAdapter.suspendItem(pid, itemID, getHandle());
+    }
+
+
+    public void unsuspendItem(String itemID, String pid)
+                    throws IOException, ResourceGatewayException {
+        _wqAdapter.unsuspendItem(pid, itemID, getHandle());
+    }
+
+
+    public void chainCase(String itemID, String pid)
+                    throws IOException, ResourceGatewayException {
+        _wqAdapter.chainCase(pid, itemID, getHandle());
+    }
+
+
+    public void skipItem(String itemID, String pid)
+                    throws IOException, ResourceGatewayException {
+        _wqAdapter.skipItem(pid, itemID, getHandle());
+    }
+
+
+    public void delegateItem(String itemID, String pidFrom, String pidTo)
+                    throws IOException, ResourceGatewayException {
+        _wqAdapter.delegateItem(pidFrom, pidTo, itemID, getHandle());
+    }
+
+
+    public void deallocateItem(String itemID, String pid)
+                    throws IOException, ResourceGatewayException {
+        _wqAdapter.deallocateItem(pid, itemID, getHandle());
+    }
+
+
+    public void reallocateItem(String itemID, String pidFrom, String pidTo, boolean stateful)
+                    throws IOException, ResourceGatewayException {
+        _wqAdapter.reallocateItem(pidFrom, pidTo, itemID, stateful, getHandle());
+    }
+
+
+    public void pileItem(String itemID, String pid)
+                    throws IOException, ResourceGatewayException {
+        _wqAdapter.pileItem(pid, itemID, getHandle());
+    }
+
+
+    public void completeItem(String itemID, String pid)
+                    throws IOException, ResourceGatewayException {
+        _wqAdapter.completeItem(pid, itemID, getHandle());
+    }
+
+
+    public void newInstance(String itemID, String pid)
+                    throws IOException, ResourceGatewayException {
+ //       _wqAdapter.addInstance(pid, itemID, getHandle());     //todo add to api
+    }
+
+
     public Set<Participant> getAssignedParticipants(String itemID, int queue)
             throws IOException, ResourceGatewayException {
         return _wqAdapter.getParticipantsAssignedWorkItem(itemID, queue, getHandle());
@@ -103,6 +177,16 @@ public class ResourceClient {
             return null;
         }
         return _resAdapter.getParticipantFromUserID(userName, getHandle());
+    }
+
+
+    public UserPrivileges getUserPrivileges(String pid) throws IOException, ResourceGatewayException {
+        return _wqAdapter.getUserPrivileges(pid, getHandle());
+    }
+
+
+    public TaskPrivileges getTaskPrivileges(String itemID) throws IOException, ResourceGatewayException {
+        return _wqAdapter.getTaskPrivileges(itemID, getHandle());
     }
 
 
@@ -128,6 +212,12 @@ public class ResourceClient {
         else if (client instanceof YExternalClient) {
             _wqAdapter.removeExternalClient(client.getUserName(), getHandle());
         }
+    }
+
+
+    public Set<Participant> getSubordinateParticpants(String pid)
+            throws IOException, ResourceGatewayException {
+        return _wqAdapter.getReportingToParticipant(pid, getHandle());
     }
 
 

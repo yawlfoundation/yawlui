@@ -10,6 +10,7 @@ import org.yawlfoundation.yawl.authentication.YExternalClient;
 import org.yawlfoundation.yawl.elements.YAWLServiceReference;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.ClientDetailsDialog;
+import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
@@ -106,7 +107,7 @@ public class ServicesView extends AbstractView {
                                              List<? extends YClient> items,
                                              ItemType itemType) {
         ActionRibbon ribbon = new ActionRibbon();
-        ribbon.add(VaadinIcon.PLUS, "#009926", "Add", event -> {
+        ribbon.add(VaadinIcon.PLUS, "Add", event -> {
             ClientDetailsDialog dialog = new ClientDetailsDialog(items, null,
                     itemType);
             dialog.getSaveButton().addClickListener(e -> {
@@ -123,10 +124,10 @@ public class ServicesView extends AbstractView {
             ribbon.reset();
         });
 
-        ribbon.add(VaadinIcon.REFRESH, "#0066FF", "Refresh", event ->
+        ribbon.add(VaadinIcon.REFRESH, "Refresh", event ->
                 refresh(itemType));
 
-        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Remove Selected",
+        ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED, "Remove Selected",
                 event -> {
                     grid.getSelectedItems().forEach(item -> {
                         if (removeClient(item)) {
@@ -169,7 +170,7 @@ public class ServicesView extends AbstractView {
         ItemType itemType = (client instanceof YAWLServiceReference) ?
                         ItemType.Service : ItemType.Client;
         ActionRibbon ribbon = new ActionRibbon();
-        ribbon.add(VaadinIcon.PENCIL, "#0066FF", "Edit", event -> {
+        ribbon.add(VaadinIcon.PENCIL, "Edit", event -> {
             ClientDetailsDialog dialog = new ClientDetailsDialog(items, client, itemType);
             dialog.getSaveButton().addClickListener(e -> {
                 if (dialog.validate()) {
@@ -182,7 +183,7 @@ public class ServicesView extends AbstractView {
             dialog.open();
             ribbon.reset();
         });
-        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Remove", event -> {
+        ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED, "Remove", event -> {
             if (removeClient(client)) {
                 announceSuccess(client, "removed");
                 refresh(itemType);

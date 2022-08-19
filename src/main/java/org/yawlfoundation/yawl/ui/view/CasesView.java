@@ -14,6 +14,7 @@ import org.yawlfoundation.yawl.ui.dialog.DelayedStartDialog;
 import org.yawlfoundation.yawl.ui.dialog.SpecInfoDialog;
 import org.yawlfoundation.yawl.ui.dialog.UploadDialog;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
+import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
@@ -102,16 +103,16 @@ public class CasesView extends AbstractView {
 
     private ActionRibbon createSpecFooterActions() {
         ActionRibbon ribbon = new ActionRibbon();
-        ribbon.add(VaadinIcon.PLUS, "#009926", "Add", event -> {
+        ribbon.add(VaadinIcon.PLUS, "Add", event -> {
             new UploadDialog(_engClient, _specs,
                     e -> refreshSpecifications()).open();
             ribbon.reset();
         });
 
-        ribbon.add(VaadinIcon.REFRESH, "#0066FF", "Refresh", event ->
+        ribbon.add(VaadinIcon.REFRESH, "Refresh", event ->
                 refreshSpecifications());
 
-        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Unload Selected",
+        ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED, "Unload Selected",
                 event -> {
                     _specsGrid.getSelectedItems().forEach(this::unloadSpecification);
                     refreshSpecifications();
@@ -124,10 +125,9 @@ public class CasesView extends AbstractView {
     private ActionRibbon createCaseFooterActions() {
         ActionRibbon ribbon = new ActionRibbon();
         
-        ribbon.add(VaadinIcon.REFRESH, "#0066FF", "Refresh", event ->
-                refreshCases());
+        ribbon.add(VaadinIcon.REFRESH, "Refresh", event -> refreshCases());
 
-        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Cancel Selected",
+        ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED, "Cancel Selected",
                 event -> {
                     _casesGrid.getSelectedItems().forEach(this::cancelCase);
                     refreshCases();
@@ -139,7 +139,7 @@ public class CasesView extends AbstractView {
 
     private ActionRibbon createCancelCaseAction(RunningCase runningCase) {
         ActionRibbon ribbon = new ActionRibbon();
-        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Cancel", event -> {
+        ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED, "Cancel", event -> {
             cancelCase(runningCase);
             refreshCases();
         });
@@ -149,24 +149,24 @@ public class CasesView extends AbstractView {
 
     private ActionRibbon createSpecActions(SpecificationData spec) {
         ActionRibbon ribbon = new ActionRibbon();
-        ribbon.add(VaadinIcon.CARET_RIGHT, "#009926", "Start", event -> {
+        ribbon.add(VaadinIcon.CARET_RIGHT, ActionIcon.GREEN, "Start", event -> {
             if (launchCase(spec)) {
                 refreshCases();
              }
         });
-        ribbon.add(VaadinIcon.CLOCK, "#009926", "Start later", event -> {
+        ribbon.add(VaadinIcon.CLOCK, ActionIcon.GREEN, "Start later", event -> {
             delayedStart(spec);
             ribbon.reset();
         });
-        ribbon.add(VaadinIcon.INFO, "#0066FF", "Info", event -> {
+        ribbon.add(VaadinIcon.INFO, "Info", event -> {
             showInfo(spec);
             ribbon.reset();
         });
-        ribbon.add(VaadinIcon.DOWNLOAD_ALT, "#D66EE6", "Download log", event -> {
+        ribbon.add(VaadinIcon.DOWNLOAD_ALT, "Download log", event -> {
             downloadLog(spec);
             ribbon.reset();
          });
-        ribbon.add(VaadinIcon.CLOSE_SMALL, "red", "Unload", event -> {
+        ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED, "Unload", event -> {
             if (unloadSpecification(spec)) {
                 refreshSpecifications();
             }
@@ -297,7 +297,7 @@ public class CasesView extends AbstractView {
                         Announcement.success("XES log downloaded");
                     });
 
-         }
+        }
         catch (IOException ioe) {
             showErrorMsg(ioe.getMessage());
         }

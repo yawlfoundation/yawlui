@@ -18,6 +18,12 @@ public class ActionRibbon extends HorizontalLayout {
     }
 
 
+    public ActionIcon add(VaadinIcon iconName, String tooltip,
+                    ComponentEventListener<ClickEvent<Icon>> clickListener) {
+        return add(iconName, ActionIcon.DEFAULT_HOVER, tooltip, clickListener);
+    }
+
+    
     public ActionIcon add(VaadinIcon iconName, String hoverColor, String tooltip,
                     ComponentEventListener<ClickEvent<Icon>> clickListener) {
         ActionIcon icon = new ActionIcon(iconName, hoverColor, tooltip, clickListener);
@@ -26,6 +32,12 @@ public class ActionRibbon extends HorizontalLayout {
     }
 
 
+    public ActionIcon add(int index, VaadinIcon iconName, String tooltip,
+                    ComponentEventListener<ClickEvent<Icon>> clickListener) {
+        return add(index, iconName, ActionIcon.DEFAULT_HOVER, tooltip, clickListener);
+    }
+
+    
     public ActionIcon add(int index, VaadinIcon iconName, String hoverColor, String tooltip,
                     ComponentEventListener<ClickEvent<Icon>> clickListener) {
         ActionIcon icon = new ActionIcon(iconName, hoverColor, tooltip, clickListener);

@@ -64,11 +64,12 @@ public class MainView extends AppLayout implements
         // tab's element's root has two children: an icon and a span (i.e. the label)
         String label = tab.getElement().getChild(0).getChild(1).getText();
         switch (label) {
-            case "My Worklist" : setContent(new UserWorklistView(_resClient, _user)); break;
+            case "My Worklist" : setContent(new UserWorklistView(
+                    _resClient, _engClient, _user)); break;
             case "My Profile" : setContent(null); break;
             case "My Team's Worklist" : setContent(null); break;
             case "Case Mgt" : setContent(new CasesView(_resClient, _engClient)); break;
-            case "Admin Worklist" : setContent(new AdminWorklistView(_resClient)); break;
+            case "Admin Worklist" : setContent(new AdminWorklistView(_resClient, _user)); break;
             case "Resources" : setContent(null); break;
             case "Org Data" : setContent(null); break;
             case "Non-Human Resources" : setContent(null); break;

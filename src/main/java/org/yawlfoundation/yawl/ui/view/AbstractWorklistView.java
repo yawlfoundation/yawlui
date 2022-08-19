@@ -7,12 +7,19 @@ import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
 import org.yawlfoundation.yawl.resourcing.WorkQueue;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
+import org.yawlfoundation.yawl.resourcing.resource.UserPrivileges;
+import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
+import org.yawlfoundation.yawl.ui.announce.Announcement;
+import org.yawlfoundation.yawl.ui.component.MultiSelectParticipantList;
+import org.yawlfoundation.yawl.ui.component.SingleSelectParticipantList;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
+import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
 
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,6 +32,10 @@ import java.util.List;
  */
 public abstract class AbstractWorklistView extends AbstractView {
 
+    protected enum Action {
+        Offer, Allocate, Start, Reoffer, Reallocate, Restart, Delegate
+    }
+
     private static final DateFormat DATE_FORMAT =
                 new SimpleDateFormat("MMM dd yyyy H:mm:ss");
 
@@ -33,19 +44,20 @@ public abstract class AbstractWorklistView extends AbstractView {
     private H4 _header;
 
     private final Participant _user;
+    private UserPrivileges _userPrivileges;
     private QueueSet _queueSet;
 
-    public AbstractWorklistView(ResourceClient resClient, Participant p) {
-        super(resClient, null);
+    public AbstractWorklistView(ResourceClient resClient, EngineClient engClient, Participant p) {
+        super(resClient, engClient);
         _user = p;
-        _queueSet = getQueueSet(p);
+        _queueSet = refreshQueueSet(p);
         _grid = createGrid();
         _content = createPanel();
         add(_content);
         setSizeFull();
     }
 
-    protected abstract QueueSet getQueueSet(Participant p);
+    protected abstract QueueSet refreshQueueSet(Participant p);
 
     protected abstract String getTitle();
 
@@ -55,7 +67,7 @@ public abstract class AbstractWorklistView extends AbstractView {
 
 
     protected void refreshGrid() {
-        _queueSet = getQueueSet(_user);
+        _queueSet = refreshQueueSet(_user);
         _grid.setItems(getAllWorkItems());
         _grid.getDataProvider().refreshAll();
         _grid.recalculateColumnWidths();
@@ -66,6 +78,9 @@ public abstract class AbstractWorklistView extends AbstractView {
     protected HorizontalLayout getContentPanel() {
         return _content;
     }
+
+
+    protected Grid<WorkItemRecord> getGrid() { return _grid; }
 
 
     protected HorizontalLayout createPanel() {
@@ -98,7 +113,97 @@ public abstract class AbstractWorklistView extends AbstractView {
     }
 
 
+    protected SingleSelectParticipantList showSingleSelectParticipantList(
+                WorkItemRecord wir, String action) {
+        try {
+            return showSingleSelectParticipantList(wir, action, getAllParticipants());
+        }
+        catch (IOException | ResourceGatewayException e) {
+            Announcement.error(e.getMessage());
+            return null;
+        }
+    }
+
+    
+    protected SingleSelectParticipantList showSingleSelectParticipantList(
+            WorkItemRecord wir, String action, List<Participant> pList) {
+        if (getContentPanel().getChildren().count() > 1) {
+            Announcement.warn("An admin action is already in progress.");
+            return null;
+        }
+
+        SingleSelectParticipantList listPanel =
+                new SingleSelectParticipantList(pList, action, wir.getID());
+        listPanel.addCancelListener(e -> getContentPanel().remove(listPanel));
+        getContentPanel().add(listPanel);
+        return listPanel;
+    }
+
+
+    protected MultiSelectParticipantList showMultiSelectParticipantList(
+            WorkItemRecord wir, String action) {
+        if (getContentPanel().getChildren().count() > 1) {
+            Announcement.warn("An admin action is already in progress.");
+            return null;
+        }
+        try {
+            List<Participant> pList = getAllParticipants();
+            MultiSelectParticipantList listPanel =
+                    new MultiSelectParticipantList(pList, action, wir.getID());
+            listPanel.addCancelListener(e -> getContentPanel().remove(listPanel));
+            getContentPanel().add(listPanel);
+            return listPanel;
+        }
+        catch (IOException | ResourceGatewayException e) {
+            Announcement.error(e.getMessage());
+            return null;
+        }
+    }
+
+
+    protected List<Participant> getAllParticipants() throws ResourceGatewayException, IOException {
+        return _resClient.getParticipants();
+    }
+
+    protected QueueSet getQueueSet() { return _queueSet; }
+
     protected ResourceClient getClient() { return _resClient; }
+
+    protected Participant getParticipant() { return _user; }
+
+    protected String getParticpantID() {
+        return _user != null ? _user.getID() : null;
+    }
+
+    protected boolean isAdminUser() { return _user == null; }
+
+    protected boolean hasAdminPrivileges() {
+        return isAdminUser() || _user.isAdministrator();
+    }
+
+    protected UserPrivileges getUserPrivileges() {
+        if (_userPrivileges == null && _user != null) {
+            try {
+                _userPrivileges = _resClient.getUserPrivileges(getParticpantID());
+            }
+            catch (IOException | ResourceGatewayException e) {
+                e.printStackTrace();
+            }
+        }
+        return _userPrivileges;
+    }
+
+
+    protected void startItem(WorkItemRecord wir, String pid) {
+        try {
+            _resClient.startItem(wir.getID(), pid);
+            refreshGrid();
+            Announcement.success("Item '%s' started", wir.getID());
+        }
+        catch (IOException | ResourceGatewayException ex) {
+            Announcement.error(ex.getMessage());
+        }
+    }
 
 
     private String getSpecID(WorkItemRecord wir) {

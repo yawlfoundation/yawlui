@@ -2,6 +2,9 @@ package org.yawlfoundation.yawl.ui.service;
 
 import org.yawlfoundation.yawl.authentication.YExternalClient;
 import org.yawlfoundation.yawl.engine.YSpecificationID;
+import org.yawlfoundation.yawl.engine.interfce.Marshaller;
+import org.yawlfoundation.yawl.engine.interfce.TaskInformation;
+import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.engine.interfce.interfaceA.InterfaceA_EnvironmentBasedClient;
 import org.yawlfoundation.yawl.engine.interfce.interfaceB.InterfaceB_EnvironmentBasedClient;
 import org.yawlfoundation.yawl.util.StringUtil;
@@ -93,11 +96,39 @@ public class EngineClient {
         return msg;
     }
 
+
     public void cancelCase(String caseID) throws IOException {
         _ibClient.cancelCase(caseID, getHandle());
     }
 
 
+    public boolean canCreateNewInstance(String itemID) throws IOException {
+        return successful(_ibClient.checkPermissionToAddInstances(itemID, getHandle()));
+    }
+
+    public WorkItemRecord createNewInstance(String itemID, String paramValue)
+            throws IOException {
+        String xml = _ibClient.createNewInstance(itemID, paramValue, getHandle());
+        if (successful(xml)) {
+            return Marshaller.unmarshalWorkItem(xml);
+        }
+        else throw new IOException(xml);
+    }
+
+
+    public TaskInformation getTaskInformation(WorkItemRecord wir) throws IOException {
+        return getTaskInformation(new YSpecificationID(wir), wir.getTaskID());
+    }
+
+
+    public TaskInformation getTaskInformation(YSpecificationID specID, String taskID)
+            throws IOException {
+        String xml = _ibClient.getTaskInformationStr(specID, taskID, getHandle());
+        return successful(xml) ? _ibClient.parseTaskInformation(xml) : null;
+    }
+
+
+    private boolean successful(String xml) { return _ibClient.successful(xml); }
 
     private String getHandle() throws IOException {
         connect();
