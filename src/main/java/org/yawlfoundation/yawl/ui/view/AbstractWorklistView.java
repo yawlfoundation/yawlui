@@ -33,7 +33,8 @@ import java.util.List;
 public abstract class AbstractWorklistView extends AbstractView {
 
     protected enum Action {
-        Offer, Allocate, Start, Reoffer, Reallocate, Restart, Delegate
+        Offer, Allocate, Start, Reoffer, Reallocate, Restart, Delegate, Complete,
+        Suspend, Unsuspend, Pile, Skip, Chain, Deallocate, Accept, Edit
     }
 
     private static final DateFormat DATE_FORMAT =

@@ -70,7 +70,7 @@ public class MainView extends AppLayout implements
             case "My Team's Worklist" : setContent(null); break;
             case "Case Mgt" : setContent(new CasesView(_resClient, _engClient)); break;
             case "Admin Worklist" : setContent(new AdminWorklistView(_resClient, _user)); break;
-            case "Resources" : setContent(null); break;
+            case "Resources" : setContent(new ParticipantsView(_resClient)); break;
             case "Org Data" : setContent(null); break;
             case "Non-Human Resources" : setContent(null); break;
             case "Calendar" : setContent(null); break;
@@ -95,6 +95,7 @@ public class MainView extends AppLayout implements
             try {
                 if (_resClient.authenticate(e.getUsername(), e.getPassword())) {
                     _user = _resClient.getParticipant(e.getUsername());
+                    _user.setUserPrivileges(_resClient.getUserPrivileges(_user.getID()));
                     createMenuBar(_user);
                 }
                 else {

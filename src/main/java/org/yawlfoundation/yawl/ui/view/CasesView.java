@@ -109,14 +109,14 @@ public class CasesView extends AbstractView {
             ribbon.reset();
         });
 
-        ribbon.add(VaadinIcon.REFRESH, "Refresh", event ->
-                refreshSpecifications());
-
         ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED, "Unload Selected",
                 event -> {
                     _specsGrid.getSelectedItems().forEach(this::unloadSpecification);
                     refreshSpecifications();
                 });
+
+        ribbon.add(VaadinIcon.REFRESH, "Refresh", event ->
+                refreshSpecifications());
 
         return ribbon;
     }
@@ -125,13 +125,13 @@ public class CasesView extends AbstractView {
     private ActionRibbon createCaseFooterActions() {
         ActionRibbon ribbon = new ActionRibbon();
         
-        ribbon.add(VaadinIcon.REFRESH, "Refresh", event -> refreshCases());
-
         ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED, "Cancel Selected",
                 event -> {
                     _casesGrid.getSelectedItems().forEach(this::cancelCase);
                     refreshCases();
                 });
+
+        ribbon.add(VaadinIcon.REFRESH, "Refresh", event -> refreshCases());
 
         return ribbon;
     }

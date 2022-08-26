@@ -54,9 +54,9 @@ public abstract class AbstractParticipantList extends VerticalLayout {
 
     private ActionRibbon createRibbon() {
         closeAction = new ActionIcon(VaadinIcon.CLOSE,
-                "red", "Cancel", null);
+                ActionIcon.RED, "Cancel", null);
         okAction = new ActionIcon(VaadinIcon.CHECK,
-                "green", "OK", null);
+                ActionIcon.GREEN, "OK", null);
         ActionRibbon ribbon = new ActionRibbon();
         ribbon.setJustifyContentMode(JustifyContentMode.END);
         ribbon.add(closeAction, okAction);

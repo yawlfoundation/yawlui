@@ -73,6 +73,9 @@ public class ClientDetailsDialog extends AbstractDialog {
         _pwConfirmField.setAutocomplete(Autocomplete.NEW_PASSWORD);
         _descriptionField.setAutocomplete(Autocomplete.OFF);
 
+        _passwordField.setRevealButtonVisible(false);
+        _pwConfirmField.setRevealButtonVisible(false);
+
         FormLayout form = new FormLayout();
         form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 2));
         form.add(_nameField, 2);

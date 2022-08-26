@@ -28,8 +28,8 @@ public class UnpaddedVerticalLayout extends VerticalLayout {
 
 
     public UnpaddedVerticalLayout(String sides, Component... components) {
-        super(components);
-        applySides(sides);
+        this(sides);
+        add(components);
     }
 
 

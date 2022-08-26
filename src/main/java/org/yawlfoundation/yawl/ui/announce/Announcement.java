@@ -47,8 +47,7 @@ public class Announcement {
 
 
     public static Notification success(String formatMsg, Object... values) {
-        String msg = String.format(formatMsg, values);
-        return success(msg);
+        return success(String.format(formatMsg, values));
     }
 
 
@@ -57,13 +56,28 @@ public class Announcement {
     }
 
 
+    public static Notification highlight(String formatMsg, Object... values) {
+        return highlight(String.format(formatMsg, values));
+    }
+
+
     public static Notification warn(String msg) {
         return show(msg, NotificationVariant.LUMO_CONTRAST);
+    }
+
+
+    public static Notification warn(String formatMsg, Object... values) {
+        return warn(String.format(formatMsg, values));
     }
 
 
     public static void error(String msg) {
         new ErrorMsg(msg, DEFAULT_POSITION).open();
     }
-    
+
+
+    public static void error(String formatMsg, Object... values) {
+        new ErrorMsg(String.format(formatMsg, values), DEFAULT_POSITION).open();
+    }
+
 }

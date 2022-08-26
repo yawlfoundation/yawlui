@@ -30,7 +30,7 @@ import java.util.Set;
  * @date 2/11/20
  */
 public class UserWorklistView extends AbstractWorklistView {
-
+    
 
     public UserWorklistView(ResourceClient resClient, EngineClient engClient, Participant p) {
         super(resClient, engClient, p);
@@ -55,7 +55,6 @@ public class UserWorklistView extends AbstractWorklistView {
     }
 
 
-    //todo finish task privs
     @Override
     protected ActionRibbon createColumnActions(WorkItemRecord wir) {
         TaskPrivileges taskPrivileges = getTaskPrivileges(wir);
@@ -71,11 +70,17 @@ public class UserWorklistView extends AbstractWorklistView {
 
     private ActionRibbon createOfferedRibbon(WorkItemRecord wir) {
         ActionRibbon ribbon = new ActionRibbon();
-        ribbon.add(VaadinIcon.INBOX,"Accept", e -> accept(wir));
+        ribbon.add(VaadinIcon.HASH,"Accept",
+                e -> performAction(Action.Accept, wir));
+        ribbon.add(VaadinIcon.CARET_RIGHT, ActionIcon.GREEN,"Accept & Start",
+                e -> acceptAndStart(wir));
+
         ContextMenu menu = addContextMenu(ribbon);
-        menu.addItem("Accept & Start", e -> acceptAndStart(wir));
         if (userMayChain(wir)) {
-            menu.addItem("Chain", e -> chain(wir));
+            menu.addItem("Chain", e -> performAction(Action.Chain, wir));
+        }
+        else {
+            menu.setEnabled(false);
         }
         return ribbon;
     }
@@ -90,20 +95,23 @@ public class UserWorklistView extends AbstractWorklistView {
         else {
             ribbon.add(VaadinIcon.CARET_RIGHT);
         }
+        if (userMaySkip(wir, privileges)) {
+            ribbon.add(VaadinIcon.ARROW_FORWARD, "Skip",
+                    e -> performAction(Action.Skip, wir));
+        }
+        else {
+            ribbon.add(VaadinIcon.ARROW_FORWARD);
+        }
 
         ContextMenu menu = addContextMenu(ribbon);
-
-        if (userMaySkip(wir, privileges)) {
-            menu.addItem("Skip", e -> skip(wir));
-        }
         if (userMayDeallocate(privileges)) {
-            menu.addItem("Deallocate", e -> deallocate(wir));
+            menu.addItem("Deallocate", e -> performAction(Action.Deallocate, wir));
         }
         if (userMayDelegate(privileges)) {
             menu.addItem("Delegate", e -> delegate(wir));
         }
         if (userMayPile(wir, privileges)) {
-            menu.addItem("Pile", e -> pile(wir));
+            menu.addItem("Pile", e -> performAction(Action.Pile, wir));
         }
         if (menu.getItems().isEmpty()) {
             menu.setEnabled(false);
@@ -120,12 +128,17 @@ public class UserWorklistView extends AbstractWorklistView {
         else {
             ribbon.add(VaadinIcon.PENCIL);   // show disabled
         }
+        if (userMayComplete(wir)) {
+            ribbon.add(VaadinIcon.CHECK, "Complete",
+                    event -> performAction(Action.Complete, wir));
+        }
+        else {
+            ribbon.add(VaadinIcon.CHECK);   // show disabled
+        }
+
         ContextMenu menu = addContextMenu(ribbon);
         if (userMaySuspend(privileges)) {
-            menu.addItem("Suspend", e -> suspend(wir));
-        }
-        if (userMayComplete(wir)) {
-            menu.addItem("Complete", e -> complete(wir));
+            menu.addItem("Suspend", e -> performAction(Action.Suspend, wir));
         }
         if (userMayReallocateStateful(privileges)) {
             menu.addItem("Reallocate (stateful)", e -> reallocate(wir, true));
@@ -145,7 +158,11 @@ public class UserWorklistView extends AbstractWorklistView {
 
     private ActionRibbon createSuspendedRibbon(WorkItemRecord wir) {
         ActionRibbon ribbon = new ActionRibbon();
-        ribbon.add(VaadinIcon.TIME_BACKWARD, "Unsuspend", event -> unsuspend(wir));
+        ActionIcon icon = new ActionIcon(VaadinIcon.TIME_BACKWARD,
+                ActionIcon.DEFAULT_HOVER, "Unsuspend",
+                event -> performAction(Action.Unsuspend, wir));
+        icon.getStyle().set("margin-right", "32px");           // empty space to right
+        ribbon.add(icon);
         ribbon.add(VaadinIcon.MENU);
         return ribbon;
     }
@@ -219,33 +236,27 @@ public class UserWorklistView extends AbstractWorklistView {
     }
 
 
-    private void complete(WorkItemRecord wir) {
+    private void performAction(Action action, WorkItemRecord wir) {
         try {
-            _resClient.completeItem(wir.getID(), getParticpantID());
-        }
-        catch (IOException | ResourceGatewayException e) {
-            Announcement.error(e.getMessage());
-        }
-    }
-
-
-    private void suspend(WorkItemRecord wir) {
-        try {
-            _resClient.suspendItem(wir.getID(), getParticpantID());
+            String successMsg = String.format("%s%s item '%s'", action.name(),
+                    (action.name().endsWith("e") ? "d" : "ed"), wir.getID());
+            String pid = getParticpantID();
+            switch (action) {
+                case Accept : _resClient.acceptItem(wir.getID(), pid); break;
+                case Complete : _resClient.completeItem(wir, pid); break;
+                case Suspend : _resClient.suspendItem(wir.getID(), pid); break;
+                case Unsuspend : _resClient.unsuspendItem(wir.getID(), pid); break;
+                case Deallocate : _resClient.deallocateItem(wir.getID(), pid); break;
+                case Skip : _resClient.skipItem(wir.getID(), pid); break;
+                case Pile : _resClient.pileItem(wir.getID(), pid); break;
+                case Chain : {
+                    _resClient.chainCase(wir.getID(), pid);
+                    successMsg = String.format("Case %s chained", wir.getRootCaseID());
+                    break;
+                }
+            }
             refreshGrid();
-            Announcement.success("Item '%s' suspended", wir.getID());
-        }
-        catch (ResourceGatewayException | IOException e) {
-            Announcement.error(e.getMessage());
-        }
-    }
-
-
-    private void pile(WorkItemRecord wir) {
-        try {
-            _resClient.pileItem(wir.getID(), getParticpantID());
-            refreshGrid();
-            Announcement.success("Item '%s' suspended", wir.getID());
+            Announcement.success(successMsg);
         }
         catch (IOException | ResourceGatewayException e) {
             Announcement.error(e.getMessage());
@@ -278,44 +289,8 @@ public class UserWorklistView extends AbstractWorklistView {
     }
 
 
-    private void deallocate(WorkItemRecord wir) {
-        try {
-            _resClient.deallocateItem(wir.getID(), getParticpantID());
-            refreshGrid();
-            Announcement.success("Item '%s' deallocated", wir.getID());
-        }
-        catch (ResourceGatewayException | IOException e) {
-            Announcement.error(e.getMessage());
-        }
-    }
-
-
-    private void skip(WorkItemRecord wir) {
-        try {
-            _resClient.skipItem(wir.getID(), getParticpantID());
-            refreshGrid();
-            Announcement.success("Item '%s' skipped", wir.getID());
-        }
-        catch (ResourceGatewayException | IOException e) {
-            Announcement.error(e.getMessage());
-        }
-    }
-
-
-    private void chain(WorkItemRecord wir) {
-        try {
-            _resClient.chainCase(wir.getID(), getParticpantID());
-            refreshGrid();
-            Announcement.success("Case %s chained", wir.getRootCaseID());
-        }
-        catch (ResourceGatewayException | IOException e) {
-            Announcement.error(e.getMessage());
-        }
-
-    }
-
     private void acceptAndStart(WorkItemRecord wir) {
-        accept(wir);
+        performAction(Action.Accept, wir);
 
         // only start it next if the item is not already set to system start
         if (getQueueSet().hasWorkItemInQueue(wir.getID(), WorkQueue.ALLOCATED)) {
@@ -324,32 +299,9 @@ public class UserWorklistView extends AbstractWorklistView {
     }
 
 
-    private void unsuspend(WorkItemRecord wir) {
-        try {
-            _resClient.unsuspendItem(wir.getID(), getParticpantID());
-            refreshGrid();
-            Announcement.success("Item '%s' unsuspended", wir.getID());
-        }
-        catch (ResourceGatewayException | IOException e) {
-            Announcement.error(e.getMessage());
-        }
-    }
-
-
+    //todo
     private void edit(WorkItemRecord wir) {
 
-    }
-
-
-    private void accept(WorkItemRecord wir) {
-        try {
-            _resClient.acceptItem(wir.getID(), getParticpantID());
-            refreshGrid();
-            Announcement.success("Item '%s' accepted", wir.getID());
-        }
-        catch (ResourceGatewayException | IOException e) {
-            Announcement.error(e.getMessage());
-        }
     }
 
 
@@ -373,7 +325,7 @@ public class UserWorklistView extends AbstractWorklistView {
 
     private TaskPrivileges getTaskPrivileges(WorkItemRecord wir) {
         try {
-            return _resClient.getTaskPrivileges(wir.getID());
+            return _resClient.getTaskPrivileges(wir);
         }
         catch (IOException | ResourceGatewayException e) {
             e.printStackTrace();

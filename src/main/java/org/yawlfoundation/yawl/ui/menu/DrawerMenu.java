@@ -48,7 +48,7 @@ public class DrawerMenu extends Tabs {
             add(createTab(VaadinIcon.LINK, "Services / Clients"));
         }
         add(createTab(VaadinIcon.QUESTION_CIRCLE_O, "About"));
-        add(createTab(VaadinIcon.EXIT, "Logout"));
+        add(createTab(VaadinIcon.SIGN_OUT_ALT, "Logout"));
     }
 
 

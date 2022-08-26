@@ -124,9 +124,6 @@ public class ServicesView extends AbstractView {
             ribbon.reset();
         });
 
-        ribbon.add(VaadinIcon.REFRESH, "Refresh", event ->
-                refresh(itemType));
-
         ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED, "Remove Selected",
                 event -> {
                     grid.getSelectedItems().forEach(item -> {
@@ -136,6 +133,9 @@ public class ServicesView extends AbstractView {
                     });
                     refresh(itemType);
                 });
+
+        ribbon.add(VaadinIcon.REFRESH, "Refresh", event ->
+                refresh(itemType));
 
         return ribbon;
     }

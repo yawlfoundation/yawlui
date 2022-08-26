@@ -14,9 +14,9 @@ import com.vaadin.flow.shared.Registration;
  */
 public class ActionIcon extends Icon {
 
-    public static final String DEFAULT_HOVER  = "#275ED3";             // blue
-    public static final String RED = "#AF2318";
-    public static final String GREEN = "#009926";
+    public static final String DEFAULT_HOVER = "#C89100"; // = "#275ED3";             // blue
+    public static final String RED = "#A70100"; //"#AF2318";
+    public static final String GREEN = "#2E6851"; //"#009926";
     public static final String ENABLED_COLOR = "gray";
     public static final String DISABLED_COLOR = "#D5D5D7";
 

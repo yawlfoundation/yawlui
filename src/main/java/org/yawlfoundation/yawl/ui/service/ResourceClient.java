@@ -1,5 +1,6 @@
 package org.yawlfoundation.yawl.ui.service;
 
+import org.jdom2.Element;
 import org.yawlfoundation.yawl.authentication.YClient;
 import org.yawlfoundation.yawl.authentication.YExternalClient;
 import org.yawlfoundation.yawl.elements.YAWLServiceReference;
@@ -9,12 +10,13 @@ import org.yawlfoundation.yawl.engine.interfce.SpecificationData;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
 import org.yawlfoundation.yawl.resourcing.TaskPrivileges;
-import org.yawlfoundation.yawl.resourcing.resource.Participant;
-import org.yawlfoundation.yawl.resourcing.resource.UserPrivileges;
+import org.yawlfoundation.yawl.resourcing.resource.*;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayClientAdapter;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceLogGatewayClient;
 import org.yawlfoundation.yawl.resourcing.rsInterface.WorkQueueGatewayClientAdapter;
+import org.yawlfoundation.yawl.ui.util.TaskPrivilegesCache;
+import org.yawlfoundation.yawl.util.JDOMUtil;
 import org.yawlfoundation.yawl.util.PasswordEncryptor;
 
 import java.io.IOException;
@@ -23,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class ResourceClient {
+public class ResourceClient extends AbstractClient {
 
     private final ResourceGatewayClientAdapter _resAdapter = new ResourceGatewayClientAdapter(
             "http://localhost:8080/resourceService/gateway");
@@ -34,11 +36,10 @@ public class ResourceClient {
     private final ResourceLogGatewayClient _logClient = new ResourceLogGatewayClient(
             "http://localhost:8080/resourceService/logGateway");
 
+    public final TaskPrivilegesCache _taskPrivilegesCache = new TaskPrivilegesCache(this);
 
-    private String _handle;
 
-
-    public ResourceClient() { }
+    public ResourceClient() { super(); }
 
 
     public QueueSet getAdminWorkQueues() throws IOException, ResourceGatewayException {
@@ -147,15 +148,15 @@ public class ResourceClient {
     }
 
 
-    public void completeItem(String itemID, String pid)
+    public void completeItem(WorkItemRecord wir, String pid)
                     throws IOException, ResourceGatewayException {
-        _wqAdapter.completeItem(pid, itemID, getHandle());
-    }
 
-
-    public void newInstance(String itemID, String pid)
-                    throws IOException, ResourceGatewayException {
- //       _wqAdapter.addInstance(pid, itemID, getHandle());     //todo add to api
+        // have to put output data on the server first
+        Element e = wir.getUpdatedData() != null ? wir.getUpdatedData() : wir.getDataList();
+        String data = JDOMUtil.elementToStringDump(e);
+        _wqAdapter.updateWorkItemData(wir.getID(), data, getHandle());
+        
+        _wqAdapter.completeItem(pid, wir.getID(), getHandle());
     }
 
 
@@ -180,13 +181,92 @@ public class ResourceClient {
     }
 
 
-    public UserPrivileges getUserPrivileges(String pid) throws IOException, ResourceGatewayException {
+    public String addParticipant(Participant p) throws IOException {
+        return _resAdapter.addParticipant(p, true, getHandle());
+    }
+
+    public String updateParticipant(Participant p) throws IOException {
+        return _resAdapter.updateParticipant(p, true, getHandle());
+    }
+
+    public String deleteParticipant(Participant p) throws IOException {
+        return _resAdapter.removeParticipant(p, getHandle());
+    }
+
+    public List<AbstractResourceAttribute> getRoles()
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.getRoles(getHandle());
+    }
+
+    public String addParticipantToRole(String p, String r) throws IOException {
+        return _resAdapter.getClient().addParticipantToRole(p, r, getHandle());
+    }
+
+    public String addParticipantToCapability(String p, String c) throws IOException {
+        return _resAdapter.getClient().addParticipantToCapability(p, c, getHandle());
+    }
+
+    public String addParticipantToPosition(String p, String pos) throws IOException {
+        return _resAdapter.getClient().addParticipantToPosition(p, pos, getHandle());
+    }
+
+    public String removeParticipantFromRole(String p, String r) throws IOException {
+        return _resAdapter.getClient().removeParticipantFromRole(p, r, getHandle());
+    }
+
+    public String removeParticipantFromCapability(String p, String c) throws IOException {
+        return _resAdapter.getClient().removeParticipantFromCapability(p, c, getHandle());
+    }
+
+    public String removeParticipantFromPosition(String p, String pos) throws IOException {
+        return _resAdapter.getClient().removeParticipantFromPosition(p, pos, getHandle());
+    }
+
+    public List<AbstractResourceAttribute> getCapabilities()
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.getCapabilities(getHandle());
+    }
+
+    public List<AbstractResourceAttribute> getPositions()
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.getPositions(getHandle());
+    }
+
+    public List<AbstractResourceAttribute> getParticipantRoles(String pid)
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.getParticipantRoles(pid, getHandle());
+    }
+
+    public List<AbstractResourceAttribute> getParticipantCapabilities(String pid)
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.getParticipantCapabilities(pid, getHandle());
+    }
+
+    public List<AbstractResourceAttribute> getParticipantPositions(String pid)
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.getParticipantPositions(pid, getHandle());
+    }
+
+    public UserPrivileges getUserPrivileges(String pid)
+            throws IOException, ResourceGatewayException {
         return _wqAdapter.getUserPrivileges(pid, getHandle());
     }
 
+    public String setUserPrivileges(Participant p) throws IOException {
+        return _resAdapter.setParticipantPrivileges(p, getHandle());
+    }
 
-    public TaskPrivileges getTaskPrivileges(String itemID) throws IOException, ResourceGatewayException {
-        return _wqAdapter.getTaskPrivileges(itemID, getHandle());
+
+    public TaskPrivileges getTaskPrivileges(WorkItemRecord wir)
+            throws IOException, ResourceGatewayException {
+        TaskPrivileges privileges = _taskPrivilegesCache.get(wir);
+        if (privileges == null) {
+            privileges = _wqAdapter.getTaskPrivileges(wir.getID(), getHandle());
+            if (privileges != null) {
+                _taskPrivilegesCache.put(wir, privileges);
+            }
+        }
+        return privileges;
     }
 
 
@@ -240,22 +320,24 @@ public class ResourceClient {
     }
 
 
-    private String getHandle() throws IOException {
-        connect();
-        return _handle;
-    }
+    public boolean successful(String msg) { return _resAdapter.successful(msg); }
 
-    private void connect() {
+
+    @Override
+    protected void connect() {
         if (! connected()) {
             _handle = _resAdapter.connect("admin", "YAWL");
         }
     }
 
 
-    private boolean connected() {
+    @Override
+    protected boolean connected() {
         return _handle != null && _resAdapter.checkConnection(_handle);
     }
 
+
+    @Override
     public void disconnect() {
         connect();
         _resAdapter.disconnect(_handle);

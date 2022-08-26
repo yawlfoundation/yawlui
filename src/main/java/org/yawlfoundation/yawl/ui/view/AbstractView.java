@@ -48,7 +48,6 @@ abstract class AbstractView extends VerticalLayout {
         UnpaddedVerticalLayout layout = new UnpaddedVerticalLayout("t");
         layout.add(header);
         layout.add(grid);
-//        layout.setSizeFull();
         return layout;
     }
 
@@ -70,7 +69,8 @@ abstract class AbstractView extends VerticalLayout {
 
 
      protected <T> void configureActionColumn(Grid.Column<T> column) {
-         column.setAutoWidth(true).setFlexGrow(0).setResizable(false).setSortable(false);
+         column.setAutoWidth(true).setFlexGrow(0).setResizable(false)
+                 .setSortable(false).setFrozenToEnd(true);
      }
 
 

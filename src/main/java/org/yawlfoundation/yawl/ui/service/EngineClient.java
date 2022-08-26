@@ -20,7 +20,7 @@ import java.util.List;
  * @author Michael Adams
  * @date 11/11/20
  */
-public class EngineClient {
+public class EngineClient extends AbstractClient {
 
     private final InterfaceA_EnvironmentBasedClient _iaClient = new InterfaceA_EnvironmentBasedClient(
             "http://localhost:8080/yawl/ia");
@@ -28,10 +28,8 @@ public class EngineClient {
     private final InterfaceB_EnvironmentBasedClient _ibClient = new InterfaceB_EnvironmentBasedClient(
             "http://localhost:8080/yawl/ib");
 
-    private String _handle;
 
-
-    public EngineClient() { }
+    public EngineClient() { super(); }
 
 
     public List<YExternalClient> getClientApplications() throws IOException {
@@ -75,6 +73,7 @@ public class EngineClient {
         if (!_iaClient.successful(msg)) {
             throw new IOException(StringUtil.unwrap(msg));
         }
+        announceEvent(ClientEvent.Action.SpecificationUnload, specID);
         return true;
     }
 
@@ -130,26 +129,25 @@ public class EngineClient {
 
     private boolean successful(String xml) { return _ibClient.successful(xml); }
 
-    private String getHandle() throws IOException {
-        connect();
-        return _handle;
-    }
 
-
-    private void connect() throws IOException {
+    @Override
+    protected void connect() throws IOException {
         if (! connected()) {
             _handle = _iaClient.connect("admin", "YAWL");
         }
     }
 
 
-    private boolean connected() throws IOException {
+    @Override
+    protected boolean connected() throws IOException {
         return _handle != null && _iaClient.successful(_iaClient.checkConnection(_handle));
     }
 
 
+    @Override
     public void disconnect() throws IOException {
         connect();
         _iaClient.disconnect(_handle);
     }
+    
 }
