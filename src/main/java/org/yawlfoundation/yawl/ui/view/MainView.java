@@ -7,6 +7,7 @@ import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.login.LoginForm;
 import com.vaadin.flow.component.login.LoginI18n;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -19,6 +20,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.AppShellSettings;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
+import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.DrawerMenu;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
@@ -67,10 +69,10 @@ public class MainView extends AppLayout implements
             case "My Worklist" : setContent(new UserWorklistView(
                     _resClient, _engClient, _user)); break;
             case "My Profile" : setContent(null); break;
-            case "My Team's Worklist" : setContent(null); break;
+            case "My Team's Worklist" : setContent(new TeamWorklistView(_resClient, _user)); break;
             case "Case Mgt" : setContent(new CasesView(_resClient, _engClient)); break;
             case "Admin Worklist" : setContent(new AdminWorklistView(_resClient, _user)); break;
-            case "Resources" : setContent(new ParticipantsView(_resClient)); break;
+            case "Participants" : setContent(new ParticipantsView(_resClient)); break;
             case "Org Data" : setContent(null); break;
             case "Non-Human Resources" : setContent(null); break;
             case "Calendar" : setContent(null); break;
@@ -132,11 +134,24 @@ public class MainView extends AppLayout implements
         Image img = new Image("icons/yawlLogo.png", "YAWL Logo");
         img.setHeight("44px");
         addToNavbar(new DrawerToggle(), img);
+        addLogout();
         _menu = new DrawerMenu(p);
-        _menu.addSelectedChangeListener(this);
+        _menu.addSelectedChangeListener(this); 
         addToDrawer(_menu);
         setDrawerOpened(false);
         _menu.selectInitialItem();
+    }
+
+
+    // add a logout 'button' on the right side of the nav bar
+    private void addLogout() {
+        Div div = new Div();
+        ActionIcon logout = new ActionIcon(VaadinIcon.SIGN_OUT_ALT, null,
+                "Logout", e -> exit());
+        div.add(logout);
+        div.getStyle().set("margin-left", "auto");
+        div.getStyle().set("padding", "15px");
+        addToNavbar(div);
     }
 
 

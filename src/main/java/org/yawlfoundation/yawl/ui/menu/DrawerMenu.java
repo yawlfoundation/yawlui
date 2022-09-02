@@ -41,7 +41,7 @@ public class DrawerMenu extends Tabs {
         if (isAdmin(p)) {
             initialItem = createTab(VaadinIcon.RECORDS, "Admin Worklist");
             add(initialItem);
-            add(createTab(VaadinIcon.USER, "Resources"));
+            add(createTab(VaadinIcon.USER, "Participants"));
             add(createTab(VaadinIcon.GROUP, "Org Data"));
             add(createTab(VaadinIcon.CLUSTER, "Non-Human Resources"));
             add(createTab(VaadinIcon.CALENDAR_CLOCK, "Calendar"));
@@ -68,9 +68,8 @@ public class DrawerMenu extends Tabs {
 
 
     private boolean canViewTeamQueues(Participant p) {
-        return p != null && (p.isAdministrator() ||
-                p.getUserPrivileges().canViewOrgGroupItems() ||
-               p.getUserPrivileges().canViewTeamItems());
+        return isAdmin(p) || p.getUserPrivileges().canViewOrgGroupItems() ||
+               p.getUserPrivileges().canViewTeamItems();
     }
 
     

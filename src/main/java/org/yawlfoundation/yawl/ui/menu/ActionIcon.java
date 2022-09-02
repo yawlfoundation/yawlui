@@ -7,6 +7,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.dom.DomListenerRegistration;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.shared.Registration;
+import org.yawlfoundation.yawl.ui.util.AddedIcons;
 
 /**
  * @author Michael Adams
@@ -14,9 +15,9 @@ import com.vaadin.flow.shared.Registration;
  */
 public class ActionIcon extends Icon {
 
-    public static final String DEFAULT_HOVER = "#C89100"; // = "#275ED3";             // blue
-    public static final String RED = "#A70100"; //"#AF2318";
-    public static final String GREEN = "#2E6851"; //"#009926";
+    public static final String DEFAULT_HOVER = "#4A9AE9";              // blue
+    public static final String RED = "#E01773"; //"#A70100"; //"#AF2318";
+    public static final String GREEN = "#05B97C"; //""#2E6851"; //"#009926";
     public static final String ENABLED_COLOR = "gray";
     public static final String DISABLED_COLOR = "#D5D5D7";
 
@@ -32,23 +33,33 @@ public class ActionIcon extends Icon {
 
     // creates a disabled action icon
     public ActionIcon(VaadinIcon iconName) {
-        super((iconName));
-        init(DISABLED_COLOR);
-        enabled = false;
+        super(iconName);
         canToggleState = false;
+        init();
+    }
+
+
+    public ActionIcon(AddedIcons icon) {
+        super("addedicons", icon.name().toLowerCase());
+        canToggleState = false;
+        init();
     }
 
 
     // creates an enabled action icon
     public ActionIcon(VaadinIcon iconName, String hoverColor, String tooltip,
                             ComponentEventListener<ClickEvent<Icon>> listener) {
-        super((iconName));
-        init(ENABLED_COLOR);
+        super(iconName);
         canToggleState = true;
-        this.tooltip = tooltip;
-        this.hoverColor = hoverColor != null ? hoverColor : DEFAULT_HOVER;
-        clickListener = listener;
-        setEnabled(true);
+        init(hoverColor, tooltip, listener);
+    }
+
+
+    public ActionIcon(AddedIcons icon, String hoverColor, String tooltip,
+                                ComponentEventListener<ClickEvent<Icon>> listener) {
+        super("addedicons", icon.name().toLowerCase());
+        canToggleState = true;
+        init(hoverColor, tooltip, listener);
     }
 
 
@@ -84,6 +95,22 @@ public class ActionIcon extends Icon {
                 addedClickListener.remove();
             }
         }
+    }
+
+
+    private void init() {
+        init(DISABLED_COLOR);
+        enabled = false;
+    }
+
+
+    private void init(String hoverColor, String tooltip,
+                      ComponentEventListener<ClickEvent<Icon>> listener) {
+        init(ENABLED_COLOR);
+        this.tooltip = tooltip;
+        this.hoverColor = hoverColor != null ? hoverColor : DEFAULT_HOVER;
+        clickListener = listener;
+        setEnabled(true);
     }
 
 

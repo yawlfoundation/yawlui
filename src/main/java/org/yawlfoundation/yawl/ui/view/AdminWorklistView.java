@@ -1,16 +1,10 @@
 package org.yawlfoundation.yawl.ui.view;
 
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.dependency.CssImport;
-import com.vaadin.flow.component.grid.FooterRow;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
-import org.yawlfoundation.yawl.resourcing.WorkQueue;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
@@ -19,21 +13,15 @@ import org.yawlfoundation.yawl.ui.component.SingleSelectParticipantList;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
-import org.yawlfoundation.yawl.ui.util.UiUtil;
+import org.yawlfoundation.yawl.ui.util.AddedIcons;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @author Michael Adams
  * @date 2/11/20
  */
-// this css makes a combobox inside a grid transparent (when theme is added to combo)
-@CssImport(value = "./styles/combo-in-grid.css", themeFor = "vaadin-input-container")
 public class AdminWorklistView extends AbstractWorklistView {
 
     private boolean _directlyToMe;
@@ -66,19 +54,22 @@ public class AdminWorklistView extends AbstractWorklistView {
     protected ActionRibbon createColumnActions(WorkItemRecord wir) {
         ActionRibbon ribbon = new ActionRibbon();
         if ("Unoffered".equals(wir.getResourceStatus())) {
-            ribbon.add(VaadinIcon.GRID_SMALL_O, "Offer",
-                    event -> reassignMultiple(wir, Action.Offer));
-            ribbon.add(VaadinIcon.HASH, "Allocate",
-                    event -> reassignSingle(wir, Action.Allocate));
+            ActionIcon offer = new ActionIcon(AddedIcons.HUB, null,
+                    "Offer", event -> reassignMultiple(wir, Action.Offer));
+            ribbon.add(offer);
+            ActionIcon allocate = new ActionIcon(AddedIcons.DOWNLOAD, null,
+                    "Allocate", event -> reassignSingle(wir, Action.Allocate));
+            ribbon.add(allocate);
             ribbon.add(VaadinIcon.CARET_RIGHT, ActionIcon.GREEN, "Start",
                     event -> reassignSingle(wir, Action.Start));
-
         }
         else {
-            ribbon.add(VaadinIcon.GRID_SMALL_O,
+            ActionIcon reoffer = new ActionIcon(AddedIcons.HUB, null,
                     "Reoffer", event -> reassignMultiple(wir, Action.Reoffer));
-            ActionIcon reallocate = ribbon.add(VaadinIcon.HASH,
+            ribbon.add(reoffer);
+            ActionIcon reallocate = new ActionIcon(AddedIcons.DOWNLOAD, null,
                     "Reallocate", event -> reassignSingle(wir, Action.Reallocate));
+            ribbon.add(reallocate);
             ActionIcon restart = ribbon.add(VaadinIcon.CARET_RIGHT, ActionIcon.GREEN,
                     "Restart", event -> reassignSingle(wir, Action.Restart));
             switch(wir.getResourceStatus()) {
@@ -106,16 +97,7 @@ public class AdminWorklistView extends AbstractWorklistView {
 
     @Override
     protected Grid<WorkItemRecord> createGrid() {
-        Grid<WorkItemRecord> grid = super.createGrid();
-        grid.addComponentColumn(this::getAssignedParticipants).setAutoWidth(true)
-                .setResizable(true).setHeader(UiUtil.bold("Assigned"));
-
-        // reorder columns
-        List<Grid.Column<WorkItemRecord>> columns = new ArrayList<>(grid.getColumns());
-        Grid.Column<WorkItemRecord> pColumn = columns.remove(columns.size() -1);
-        columns.add(columns.size() -1, pColumn);
-        grid.setColumnOrder(columns);
-        return grid;
+        return createAdminGrid();
     }
 
 
@@ -206,52 +188,4 @@ public class AdminWorklistView extends AbstractWorklistView {
         _settingsVisible = ! _settingsVisible;                          // toggle
     }
 
-
-    private void setFooterComponent(int colIndex, Component component) {
-        FooterRow footerRow = getGrid().getFooterRows().get(0);
-        footerRow.getCell(getGrid().getColumns().get(colIndex)).setComponent(component);
-    }
-
-
-    private Component getAssignedParticipants(WorkItemRecord wir) {
-        int queue = -1;
-        switch (wir.getResourceStatus()) {
-            case "Offered" : queue = WorkQueue.OFFERED; break;
-            case "Allocated" : queue = WorkQueue.ALLOCATED; break;
-            case "Started" : queue = WorkQueue.STARTED; break;
-            case "Suspended" : queue = WorkQueue.SUSPENDED; break;
-        }
-        if (queue > -1) {
-            try {
-                List<Participant> pList = _resClient.getAssignedParticipants(
-                                wir.getID(), queue).stream()
-                        .sorted(Comparator.comparing(Participant::getLastName)
-                                .thenComparing(Participant::getFirstName))
-                        .collect(Collectors.toList());
-
-                if (pList.size() > 1) {
-                    ComboBox<Participant> comboBox = new ComboBox<>();
-                    comboBox.setItems(pList);
-                    comboBox.setItemLabelGenerator(Participant::getFullName);
-                    comboBox.setPlaceholder(pList.size() + " participants");
-                    comboBox.addValueChangeListener(e -> {
-                        comboBox.setValue(null);
-                        comboBox.setPlaceholder(pList.size() + " participants");
-                    });
-
-                    comboBox.getElement().getStyle().set("padding", "0");
-                    comboBox.getElement().setAttribute("theme", "transparent");
-                    return comboBox;
-                }
-
-                if (pList.size() == 1) {
-                    return new Label(pList.get(0).getFullName());
-                }
-            }
-            catch (IOException |ResourceGatewayException e) {
-                // fall through to blank label
-            }
-        }
-        return new Label();
-    }
 }

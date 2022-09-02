@@ -62,7 +62,7 @@ public class Announcement {
 
 
     public static Notification warn(String msg) {
-        return show(msg, NotificationVariant.LUMO_CONTRAST);
+        return show(msg, NotificationVariant.LUMO_ERROR);
     }
 
 

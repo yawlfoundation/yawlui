@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 public class ParticipantDetailsDialog extends AbstractDialog {
 
     private enum Attribute { Role, Capability, Position }
+    private enum Mode { Add, Edit, View }
 
     private final TextField _userField = new TextField("User ID");
     private final Checkbox _adminCbx = new Checkbox("Administrator");
@@ -59,7 +60,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
     private final ResourceClient _resClient;
     private final List<Participant> _allParticipants;
     private final Participant _participant;
-    private final boolean _editing;
+    private final Mode _mode;
 
     private Button _okButton;
 
@@ -70,20 +71,26 @@ public class ParticipantDetailsDialog extends AbstractDialog {
     }
 
 
+    // when read-only
+    public ParticipantDetailsDialog(ResourceClient client, Participant p) {
+         this(client, null, p);
+     }
+
+
     // when editing
     public ParticipantDetailsDialog(ResourceClient client, List<Participant> pList,
                                     Participant p) {
         _resClient = client;
         _allParticipants = pList;
         _participant = p;
-        _editing = p != null;
+        _mode = deriveMode(pList, p);
         _roleList = createAttributeList(Attribute.Role);
         _capabilityList = createAttributeList(Attribute.Capability);
         _positionList = createAttributeList(Attribute.Position);
-        setHeader((_editing ? "Edit" : "Add") + " Participant");
+        setHeader(_mode.name() + " Participant");
         addComponent(createContent());
         addComponent(createGroupPanels());
-        if (_editing) {
+        if (! adding()) {
             populateForm();
         }
         createButtons();
@@ -102,15 +109,20 @@ public class ParticipantDetailsDialog extends AbstractDialog {
 
 
     public void updateService() {
-        if (_editing) {
-            updateParticipant();
-        }
-        else {
-            addParticipant(composeParticipant());
+        switch (_mode) {
+            case Add : addParticipant(composeParticipant()); break;
+            case Edit : updateParticipant(); break;
         }
     }
 
-    
+
+    private Mode deriveMode(List<Participant> pList, Participant p) {
+        if (p == null) return Mode.Add;
+        if (pList == null) return Mode.View;
+        return Mode.Edit;
+    }
+
+
     private Participant composeParticipant() {
         String userID = _userField.getValue();
         boolean isAdmin = _adminCbx.getValue();
@@ -118,7 +130,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
         String lastName = _lastNameField.getValue();
         String password = _passwordField.getValue();
         String notes = _notesField.getValue();
-        if (_editing) {
+        if (editing()) {
             _participant.setUserID(userID);
             _participant.setAdministrator(isAdmin);
             _participant.setFirstName(firstName);
@@ -129,7 +141,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
             _participant.setNotes(notes);
             return _participant;
         }
-        else {
+        else if (adding()) {
             Participant p = new Participant(lastName, firstName, userID);
             p.setPassword(password);
             p.setAdministrator(isAdmin);
@@ -137,6 +149,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
             updateUserPrivileges(p.getUserPrivileges());
             return p;
         }
+        return null;
     }
 
 
@@ -160,25 +173,36 @@ public class ParticipantDetailsDialog extends AbstractDialog {
 
 
     private void configureFields() {
-        _userField.setRequired(true);
-        _firstNameField.setRequired(true);
-        _lastNameField.setRequired(true);
-        if (! _editing) {
-            _passwordField.setRequired(true);
-            _pwConfirmField.setRequired(true);
-        }
-
         _userField.setAutocomplete(Autocomplete.OFF);
         _firstNameField.setAutocomplete(Autocomplete.OFF);
         _lastNameField.setAutocomplete(Autocomplete.OFF);
         _passwordField.setAutocomplete(Autocomplete.NEW_PASSWORD);
         _pwConfirmField.setAutocomplete(Autocomplete.NEW_PASSWORD);
         _notesField.setAutocomplete(Autocomplete.OFF);
+
+        if (viewing()) {
+            _userField.setReadOnly(true);
+           _firstNameField.setReadOnly(true);
+           _lastNameField.setReadOnly(true);
+           _passwordField.setReadOnly(true);
+           _pwConfirmField.setReadOnly(true);
+           _notesField.setReadOnly(true);
+           _adminCbx.setReadOnly(true);
+        }
+        else {
+            _userField.setRequired(true);
+            _firstNameField.setRequired(true);
+            _lastNameField.setRequired(true);
+            if (adding()) {
+                _passwordField.setRequired(true);
+                _pwConfirmField.setRequired(true);
+            }
+        }
     }
 
 
     private VerticalLayout createPrivilegesPanel() {
-        if (_editing) {
+        if (! adding()) {
             UserPrivileges up = getUserPrivileges();
             _privCases.setValue(up.canManageCases());
             _privChoose.setValue((up.canChooseItemToStart()));
@@ -188,6 +212,15 @@ public class ParticipantDetailsDialog extends AbstractDialog {
             _privViewTeam.setValue(up.canViewTeamItems());
             _privViewGroup.setValue(up.canViewOrgGroupItems());
             _participant.setUserPrivileges(up);
+            if (viewing()) {
+                _privCases.setReadOnly(true);
+               _privChoose.setReadOnly(true);
+               _privReorder.setReadOnly(true);
+               _privConcurrent.setReadOnly(true);
+               _privChain.setReadOnly(true);
+               _privViewTeam.setReadOnly(true);
+               _privViewGroup.setReadOnly(true);
+            }
         }
         return new UnpaddedVerticalLayout("t", new H5("Privileges"), _privCases,
                 _privChoose, _privReorder, _privConcurrent, _privChain, _privViewTeam,
@@ -207,7 +240,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
     private ResourceAttributeList createAttributeList(Attribute attribute) {
         ResourceAttributeList list = new ResourceAttributeList(getAttributeList(attribute));
         
-        if (_editing) {
+        if (! adding()) {
             list.select(getParticipantAttributes(attribute));
         }
         return list;
@@ -216,20 +249,25 @@ public class ParticipantDetailsDialog extends AbstractDialog {
 
     private VerticalLayout createGroupPanel(ResourceAttributeList list, String title) {
         VerticalLayout layout = new UnpaddedVerticalLayout();
-//        layout.setWidth("220px");
         layout.setHeight("220px");
         layout.add(new H5(title));
         layout.add(list);
+        list.setReadOnly(viewing());
         return layout;
     }
 
     
     private void createButtons() {
-        Button cancel = new Button("Cancel", event -> close());
-        _okButton = new Button("OK");                 // listener added later
-        _okButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         getButtonBar().getStyle().set("margin-top", "10px");
-        getButtonBar().add(cancel, _okButton);
+        if (! viewing()) {
+            getButtonBar().add(new Button("Cancel", event -> close()));
+            _okButton = new Button("OK");                 // listener added later
+        }
+        else {
+            _okButton = new Button("Close", e -> close());
+        }
+        _okButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        getButtonBar().add(_okButton);
     }
 
 
@@ -278,7 +316,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
     private boolean validatePassword() {
         _passwordField.setInvalid(false);
         _pwConfirmField.setInvalid(false);
-        if (_editing && _passwordField.isEmpty() && _pwConfirmField.isEmpty()) {
+        if (editing() && _passwordField.isEmpty() && _pwConfirmField.isEmpty()) {
             return true;
         }
         if (_passwordField.isEmpty()) {
@@ -301,11 +339,14 @@ public class ParticipantDetailsDialog extends AbstractDialog {
     private boolean isUniqueUserID(String id) {
 
         // if editing an existing user, and there's no change to the id, don't check further
-        if (_editing && id.equals(_participant.getUserID())) {
+        if (editing() && id.equals(_participant.getUserID())) {
             return true;
         }
 
         // otherwise, it's a new user or existing user with a change
+        if (id.equalsIgnoreCase("admin")) {
+            return false;                                        // 'admin' is reserved
+        }
         for (Participant p : _allParticipants) {
             if (id.equals(p.getUserID())) {
                 return false;
@@ -316,7 +357,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
 
 
     private boolean hasUserPrivilegeChanges() {
-        if (! _editing) {
+        if (adding()) {
             return true;
         }
         UserPrivileges up = _participant.getUserPrivileges();
@@ -472,5 +513,12 @@ public class ParticipantDetailsDialog extends AbstractDialog {
                                 o -> m.getID().equals(o.getID())))
                 .collect(Collectors.toList());
     }
+
+
+    private boolean adding() { return _mode == Mode.Add; }
+
+    private boolean viewing() { return _mode == Mode.View; }
+
+    private boolean editing() { return _mode == Mode.Edit; }
 
 }

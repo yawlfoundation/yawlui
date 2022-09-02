@@ -181,6 +181,16 @@ public class ResourceClient extends AbstractClient {
     }
 
 
+    public boolean isOrgDataModifiable() {
+        try {
+            return _resAdapter.isOrgDataSetModifiable(getHandle());
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public String addParticipant(Participant p) throws IOException {
         return _resAdapter.addParticipant(p, true, getHandle());
     }
@@ -245,6 +255,18 @@ public class ResourceClient extends AbstractClient {
     public List<AbstractResourceAttribute> getParticipantPositions(String pid)
             throws IOException, ResourceGatewayException {
         return _resAdapter.getParticipantPositions(pid, getHandle());
+    }
+
+
+    public Set<Participant> getReportingTo(String pid)
+            throws IOException, ResourceGatewayException {
+        return _wqAdapter.getReportingToParticipant(pid, getHandle());
+    }
+
+
+    public Set<Participant> getOrgGroupMembers(String oid)
+            throws IOException, ResourceGatewayException {
+        return _wqAdapter.getOrgGroupMembers(oid, getHandle());
     }
 
     public UserPrivileges getUserPrivileges(String pid)

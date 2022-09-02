@@ -1,7 +1,12 @@
 package org.yawlfoundation.yawl.ui.view;
 
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.grid.FooterRow;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
@@ -23,6 +28,7 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
@@ -30,6 +36,8 @@ import java.util.List;
  * @author Michael Adams
  * @date 5/8/2022
  */
+// this css makes a combobox inside a grid transparent (when theme is added to combo)
+@CssImport(value = "./styles/combo-in-grid.css", themeFor = "vaadin-input-container")
 public abstract class AbstractWorklistView extends AbstractView {
 
     protected enum Action {
@@ -96,6 +104,11 @@ public abstract class AbstractWorklistView extends AbstractView {
 
 
     protected Grid<WorkItemRecord> createGrid() {
+        return createBasicGrid();
+    }
+
+
+    protected Grid<WorkItemRecord> createBasicGrid() {
         Grid<WorkItemRecord> grid = new Grid<>();
         grid.setItems(getAllWorkItems());
         grid.setSelectionMode(Grid.SelectionMode.MULTI);
@@ -111,6 +124,26 @@ public abstract class AbstractWorklistView extends AbstractView {
         configureActionColumn(actionColumn);
         addGridFooter(grid, createFooterActions());
         return grid;
+    }
+
+
+    protected Grid<WorkItemRecord> createAdminGrid() {
+        Grid<WorkItemRecord> grid = createBasicGrid();
+        grid.addComponentColumn(this::getAssignedParticipants).setAutoWidth(true)
+                .setResizable(true).setHeader(UiUtil.bold("Assigned"));
+
+        // reorder columns
+        List<Grid.Column<WorkItemRecord>> columns = new ArrayList<>(grid.getColumns());
+        Grid.Column<WorkItemRecord> pColumn = columns.remove(columns.size() -1);
+        columns.add(columns.size() -1, pColumn);
+        grid.setColumnOrder(columns);
+        return grid;
+    }
+
+
+    protected void setFooterComponent(int colIndex, Component component) {
+        FooterRow footerRow = getGrid().getFooterRows().get(0);
+        footerRow.getCell(getGrid().getColumns().get(colIndex)).setComponent(component);
     }
 
 
@@ -159,6 +192,59 @@ public abstract class AbstractWorklistView extends AbstractView {
             Announcement.error(e.getMessage());
             return null;
         }
+    }
+
+
+    protected Component getAssignedParticipants(WorkItemRecord wir) {
+        int queue = -1;
+        switch (wir.getResourceStatus()) {
+            case "Offered" : queue = WorkQueue.OFFERED; break;
+            case "Allocated" : queue = WorkQueue.ALLOCATED; break;
+            case "Started" : queue = WorkQueue.STARTED; break;
+            case "Suspended" : queue = WorkQueue.SUSPENDED; break;
+        }
+        if (queue > -1) {
+            try {
+                List<Participant> pList = new ArrayList<>(
+                        _resClient.getAssignedParticipants(wir.getID(), queue));
+
+                if (pList.size() > 1) {
+                    return buildParticipantCombo(pList);
+                }
+
+                if (pList.size() == 1) {
+                    return new Label(pList.get(0).getFullName());
+                }
+            }
+            catch (IOException |ResourceGatewayException e) {
+                // fall through to blank label
+            }
+        }
+        return new Label();
+    }
+
+
+
+    protected ComboBox<Participant> buildParticipantCombo(List<Participant> pList) {
+        sortParticipantList(pList);
+        ComboBox<Participant> comboBox = new ComboBox<>();
+        comboBox.setItems(pList);
+        comboBox.setItemLabelGenerator(Participant::getFullName);
+        comboBox.setPlaceholder(pList.size() + " participants");
+        comboBox.addValueChangeListener(e -> {
+            comboBox.setValue(null);
+            comboBox.setPlaceholder(pList.size() + " participants");
+        });
+
+        comboBox.getElement().getStyle().set("padding", "0");
+        comboBox.getElement().setAttribute("theme", "transparent");
+        return comboBox;
+    }
+
+
+    protected void sortParticipantList(List<Participant> pList) {
+        pList.sort(Comparator.comparing(Participant::getLastName)
+                .thenComparing(Participant::getFirstName));
     }
 
 
