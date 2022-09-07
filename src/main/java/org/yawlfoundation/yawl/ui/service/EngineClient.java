@@ -83,6 +83,7 @@ public class EngineClient extends AbstractClient {
         if (!_iaClient.successful(msg)) {
             throw new IOException(StringUtil.unwrap(msg));
         }
+        announceEvent(ClientEvent.Action.LaunchCase, msg);
         return msg;
     }
 
@@ -92,6 +93,7 @@ public class EngineClient extends AbstractClient {
         if (!_iaClient.successful(msg)) {
             throw new IOException(StringUtil.unwrap(msg));
         }
+        announceEvent(ClientEvent.Action.LaunchCase, msg);
         return msg;
     }
 

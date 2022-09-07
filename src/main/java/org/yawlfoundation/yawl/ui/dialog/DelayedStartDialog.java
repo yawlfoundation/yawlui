@@ -44,7 +44,7 @@ public class DelayedStartDialog extends AbstractDialog {
     }
 
 
-    // called from CasesView when OK is clicked
+    // called from CasesSubView when OK is clicked
     public long getDelay() {
         long msecs = -1;
         if (focussedField != null) {

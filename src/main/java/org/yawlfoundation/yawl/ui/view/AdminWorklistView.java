@@ -35,7 +35,7 @@ public class AdminWorklistView extends AbstractWorklistView {
     @Override
     protected QueueSet refreshQueueSet(Participant p) {
         try {
-            return getClient().getAdminWorkQueues();
+            return getResourceClient().getAdminWorkQueues();
         }
         catch (IOException | ResourceGatewayException e) {
             Announcement.error(e.getMessage());
@@ -51,8 +51,7 @@ public class AdminWorklistView extends AbstractWorklistView {
 
 
     @Override
-    protected ActionRibbon createColumnActions(WorkItemRecord wir) {
-        ActionRibbon ribbon = new ActionRibbon();
+    protected void addItemActions(WorkItemRecord wir, ActionRibbon ribbon) {
         if ("Unoffered".equals(wir.getResourceStatus())) {
             ActionIcon offer = new ActionIcon(AddedIcons.HUB, null,
                     "Offer", event -> reassignMultiple(wir, Action.Offer));
@@ -77,21 +76,17 @@ public class AdminWorklistView extends AbstractWorklistView {
                 case "Allocated": restart.setEnabled(false);     // deliberate no break
             }
         }
-        return ribbon;
     }
 
-
     @Override
-    protected ActionRibbon createFooterActions() {
-        ActionRibbon ribbon = new ActionRibbon();
+    void addFooterActions(ActionRibbon ribbon) {
 
         // the only setting currently is 'directly to me'
         if (getParticipant() != null) {
             ribbon.add(VaadinIcon.COG_O, "Settings", e -> settings());
         }
 
-        ribbon.add(VaadinIcon.REFRESH, "Refresh", event -> refreshGrid());
-        return ribbon;
+        super.addFooterActions(ribbon);
     }
 
 
@@ -103,7 +98,7 @@ public class AdminWorklistView extends AbstractWorklistView {
 
      private void reassignSingle(WorkItemRecord wir, Action action) {
         if (_directlyToMe) {
-            reassignSingle(wir, getParticpantID(), action);
+            reassignSingle(wir, getParticipantID(), action);
         }
         else {
             SingleSelectParticipantList listPanel =
@@ -123,7 +118,7 @@ public class AdminWorklistView extends AbstractWorklistView {
 
     private void reassignMultiple(WorkItemRecord wir, Action action) {
         if (_directlyToMe) {
-            reassignMultiple(wir, Set.of(getParticpantID()), action);
+            reassignMultiple(wir, Set.of(getParticipantID()), action);
         }
         else {
             MultiSelectParticipantList listPanel =
@@ -144,12 +139,12 @@ public class AdminWorklistView extends AbstractWorklistView {
     private void reassignSingle(WorkItemRecord wir, String pid, Action action) {
         try {
             switch (action) {
-                case Allocate: _resClient.allocateItem(wir.getID(), pid); break;
-                case Start: _resClient.startItem(wir.getID(), pid); break;
-                case Reallocate: _resClient.reallocateItem(wir.getID(), pid); break;
-                case Restart: _resClient.restartItem(wir.getID(), pid); break;
+                case Allocate: getResourceClient().allocateItem(wir.getID(), pid); break;
+                case Start: getResourceClient().startItem(wir.getID(), pid); break;
+                case Reallocate: getResourceClient().reallocateItem(wir.getID(), pid); break;
+                case Restart: getResourceClient().restartItem(wir.getID(), pid); break;
             }
-            refreshGrid();
+            refresh();
             Announcement.success("%s%s item '%s'", action.name(),
                     (action.name().endsWith("e") ? "d" : "ed"), wir.getID());
         }
@@ -162,10 +157,10 @@ public class AdminWorklistView extends AbstractWorklistView {
     private void reassignMultiple(WorkItemRecord wir, Set<String> pids, Action action) {
         try {
             switch (action) {
-                case Offer: _resClient.offerItem(wir.getID(), pids); break;
-                case Reoffer: _resClient.reofferItem(wir.getID(), pids); break;
+                case Offer: getResourceClient().offerItem(wir.getID(), pids); break;
+                case Reoffer: getResourceClient().reofferItem(wir.getID(), pids); break;
             }
-            refreshGrid();
+            refresh();
             Announcement.success("%ed item '%s' to %d participant%s",
                     action.name(), wir.getID(), pids.size(), (pids.size() > 1 ? "s" : ""));
         }

@@ -98,6 +98,17 @@ public class ActionIcon extends Icon {
     }
 
 
+    public void insertBlank() {
+        insertBlank(1);
+    }
+
+
+    public void insertBlank(int multiplier) {
+        int px = 38 * multiplier;
+        getStyle().set("margin-left", px + "px");
+    }
+
+    
     private void init() {
         init(DISABLED_COLOR);
         enabled = false;

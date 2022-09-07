@@ -19,7 +19,7 @@ import java.util.List;
  * @author Michael Adams
  * @date 12/11/20
  */
-public class ClientDetailsDialog extends AbstractDialog {
+public class ClientDetailsDialog<T extends YClient> extends AbstractDialog {
 
     private final TextField _nameField = new TextField("Name");
     private final TextField _uriField = new TextField("URI");
@@ -27,19 +27,19 @@ public class ClientDetailsDialog extends AbstractDialog {
     private final PasswordField _pwConfirmField = new PasswordField("Confirm Password");
     private final TextArea _descriptionField = new TextArea("Description");
 
-    private final List<? extends YClient> _existingItems;
-    private final YClient _client;
+    private final List<T> _existingItems;
+    private final T _client;
     private final boolean _editing;
-    private final boolean _isServices;
+    private final boolean _isService;
     private Button _saveButton;
 
     public enum ItemType { Service, Client }
 
 
-    public ClientDetailsDialog(List<? extends YClient> items, YClient client, ItemType itemType) {
+    public ClientDetailsDialog(List<T> items, T client) {
         _existingItems = items;
         _client = client;
-        _isServices = itemType == ItemType.Service;
+        _isService = items.get(0) instanceof YAWLServiceReference;
         _editing = client != null;
 
         setHeader(getTitle());
@@ -56,7 +56,7 @@ public class ClientDetailsDialog extends AbstractDialog {
 
     private String getTitle() {
         return (_client != null ? "Edit " : "Add ") +
-                (_isServices ? "Service" : "Client App");
+                (_isService ? "Service" : "Client App");
     }
 
     
@@ -81,7 +81,7 @@ public class ClientDetailsDialog extends AbstractDialog {
         form.add(_nameField, 2);
         form.add(_passwordField, 1);
         form.add(_pwConfirmField, 1);
-        if (_isServices) {
+        if (_isService) {
             form.add(_uriField, 2);
         }
         form.add(_descriptionField, 2);
@@ -95,7 +95,7 @@ public class ClientDetailsDialog extends AbstractDialog {
             _passwordField.setValue(_client.getPassword());
             _pwConfirmField.setValue(_client.getPassword());
             _descriptionField.setValue(_client.getDocumentation());
-            if (_client instanceof YAWLServiceReference) {
+            if (_isService) {
                 _uriField.setValue(((YAWLServiceReference) _client).getServiceID());
             }
         }
@@ -115,7 +115,7 @@ public class ClientDetailsDialog extends AbstractDialog {
         String password = _passwordField.getValue();
         String desc = _descriptionField.getValue();
         String uri = _uriField.getValue();
-        return _isServices ?
+        return _isService ?
                 new YAWLServiceReference(uri, null, userName, password, desc) :
                 new YExternalClient(userName, password, desc);
     }
@@ -174,7 +174,7 @@ public class ClientDetailsDialog extends AbstractDialog {
 
     private boolean validateURI() {
         _uriField.setInvalid(false);
-        if (_isServices) {
+        if (_isService) {
             if (_uriField.isEmpty()) {
                 _uriField.setErrorMessage("A URI is required");
                 _uriField.setInvalid(true);

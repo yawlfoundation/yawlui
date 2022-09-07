@@ -1,7 +1,6 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
@@ -45,6 +44,12 @@ public class TeamWorklistView extends AbstractWorklistView {
 
 
     @Override
+    void addItemActions(WorkItemRecord item, ActionRibbon ribbon) {
+         // no item actions
+    }
+
+
+    @Override
     protected String getTitle() {
         if (_displayed != null) {
             return _displayed + "'s Work Items";
@@ -57,20 +62,7 @@ public class TeamWorklistView extends AbstractWorklistView {
         }
         return "Org Group's Work Items";
     }
-
-
-    @Override
-    protected ActionRibbon createColumnActions(WorkItemRecord wir) {
-        return new ActionRibbon();
-    }
-
     
-    @Override
-    protected ActionRibbon createFooterActions() {
-        ActionRibbon ribbon = new ActionRibbon();
-        ribbon.add(VaadinIcon.REFRESH, "Refresh", event -> refreshGrid());
-        return ribbon;
-    }
 
 
     @Override
@@ -101,7 +93,7 @@ public class TeamWorklistView extends AbstractWorklistView {
         rbGroup.setValue("Team");
         rbGroup.addValueChangeListener(e -> {
             _displayed = e.getSource().getValue();
-            refreshGrid();
+            refresh();
         });
         setFooterComponent(0, rbGroup);
     }
@@ -120,7 +112,7 @@ public class TeamWorklistView extends AbstractWorklistView {
         QueueSet qSet = new QueueSet();
         for (Participant member : getTeamMembers(p)) {
             try {
-                QueueSet memberSet = getClient().getUserWorkQueues(member.getID());
+                QueueSet memberSet = getResourceClient().getUserWorkQueues(member.getID());
                 for (WorkQueue queue : memberSet.getActiveQueues()) {
                     qSet.addToQueue(queue.getQueueType(), queue);
                 }
@@ -138,13 +130,13 @@ public class TeamWorklistView extends AbstractWorklistView {
 
         try {
             if ("Team".equals(_displayed)) {
-                teamMembers.addAll(getClient().getReportingTo(p.getID()));
+                teamMembers.addAll(getResourceClient().getReportingTo(p.getID()));
             }
             else {
                 for (Position pos : p.getPositions()) {
                     String oid = pos.get_orgGroupID();
                     if (oid != null) {
-                        teamMembers.addAll(getClient().getOrgGroupMembers(oid));
+                        teamMembers.addAll(getResourceClient().getOrgGroupMembers(oid));
                     }
                 }
             }

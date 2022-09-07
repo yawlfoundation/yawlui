@@ -1,11 +1,9 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.grid.FooterRow;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
@@ -17,7 +15,6 @@ import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.component.MultiSelectParticipantList;
 import org.yawlfoundation.yawl.ui.component.SingleSelectParticipantList;
-import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
@@ -28,7 +25,6 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
@@ -38,7 +34,7 @@ import java.util.List;
  */
 // this css makes a combobox inside a grid transparent (when theme is added to combo)
 @CssImport(value = "./styles/combo-in-grid.css", themeFor = "vaadin-input-container")
-public abstract class AbstractWorklistView extends AbstractView {
+public abstract class AbstractWorklistView extends AbstractGridView<WorkItemRecord> {
 
     protected enum Action {
         Offer, Allocate, Start, Reoffer, Reallocate, Restart, Delegate, Complete,
@@ -48,39 +44,57 @@ public abstract class AbstractWorklistView extends AbstractView {
     private static final DateFormat DATE_FORMAT =
                 new SimpleDateFormat("MMM dd yyyy H:mm:ss");
 
-    private final Grid<WorkItemRecord> _grid;
-    private final HorizontalLayout _content;
-    private H4 _header;
+    private HorizontalLayout _content;
 
     private final Participant _user;
     private UserPrivileges _userPrivileges;
     private QueueSet _queueSet;
 
-    public AbstractWorklistView(ResourceClient resClient, EngineClient engClient, Participant p) {
+    
+    public AbstractWorklistView(ResourceClient resClient, EngineClient engClient,
+                                Participant p) {
         super(resClient, engClient);
         _user = p;
-        _queueSet = refreshQueueSet(p);
-        _grid = createGrid();
-        _content = createPanel();
-        add(_content);
-        setSizeFull();
+        build();
+ //       _queueSet = refreshQueueSet(p);
     }
 
-    protected abstract QueueSet refreshQueueSet(Participant p);
+     abstract QueueSet refreshQueueSet(Participant p);
 
-    protected abstract String getTitle();
-
-    protected abstract ActionRibbon createColumnActions(WorkItemRecord wir);
-
-    protected abstract ActionRibbon createFooterActions();
-
-
-    protected void refreshGrid() {
+    @Override
+    List<WorkItemRecord> getItems() {
         _queueSet = refreshQueueSet(_user);
-        _grid.setItems(getAllWorkItems());
-        _grid.getDataProvider().refreshAll();
-        _grid.recalculateColumnWidths();
-        refreshHeader(_header, getTitle(), getItemCount());
+        return getAllWorkItems();
+    }
+
+    @Override
+    void addColumns(Grid<WorkItemRecord> grid) {
+        grid.addColumn(WorkItemRecord::getID).setHeader(UiUtil.bold("Item"));
+        grid.addColumn(WorkItemRecord::getRootCaseID).setHeader(UiUtil.bold("Case"));
+        grid.addColumn(this::getSpecID).setHeader(UiUtil.bold("Specification"));
+        grid.addColumn(this::getEnablementTime).setHeader(UiUtil.bold("Created"));
+        grid.addColumn(this::getExpiryTime).setHeader(UiUtil.bold("Expires"));
+        grid.addColumn(WorkItemRecord::getResourceStatus).setHeader(UiUtil.bold("Status"));
+    }
+
+
+    @Override
+    void configureComponentColumns(Grid<WorkItemRecord> grid) { }
+
+    @Override
+    void addFooterActions(ActionRibbon ribbon) {
+        ribbon.add(createRefreshAction());
+    }
+
+    
+    @Override
+    protected HorizontalLayout createLayout() {
+        Component gridPanel = super.createLayout();
+        _content = new HorizontalLayout();
+        _content.add(gridPanel);
+        _content.setFlexGrow(1, gridPanel);
+        _content.setSizeFull();
+        return _content;
     }
 
 
@@ -89,46 +103,9 @@ public abstract class AbstractWorklistView extends AbstractView {
     }
 
 
-    protected Grid<WorkItemRecord> getGrid() { return _grid; }
-
-
-    protected HorizontalLayout createPanel() {
-        _header = new H4(String.format("%s (%d)", getTitle(), getItemCount()));
-        UnpaddedVerticalLayout gridPanel = createGridPanel(_header, _grid);
-        HorizontalLayout content = new HorizontalLayout();
-        content.add(gridPanel);
-        content.setFlexGrow(1, gridPanel);
-        content.setSizeFull();
-        return content;
-    }
-
-
-    protected Grid<WorkItemRecord> createGrid() {
-        return createBasicGrid();
-    }
-
-
-    protected Grid<WorkItemRecord> createBasicGrid() {
-        Grid<WorkItemRecord> grid = new Grid<>();
-        grid.setItems(getAllWorkItems());
-        grid.setSelectionMode(Grid.SelectionMode.MULTI);
-        grid.addColumn(WorkItemRecord::getID).setHeader(UiUtil.bold("Item"));
-        grid.addColumn(WorkItemRecord::getRootCaseID).setHeader(UiUtil.bold("Case"));
-        grid.addColumn(this::getSpecID).setHeader(UiUtil.bold("Specification"));
-        grid.addColumn(this::getEnablementTime).setHeader(UiUtil.bold("Created"));
-        grid.addColumn(this::getExpiryTime).setHeader(UiUtil.bold("Expires"));
-        grid.addColumn(WorkItemRecord::getResourceStatus).setHeader(UiUtil.bold("Status"));
-        Grid.Column<WorkItemRecord> actionColumn = grid.addComponentColumn(
-                this::createColumnActions);
-        configureGrid(grid);
-        configureActionColumn(actionColumn);
-        addGridFooter(grid, createFooterActions());
-        return grid;
-    }
-
 
     protected Grid<WorkItemRecord> createAdminGrid() {
-        Grid<WorkItemRecord> grid = createBasicGrid();
+        Grid<WorkItemRecord> grid = super.createGrid();
         grid.addComponentColumn(this::getAssignedParticipants).setAutoWidth(true)
                 .setResizable(true).setHeader(UiUtil.bold("Assigned"));
 
@@ -206,7 +183,7 @@ public abstract class AbstractWorklistView extends AbstractView {
         if (queue > -1) {
             try {
                 List<Participant> pList = new ArrayList<>(
-                        _resClient.getAssignedParticipants(wir.getID(), queue));
+                        getResourceClient().getAssignedParticipants(wir.getID(), queue));
 
                 if (pList.size() > 1) {
                     return buildParticipantCombo(pList);
@@ -224,41 +201,16 @@ public abstract class AbstractWorklistView extends AbstractView {
     }
 
 
-
-    protected ComboBox<Participant> buildParticipantCombo(List<Participant> pList) {
-        sortParticipantList(pList);
-        ComboBox<Participant> comboBox = new ComboBox<>();
-        comboBox.setItems(pList);
-        comboBox.setItemLabelGenerator(Participant::getFullName);
-        comboBox.setPlaceholder(pList.size() + " participants");
-        comboBox.addValueChangeListener(e -> {
-            comboBox.setValue(null);
-            comboBox.setPlaceholder(pList.size() + " participants");
-        });
-
-        comboBox.getElement().getStyle().set("padding", "0");
-        comboBox.getElement().setAttribute("theme", "transparent");
-        return comboBox;
-    }
-
-
-    protected void sortParticipantList(List<Participant> pList) {
-        pList.sort(Comparator.comparing(Participant::getLastName)
-                .thenComparing(Participant::getFirstName));
-    }
-
-
-    protected List<Participant> getAllParticipants() throws ResourceGatewayException, IOException {
-        return _resClient.getParticipants();
+    protected List<Participant> getAllParticipants()
+            throws ResourceGatewayException, IOException {
+        return getResourceClient().getParticipants();
     }
 
     protected QueueSet getQueueSet() { return _queueSet; }
 
-    protected ResourceClient getClient() { return _resClient; }
-
     protected Participant getParticipant() { return _user; }
 
-    protected String getParticpantID() {
+    protected String getParticipantID() {
         return _user != null ? _user.getID() : null;
     }
 
@@ -271,7 +223,7 @@ public abstract class AbstractWorklistView extends AbstractView {
     protected UserPrivileges getUserPrivileges() {
         if (_userPrivileges == null && _user != null) {
             try {
-                _userPrivileges = _resClient.getUserPrivileges(getParticpantID());
+                _userPrivileges = getResourceClient().getUserPrivileges(getParticipantID());
             }
             catch (IOException | ResourceGatewayException e) {
                 e.printStackTrace();
@@ -283,8 +235,8 @@ public abstract class AbstractWorklistView extends AbstractView {
 
     protected void startItem(WorkItemRecord wir, String pid) {
         try {
-            _resClient.startItem(wir.getID(), pid);
-            refreshGrid();
+            getResourceClient().startItem(wir.getID(), pid);
+            refresh();
             Announcement.success("Item '%s' started", wir.getID());
         }
         catch (IOException | ResourceGatewayException ex) {

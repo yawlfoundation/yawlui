@@ -73,7 +73,7 @@ public class MainView extends AppLayout implements
             case "Case Mgt" : setContent(new CasesView(_resClient, _engClient)); break;
             case "Admin Worklist" : setContent(new AdminWorklistView(_resClient, _user)); break;
             case "Participants" : setContent(new ParticipantsView(_resClient)); break;
-            case "Org Data" : setContent(null); break;
+            case "Org Data" : setContent(new OrgDataView(_resClient)); break;
             case "Non-Human Resources" : setContent(null); break;
             case "Calendar" : setContent(null); break;
             case "Services / Clients"   : setContent(new ServicesView(_resClient, _engClient)); break;
