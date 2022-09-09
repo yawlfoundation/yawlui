@@ -70,6 +70,9 @@ abstract class AbstractGridView<T> extends AbstractView {
 
 
     protected H4 getHeader() { return _header; }
+
+
+    protected boolean showHeader() { return true; }
     
 
     protected Component createLayout() {
@@ -112,7 +115,9 @@ abstract class AbstractGridView<T> extends AbstractView {
         _grid.setItems(_items);
         _grid.getDataProvider().refreshAll();
         _grid.recalculateColumnWidths();
-        refreshHeader(_header, getTitle(), _items.size());
+        if (showHeader()) {
+            refreshHeader(_header, getTitle(), _items.size());
+        }
     }
 
 
@@ -155,7 +160,9 @@ abstract class AbstractGridView<T> extends AbstractView {
 
     protected UnpaddedVerticalLayout createGridPanel(H4 header, Grid<?> grid) {
         UnpaddedVerticalLayout layout = new UnpaddedVerticalLayout("t");
-        layout.add(header);
+        if (showHeader()) {
+            layout.add(header);
+        }
         layout.add(grid);
         layout.setSizeFull();
         return layout;

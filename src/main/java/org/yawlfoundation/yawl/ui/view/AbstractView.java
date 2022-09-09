@@ -51,5 +51,9 @@ public abstract class AbstractView extends VerticalLayout {
     protected void announceError(String msg) {
         Announcement.error(StringUtil.unwrap(msg));
     }
+
+    protected boolean successful(String xmlMsg) {
+        return getResourceClient().successful(xmlMsg);
+    }
     
 }

@@ -1,7 +1,6 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
@@ -34,23 +33,25 @@ public class OrgDataView extends AbstractView {
         content.setSpacing(false);
         content.setSizeFull();
         setContent(tabs.getSelectedTab());
-        return new VerticalLayout(tabs, content);
+        VerticalLayout layout = new VerticalLayout(tabs, content);
+        layout.setSizeFull();
+        return layout;
     }
 
 
     private void setContent(Tab tab) {
         content.removeAll();
         if (tab.equals(_tabRoles)) {
-            content.add(new Paragraph("This is the Roles tab"));
+            content.add(new RoleSubView(getResourceClient(), getEngineClient()));
         }
         else if (tab.equals(_tabCapabilities)) {
-            content.add(new Paragraph("This is the Caps tab"));
+            content.add(new CapabilitySubView(getResourceClient(), getEngineClient()));
         }
         else if (tab.equals(_tabPositions)) {
-            content.add(new Paragraph("This is the Positions tab"));
+            content.add(new PositionSubView(getResourceClient(), getEngineClient()));
         }
         else {
-            content.add(new Paragraph("This is the Org Groups tab"));
+            content.add(new OrgGroupSubView(getResourceClient(), getEngineClient()));
         }
     }
 

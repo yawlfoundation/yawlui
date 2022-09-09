@@ -17,6 +17,7 @@ import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -28,18 +29,29 @@ public abstract class AbstractParticipantList extends VerticalLayout {
     private ActionIcon closeAction;
     private ActionIcon okAction;
 
-    public AbstractParticipantList(List<Participant> pList, String action, String itemID) {
-        add(new H4(String.format("%s Work Item '%s'", action, itemID)));
+    public AbstractParticipantList(List<Participant> pList, String title) {
+        this(pList, title, true);
+    }
+
+    public AbstractParticipantList(List<Participant> pList, String title, boolean showRibbon) {
+        if (title != null) {
+            add(new H4(title));
+        }
         add(createFilterField(pList));
         add(createListBox(sortByName(pList)));
-        add(createRibbon());
+        if (showRibbon) {
+            add(createRibbon());
+        }
         setHeightFull();
         setWidth("25%");
     }
 
+    
     abstract Component createListBox(List<Participant> pList);
 
     abstract void updateList(List<Participant> pList);
+
+    abstract Set<Participant> getSelection();
 
 
     public void addOKListener(ComponentEventListener<ClickEvent<Icon>> listener) {
@@ -93,7 +105,7 @@ public abstract class AbstractParticipantList extends VerticalLayout {
          });
          return filtered;
      }
-     
+
 
     private List<Participant> sortByName(List<Participant> list) {
         return list.stream().sorted(Comparator.comparing(
@@ -102,5 +114,5 @@ public abstract class AbstractParticipantList extends VerticalLayout {
                                 p -> ((Participant) p).getFirstName().toLowerCase()))
                 .collect(Collectors.toList());
     }
-    
+
 }

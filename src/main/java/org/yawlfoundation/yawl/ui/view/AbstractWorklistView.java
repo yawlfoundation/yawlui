@@ -56,7 +56,6 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
         super(resClient, engClient);
         _user = p;
         build();
- //       _queueSet = refreshQueueSet(p);
     }
 
      abstract QueueSet refreshQueueSet(Participant p);
@@ -107,7 +106,7 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
     protected Grid<WorkItemRecord> createAdminGrid() {
         Grid<WorkItemRecord> grid = super.createGrid();
         grid.addComponentColumn(this::getAssignedParticipants).setAutoWidth(true)
-                .setResizable(true).setHeader(UiUtil.bold("Assigned"));
+                .setFlexGrow(0).setResizable(false).setHeader(UiUtil.bold("Assigned"));
 
         // reorder columns
         List<Grid.Column<WorkItemRecord>> columns = new ArrayList<>(grid.getColumns());
@@ -143,8 +142,9 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
             return null;
         }
 
+        String title = String.format("%s Work Item '%s'", action, wir.getID());
         SingleSelectParticipantList listPanel =
-                new SingleSelectParticipantList(pList, action, wir.getID());
+                new SingleSelectParticipantList(pList, title);
         listPanel.addCancelListener(e -> getContentPanel().remove(listPanel));
         getContentPanel().add(listPanel);
         return listPanel;
@@ -159,8 +159,9 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
         }
         try {
             List<Participant> pList = getAllParticipants();
+            String title = String.format("%s Work Item '%s'", action, wir.getID());
             MultiSelectParticipantList listPanel =
-                    new MultiSelectParticipantList(pList, action, wir.getID());
+                    new MultiSelectParticipantList(pList, title);
             listPanel.addCancelListener(e -> getContentPanel().remove(listPanel));
             getContentPanel().add(listPanel);
             return listPanel;

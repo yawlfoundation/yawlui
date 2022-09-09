@@ -1,6 +1,6 @@
 package org.yawlfoundation.yawl.ui.component;
 
-import com.vaadin.flow.component.listbox.MultiSelectListBox;
+import com.vaadin.flow.component.listbox.ListBox;
 import org.yawlfoundation.yawl.resourcing.resource.AbstractResourceAttribute;
 
 import java.util.List;
@@ -9,9 +9,9 @@ import java.util.List;
  * @author Michael Adams
  * @date 25/8/2022
  */
-public class ResourceAttributeList extends MultiSelectListBox<AbstractResourceAttribute> {
+public class SingleSelectResourceList extends ListBox<AbstractResourceAttribute> {
 
-    public ResourceAttributeList(List<AbstractResourceAttribute> items) {
+    public SingleSelectResourceList(List<AbstractResourceAttribute> items) {
         setItems(items);
         setWidth("210px");
         setItemLabelGenerator(AbstractResourceAttribute::getName);
@@ -20,9 +20,4 @@ public class ResourceAttributeList extends MultiSelectListBox<AbstractResourceAt
         getElement().getStyle().set("border", "1px solid lightgray");
     }
 
-
-    public void setSelected(List<AbstractResourceAttribute> items) {
-        select(items);
-    }
-    
 }

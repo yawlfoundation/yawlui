@@ -22,6 +22,7 @@ import org.yawlfoundation.yawl.util.PasswordEncryptor;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -242,6 +243,24 @@ public class ResourceClient extends AbstractClient {
         return _resAdapter.getPositions(getHandle());
     }
 
+    public List<AbstractResourceAttribute> getOrgGroups()
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.getOrgGroups(getHandle());
+    }
+
+    public Role getRole(String rid) throws IOException, ResourceGatewayException {
+        return _resAdapter.getRole(rid, getHandle());
+    }
+
+    public Position getPosition(String pid) throws IOException, ResourceGatewayException {
+        return _resAdapter.getPosition(pid, getHandle());
+    }
+
+    public OrgGroup getOrgGroup(String oid) throws IOException, ResourceGatewayException {
+        return _resAdapter.getOrgGroup(oid, getHandle());
+    }
+
+
     public List<AbstractResourceAttribute> getParticipantRoles(String pid)
             throws IOException, ResourceGatewayException {
         return _resAdapter.getParticipantRoles(pid, getHandle());
@@ -257,16 +276,33 @@ public class ResourceClient extends AbstractClient {
         return _resAdapter.getParticipantPositions(pid, getHandle());
     }
 
+    public List<Participant> getRoleMembers(String name)
+            throws IOException, ResourceGatewayException {
+        Set<Participant> pSet = _resAdapter.getParticipantsWithRole(name, getHandle());
+        return pSet != null ? new ArrayList<>(pSet) : Collections.emptyList();
+    }
 
+    public List<Participant> getCapabilityMembers(String name)
+            throws IOException, ResourceGatewayException {
+        Set<Participant> pSet = _resAdapter.getParticipantsWithCapability(name, getHandle());
+        return pSet != null ? new ArrayList<>(pSet) : Collections.emptyList();
+    }
+
+    public List<Participant> getPositionMembers(String name)
+            throws IOException, ResourceGatewayException {
+        Set<Participant> pSet = _resAdapter.getParticipantsWithPosition(name, getHandle());
+        return pSet != null ? new ArrayList<>(pSet) : Collections.emptyList();
+    }
+    
     public Set<Participant> getReportingTo(String pid)
             throws IOException, ResourceGatewayException {
         return _wqAdapter.getReportingToParticipant(pid, getHandle());
     }
 
 
-    public Set<Participant> getOrgGroupMembers(String oid)
+    public List<Participant> getOrgGroupMembers(String oid)
             throws IOException, ResourceGatewayException {
-        return _wqAdapter.getOrgGroupMembers(oid, getHandle());
+        return new ArrayList<>(_wqAdapter.getOrgGroupMembers(oid, getHandle()));
     }
 
     public UserPrivileges getUserPrivileges(String pid)
@@ -276,6 +312,55 @@ public class ResourceClient extends AbstractClient {
 
     public String setUserPrivileges(Participant p) throws IOException {
         return _resAdapter.setParticipantPrivileges(p, getHandle());
+    }
+
+
+    public String addRole(Role role) throws IOException {
+        return _resAdapter.addRole(role, getHandle());
+    }
+
+    public String addCapability(Capability capability) throws IOException {
+        return _resAdapter.addCapability(capability, getHandle());
+    }
+
+    public String addPosition(Position position) throws IOException {
+        return _resAdapter.addPosition(position, getHandle());
+    }
+
+    public String addOrgGroup(OrgGroup orgGroup) throws IOException {
+        return _resAdapter.addOrgGroup(orgGroup, getHandle());
+    }
+
+    public String updateRole(Role role) throws IOException {
+        return _resAdapter.updateRole(role, getHandle());
+    }
+
+    public String updateCapability(Capability capability) throws IOException {
+        return _resAdapter.updateCapability(capability, getHandle());
+    }
+
+    public String updatePosition(Position position) throws IOException {
+        return _resAdapter.updatePosition(position, getHandle());
+    }
+
+    public String updateOrgGroup(OrgGroup orgGroup) throws IOException {
+        return _resAdapter.updateOrgGroup(orgGroup, getHandle());
+    }
+
+    public String removeRole(Role role) throws IOException {
+        return _resAdapter.removeRole(role, getHandle());
+    }
+
+    public String removeCapability(Capability capability) throws IOException {
+        return _resAdapter.removeCapability(capability, getHandle());
+    }
+
+    public String removePosition(Position position) throws IOException {
+        return _resAdapter.removePosition(position, getHandle());
+    }
+
+    public String removeOrgGroup(OrgGroup orgGroup) throws IOException {
+        return _resAdapter.removeOrgGroup(orgGroup, getHandle());
     }
 
 

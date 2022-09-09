@@ -18,8 +18,13 @@ public class MultiSelectParticipantList extends AbstractParticipantList {
     private MultiSelectListBox<Participant> listbox;
 
 
-    public MultiSelectParticipantList(List<Participant> pList, String action, String itemID) {
-        super(pList, action, itemID);
+    public MultiSelectParticipantList(List<Participant> pList, String title) {
+        super(pList, title);
+    }
+
+    public MultiSelectParticipantList(List<Participant> pList, String title,
+                                       boolean showRibbon) {
+        super(pList, title, showRibbon);
     }
 
 
@@ -30,7 +35,15 @@ public class MultiSelectParticipantList extends AbstractParticipantList {
     }
 
 
-    public Set<Participant> getSelected() {
+    public void setSelected(List<Participant> selected) { listbox.select(selected); }
+
+
+    public MultiSelectListBox<Participant> getListbox() {
+        return listbox;
+    }
+
+    @Override
+    public Set<Participant> getSelection() {
         return new HashSet<>(listbox.getValue());
     }
 
@@ -44,7 +57,6 @@ public class MultiSelectParticipantList extends AbstractParticipantList {
         UiUtil.setStyle(listbox, "flex-grow", "1");
         return listbox;
     }
-
 
     @Override
     void updateList(List<Participant> pList) {

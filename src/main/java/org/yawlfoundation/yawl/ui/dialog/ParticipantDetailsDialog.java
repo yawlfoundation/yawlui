@@ -14,7 +14,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import org.yawlfoundation.yawl.resourcing.resource.*;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
-import org.yawlfoundation.yawl.ui.component.ResourceAttributeList;
+import org.yawlfoundation.yawl.ui.component.MultiSelectResourceList;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.util.StringUtil;
@@ -53,9 +53,9 @@ public class ParticipantDetailsDialog extends AbstractDialog {
     private final Checkbox _privViewTeam = new Checkbox("View team's work items");
     private final Checkbox _privViewGroup = new Checkbox("View org group's work items");
 
-    private final ResourceAttributeList _roleList;
-    private final ResourceAttributeList _capabilityList;
-    private final ResourceAttributeList _positionList;
+    private final MultiSelectResourceList _roleList;
+    private final MultiSelectResourceList _capabilityList;
+    private final MultiSelectResourceList _positionList;
     
     private final ResourceClient _resClient;
     private final List<Participant> _allParticipants;
@@ -237,8 +237,8 @@ public class ParticipantDetailsDialog extends AbstractDialog {
     }
 
 
-    private ResourceAttributeList createAttributeList(Attribute attribute) {
-        ResourceAttributeList list = new ResourceAttributeList(getAttributeList(attribute));
+    private MultiSelectResourceList createAttributeList(Attribute attribute) {
+        MultiSelectResourceList list = new MultiSelectResourceList(getAttributeList(attribute));
         
         if (! adding()) {
             list.select(getParticipantAttributes(attribute));
@@ -247,7 +247,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
     }
 
 
-    private VerticalLayout createGroupPanel(ResourceAttributeList list, String title) {
+    private VerticalLayout createGroupPanel(MultiSelectResourceList list, String title) {
         VerticalLayout layout = new UnpaddedVerticalLayout();
         layout.setHeight("220px");
         layout.add(new H5(title));
