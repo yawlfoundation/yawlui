@@ -16,7 +16,8 @@ import java.util.Set;
 public class MultiSelectParticipantList extends AbstractParticipantList {
 
     private MultiSelectListBox<Participant> listbox;
-
+    private final Set<Participant> storedSelections = new HashSet<>();
+    private boolean updating = false;
 
     public MultiSelectParticipantList(List<Participant> pList, String title) {
         super(pList, title);
@@ -35,7 +36,10 @@ public class MultiSelectParticipantList extends AbstractParticipantList {
     }
 
 
-    public void setSelected(List<Participant> selected) { listbox.select(selected); }
+    public void setSelected(List<Participant> selected) {
+        listbox.select(selected);
+        storedSelections.addAll(selected);
+    }
 
 
     public MultiSelectListBox<Participant> getListbox() {
@@ -44,7 +48,7 @@ public class MultiSelectParticipantList extends AbstractParticipantList {
 
     @Override
     public Set<Participant> getSelection() {
-        return new HashSet<>(listbox.getValue());
+        return storedSelections;
     }
 
 
@@ -55,13 +59,24 @@ public class MultiSelectParticipantList extends AbstractParticipantList {
         listbox.setItemLabelGenerator(Participant::getFullName);
         UiUtil.setStyle(listbox, "overflow-y", "scroll");
         UiUtil.setStyle(listbox, "flex-grow", "1");
+
+        listbox.addSelectionListener(e -> {
+            if (! updating) {
+                storedSelections.addAll(e.getAddedSelection());
+                storedSelections.removeAll(e.getRemovedSelection());
+            }
+        });
         return listbox;
     }
 
+
     @Override
     void updateList(List<Participant> pList) {
+        updating = true;
         listbox.setItems(pList);
         listbox.getListDataView().refreshAll();
+        listbox.select(storedSelections);
+        updating = false;
     }
-
+    
 }

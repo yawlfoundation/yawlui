@@ -61,27 +61,29 @@ public class RoleSubView extends AbstractOrgDataView<Role> {
 
     @Override
     List<Participant> getMembers(Role item) {
-        try {
-            return getResourceClient().getRoleMembers(item.getName());
-        }
-        catch (IOException | ResourceGatewayException e) {
-            Announcement.warn(
-                     "Failed to retrieve list of Role members from engine : %s",
-                      e.getMessage());
+        if (item != null) {
+            try {
+                return getResourceClient().getRoleMembers(item.getName());
+            }
+            catch (IOException | ResourceGatewayException e) {
+                Announcement.warn(
+                        "Failed to retrieve list of Role members from engine : %s",
+                        e.getMessage());
+            }
         }
         return Collections.emptyList();
     }
 
 
     @Override
-    boolean addItem(Role item) {
+    Role addItem(Role item) {
         try {
-            return successful(getResourceClient().addRole(item));
+            return getResourceClient().addRole(item);
         }
         catch (IOException e) {
             Announcement.error("Failed to add Role : %s", e.getMessage());
         }
-        return false;
+        return item;
     }
 
 
@@ -109,6 +111,34 @@ public class RoleSubView extends AbstractOrgDataView<Role> {
     }
 
 
+    @Override
+    void addMembers(List<Participant> pList, Role item) {
+        pList.forEach(p -> {
+            try {
+                getResourceClient().addParticipantToRole(p.getID(), item.getID());
+            }
+            catch (IOException e) {
+                Announcement.error("Failed to add % to Role : %s",
+                        p.getFullName(), e.getMessage());
+            }
+        });
+    }
+
+
+    @Override
+    void removeMembers(List<Participant> pList, Role item) {
+        pList.forEach(p -> {
+            try {
+                getResourceClient().removeParticipantFromRole(p.getID(), item.getID());
+            }
+            catch (IOException e) {
+                Announcement.error("Failed to remove % from Role : %s",
+                        p.getFullName(), e.getMessage());
+            }
+        });
+    }
+
+    
     protected String getBelongsToName(Role r) {
         Role btRole = getBelongsTo(r);
         return btRole != null ? btRole.getName() : "";
@@ -116,13 +146,15 @@ public class RoleSubView extends AbstractOrgDataView<Role> {
 
 
     protected Role getBelongsTo(Role r) {
-        String btid = r.get_belongsToID();
-        if (btid != null) {
-            try {
-                return getResourceClient().getRole(btid);
-            }
-            catch (IOException | ResourceGatewayException e) {
-                //fall through;
+        if (r != null) {
+            String btid = r.get_belongsToID();
+            if (btid != null) {
+                try {
+                    return getResourceClient().getRole(btid);
+                }
+                catch (IOException | ResourceGatewayException e) {
+                    //fall through;
+                }
             }
         }
         return null;

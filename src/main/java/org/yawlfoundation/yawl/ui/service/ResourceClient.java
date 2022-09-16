@@ -18,6 +18,7 @@ import org.yawlfoundation.yawl.resourcing.rsInterface.WorkQueueGatewayClientAdap
 import org.yawlfoundation.yawl.ui.util.TaskPrivilegesCache;
 import org.yawlfoundation.yawl.util.JDOMUtil;
 import org.yawlfoundation.yawl.util.PasswordEncryptor;
+import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -315,20 +316,40 @@ public class ResourceClient extends AbstractClient {
     }
 
 
-    public String addRole(Role role) throws IOException {
-        return _resAdapter.addRole(role, getHandle());
+    public Role addRole(Role role) throws IOException {
+        String id = _resAdapter.addRole(role, getHandle());
+        if (successful(id)) {
+            role.setID(id);
+            return role;
+        }
+        throw new IOException(StringUtil.unwrap(id));
     }
 
-    public String addCapability(Capability capability) throws IOException {
-        return _resAdapter.addCapability(capability, getHandle());
+    public Capability addCapability(Capability capability) throws IOException {
+        String id = _resAdapter.addCapability(capability, getHandle());
+        if (successful(id)) {
+            capability.setID(id);
+            return capability;
+        }
+        throw new IOException(StringUtil.unwrap(id));
     }
 
-    public String addPosition(Position position) throws IOException {
-        return _resAdapter.addPosition(position, getHandle());
+    public Position addPosition(Position position) throws IOException {
+        String id = _resAdapter.addPosition(position, getHandle());
+        if (successful(id)) {
+            position.setID(id);
+            return position;
+        }
+        throw new IOException(StringUtil.unwrap(id));
     }
 
-    public String addOrgGroup(OrgGroup orgGroup) throws IOException {
-        return _resAdapter.addOrgGroup(orgGroup, getHandle());
+    public OrgGroup addOrgGroup(OrgGroup orgGroup) throws IOException {
+        String id = _resAdapter.addOrgGroup(orgGroup, getHandle());
+        if (successful(id)) {
+            orgGroup.setID(id);
+            return orgGroup;
+        }
+        throw new IOException(StringUtil.unwrap(id));
     }
 
     public String updateRole(Role role) throws IOException {

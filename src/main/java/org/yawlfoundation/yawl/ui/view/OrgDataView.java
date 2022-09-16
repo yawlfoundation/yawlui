@@ -27,6 +27,11 @@ public class OrgDataView extends AbstractView {
 
     @Override
     Component createLayout() {
+        enlargeLabel(_tabRoles);
+        enlargeLabel(_tabCapabilities);
+        enlargeLabel(_tabPositions);
+        enlargeLabel(_tabOrgGroups);
+
         Tabs tabs = new Tabs(_tabRoles, _tabCapabilities, _tabPositions, _tabOrgGroups);
         tabs.addSelectedChangeListener(event -> setContent(event.getSelectedTab()));
 
@@ -53,6 +58,11 @@ public class OrgDataView extends AbstractView {
         else {
             content.add(new OrgGroupSubView(getResourceClient(), getEngineClient()));
         }
+    }
+
+
+    private void enlargeLabel(Tab tab) {
+        tab.getStyle().set("font-size", "var(--lumo-font-size-l)");
     }
 
 }

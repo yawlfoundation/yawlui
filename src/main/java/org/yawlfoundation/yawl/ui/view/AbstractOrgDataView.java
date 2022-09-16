@@ -18,6 +18,7 @@ import org.yawlfoundation.yawl.ui.util.UiUtil;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Michael Adams
@@ -71,6 +72,7 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
             dialog.getSaveButton().addClickListener(e -> {
                 if (dialog.validate()) {
                     updateItem(dialog.compose());
+                    updateMembers(dialog.getStartingMembers(), dialog.getUpdatedMembers(), item);
                     dialog.close();
                     announceSuccess(item.getName(), "updated");
                     refresh();
@@ -98,11 +100,14 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
             dialog.getSaveButton().addClickListener(e -> {
                 if (dialog.validate()) {
                     T item = dialog.compose();
-                    if (addItem(item)) {
-                        refresh();
-                        dialog.close();
-                        announceSuccess(item.getName(), "added");
+                    item = addItem(item);
+                    String id = item.getID();
+                    if (id != null && dialog.hasUpdatedMembers()) {
+                        addMembers(dialog.getUpdatedMembers(), item);
                     }
+                    refresh();
+                    dialog.close();
+                    announceSuccess(item.getName(), "added");
                 }
             });
             dialog.open();
@@ -130,8 +135,13 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
     abstract void addBelongsToColumn(Grid<T> grid);
     
     abstract List<Participant> getMembers(T item);
-    
-    abstract boolean addItem(T item);
+
+    abstract void addMembers(List<Participant> pList, T item);
+
+    abstract void removeMembers(List<Participant> pList, T item);
+
+
+    abstract T addItem(T item);
 
     abstract boolean updateItem(T item);
 
@@ -170,8 +180,27 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
 
     
     protected void announceSuccess(String clientName, String verb) {
-        Announcement.success("%s %s %s",
-                StringUtils.chop(getTitle()), clientName, verb);
+        String object = StringUtils.chop(getTitle());
+        if (object.endsWith("ie")) {
+            object = object.replace("ie", "y");
+        }
+        Announcement.success("%s %s %s", object, clientName, verb);
+    }
+
+
+    protected void updateMembers(List<Participant> oldList,
+                                 List<Participant> newList, T item) {
+        removeMembers(notInOther(oldList, newList), item);
+        addMembers(notInOther(newList, oldList), item);
+    }
+
+
+    protected List<Participant> notInOther(List<Participant> master,
+                                           List<Participant> other) {
+        return master.stream().filter(
+                        m -> other.stream().noneMatch(
+                                o -> m.getID().equals(o.getID())))
+                .collect(Collectors.toList());
     }
 
 }

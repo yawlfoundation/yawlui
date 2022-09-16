@@ -7,6 +7,7 @@ import org.yawlfoundation.yawl.resourcing.resource.Position;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.orgdata.AbstractOrgDataDialog;
+import org.yawlfoundation.yawl.ui.dialog.orgdata.PositionDialog;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
@@ -74,20 +75,50 @@ public class PositionSubView extends AbstractOrgDataView<Position> {
         return Collections.emptyList();
     }
 
+
+    @Override
+    void addMembers(List<Participant> pList, Position item) {
+        pList.forEach(p -> {
+            try {
+                getResourceClient().addParticipantToPosition(p.getID(), item.getID());
+            }
+            catch (IOException e) {
+                Announcement.error("Failed to add % to Position : %s",
+                        p.getFullName(), e.getMessage());
+            }
+        });
+    }
+
+
+    @Override
+    void removeMembers(List<Participant> pList, Position item) {
+        pList.forEach(p -> {
+        try {
+            getResourceClient().removeParticipantFromPosition(p.getID(), item.getID());
+        }
+        catch (IOException e) {
+            Announcement.error("Failed to remove % from Position : %s",
+                    p.getFullName(), e.getMessage());
+        }
+        });
+    }
+
+
     @Override
     AbstractOrgDataDialog<Position> createDialog(List<Position> existingItems, Position item) {
-        return null;
+        return new PositionDialog(existingItems, item, getAllParticipants(), getMembers(item),
+                getReportsTo(item), getAllOrgGroups(), getOrgGroup(item));
     }
 
     @Override
-    boolean addItem(Position item) {
+    Position addItem(Position item) {
         try {
-            return successful(getResourceClient().addPosition(item));
+            return getResourceClient().addPosition(item);
         }
         catch (IOException e) {
             Announcement.error("Failed to add Position : %s", e.getMessage());
         }
-        return false;
+        return item;
     }
 
 
@@ -116,36 +147,54 @@ public class PositionSubView extends AbstractOrgDataView<Position> {
 
 
     protected String getOrgGroupName(Position p) {
+        OrgGroup group = getOrgGroup(p);
+        return group != null ? group.getName() : "";
+    }
+
+
+    protected OrgGroup getOrgGroup(Position p) {
         String oid = p.get_orgGroupID();
         if (oid != null) {
             try {
-                OrgGroup og = getResourceClient().getOrgGroup(oid);
-                if (og != null) {
-                    return og.getName();
-                }
+                return getResourceClient().getOrgGroup(oid);
             }
             catch (IOException | ResourceGatewayException e) {
                 //fall through;
             }
         }
-        return "";
+        return null;
     }
 
 
     protected String getReportsToName(Position p) {
+        Position reportsTo = getReportsTo(p);
+        return reportsTo != null ? reportsTo.getName() : "";
+    }
+
+
+    protected Position getReportsTo(Position p) {
         String rtid = p.get_reportsToID();
         if (rtid != null) {
             try {
-                Position rPos = getResourceClient().getPosition(rtid);
-                if (rPos != null) {
-                    return rPos.getName();
-                }
+                return getResourceClient().getPosition(rtid);
             }
             catch (IOException | ResourceGatewayException e) {
                 //fall through;
             }
         }
-        return "";
+        return null;
+    }
+
+
+    private List<OrgGroup> getAllOrgGroups() {
+        List<OrgGroup> groups = new ArrayList<>();
+        try {
+           getResourceClient().getOrgGroups().forEach(o -> groups.add((OrgGroup) o));
+        }
+        catch (IOException | ResourceGatewayException e) {
+            // fall through;
+        }
+        return groups;
     }
 
 }

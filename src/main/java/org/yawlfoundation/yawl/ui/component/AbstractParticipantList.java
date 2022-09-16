@@ -28,6 +28,9 @@ public abstract class AbstractParticipantList extends VerticalLayout {
 
     private ActionIcon closeAction;
     private ActionIcon okAction;
+    private ActionRibbon ribbon;
+    private TextField filterField;
+
 
     public AbstractParticipantList(List<Participant> pList, String title) {
         this(pList, title, true);
@@ -63,13 +66,21 @@ public abstract class AbstractParticipantList extends VerticalLayout {
         closeAction.addClickListener(listener);
     }
 
+    public void smaller() {
+        closeAction.setSize("12px");
+        okAction.setSize("12px");
+        filterField.getStyle().set("--lumo-text-field-size","var(--lumo-size-s)");
+        ribbon.setSpacing(false);
+        setSpacing(false);
+    }
+
 
     private ActionRibbon createRibbon() {
         closeAction = new ActionIcon(VaadinIcon.CLOSE,
                 ActionIcon.RED, "Cancel", null);
         okAction = new ActionIcon(VaadinIcon.CHECK,
                 ActionIcon.GREEN, "OK", null);
-        ActionRibbon ribbon = new ActionRibbon();
+        ribbon = new ActionRibbon();
         ribbon.setJustifyContentMode(JustifyContentMode.END);
         ribbon.add(closeAction, okAction);
         ribbon.setWidthFull();
@@ -78,13 +89,13 @@ public abstract class AbstractParticipantList extends VerticalLayout {
 
 
     private HorizontalLayout createFilterField(List<Participant> fullList) {
-        Icon icon = VaadinIcon.FILTER.create();
-        icon.setSize("18px");
-        icon.setColor("gray");
+        Icon filterIcon = VaadinIcon.FILTER.create();
+        filterIcon.setSize("18px");
+        filterIcon.setColor("gray");
 
-        TextField filterField = new TextField();
+        filterField = new TextField();
         filterField.setPlaceholder("Filter");
-        filterField.setPrefixComponent(icon);
+        filterField.setPrefixComponent(filterIcon);
         filterField.addValueChangeListener(e ->
                 updateList(filterList(fullList, filterField.getValue())));
         filterField.setValueChangeMode(ValueChangeMode.EAGER);
@@ -97,14 +108,14 @@ public abstract class AbstractParticipantList extends VerticalLayout {
         if (chars == null || chars.isEmpty()) {
             return fullList;
         }
-         List<Participant> filtered = new ArrayList<>();
-         fullList.forEach(p -> {
-             if (p.getFullName().toLowerCase().contains(chars.toLowerCase())) {
-                 filtered.add(p);
-             }
-         });
-         return filtered;
-     }
+        List<Participant> filtered = new ArrayList<>();
+        fullList.forEach(p -> {
+            if (p.getFullName().toLowerCase().contains(chars.toLowerCase())) {
+                filtered.add(p);
+            }
+        });
+        return filtered;
+    }
 
 
     private List<Participant> sortByName(List<Participant> list) {

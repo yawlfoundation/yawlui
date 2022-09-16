@@ -6,6 +6,7 @@ import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.orgdata.AbstractOrgDataDialog;
+import org.yawlfoundation.yawl.ui.dialog.orgdata.OrgGroupDialog;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
@@ -72,19 +73,28 @@ public class OrgGroupSubView extends AbstractOrgDataView<OrgGroup> {
     }
 
     @Override
+    void addMembers(List<Participant> pList, OrgGroup item) { }
+
+
+    @Override
+    void removeMembers(List<Participant> pList, OrgGroup item) { }
+
+
+    @Override
     AbstractOrgDataDialog<OrgGroup> createDialog(List<OrgGroup> existingItems, OrgGroup item) {
-        return null;
+        return new OrgGroupDialog(existingItems, item, getAllParticipants(), null,
+                getBelongsTo(item));
     }
 
     @Override
-    boolean addItem(OrgGroup item) {
+    OrgGroup addItem(OrgGroup item) {
         try {
-            return successful(getResourceClient().addOrgGroup(item));
+            return getResourceClient().addOrgGroup(item);
         }
         catch (IOException e) {
             Announcement.error("Failed to add Org Group : %s", e.getMessage());
         }
-        return false;
+        return item;
     }
 
 
@@ -112,20 +122,23 @@ public class OrgGroupSubView extends AbstractOrgDataView<OrgGroup> {
     }
 
 
-    protected String getBelongsToName(OrgGroup og) {
+    protected OrgGroup getBelongsTo(OrgGroup og) {
         String btid = og.get_belongsToID();
         if (btid != null) {
             try {
-                OrgGroup btOg = getResourceClient().getOrgGroup(btid);
-                if (btOg != null) {
-                    return btOg.getName();
-                }
+                return getResourceClient().getOrgGroup(btid);
             }
             catch (IOException | ResourceGatewayException e) {
                 //fall through;
             }
         }
-        return "";
+        return null;
+    }
+
+
+    protected String getBelongsToName(OrgGroup og) {
+        OrgGroup belongsTo = getBelongsTo(og);
+        return belongsTo != null ? belongsTo.getName() : "";
     }
 
 }

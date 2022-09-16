@@ -5,19 +5,22 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.Autocomplete;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import org.yawlfoundation.yawl.resourcing.resource.AbstractResourceAttribute;
-import org.yawlfoundation.yawl.resourcing.resource.OrgGroup;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.ui.component.MultiSelectParticipantList;
+import org.yawlfoundation.yawl.ui.component.Prompt;
+import org.yawlfoundation.yawl.ui.component.ResourceMemberList;
 import org.yawlfoundation.yawl.ui.dialog.AbstractDialog;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -34,20 +37,24 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
 
     private final List<T> _existingItems;
     private final T _item;
-    private final List<Participant> _pList;
+    private final List<Participant> _ogMembers;
+    private final List<Participant> _allParticipants;
     private final String _title;
 
+    private List<Participant> _updatedMembers;
+    private HorizontalLayout _layout;
+    private ResourceMemberList _memberList;
     private Button _saveButton;
-    private ComboBox<OrgGroup.GroupType> _ogTypeCombo;
-    private MultiSelectParticipantList _membersList;
+    
 
-
-
-    public AbstractOrgDataDialog(List<T> items, T item, List<Participant> pList, String title) {
+    public AbstractOrgDataDialog(List<T> items, T item, List<Participant> pList,
+                                 List<Participant> members, String title) {
         items.sort(Comparator.comparing(AbstractResourceAttribute::getName));
         _existingItems = items;
         _item = item;
-        _pList = pList;
+        _allParticipants = pList;
+        _ogMembers = members;
+        _updatedMembers = members;
         _title = title;
    }
 
@@ -59,7 +66,6 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
             populateForm();
         }
         createButtons();
-        setHeight("350px");
     }
 
 
@@ -67,27 +73,40 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
 
     abstract void addGroupCombo(FormLayout form, T item);
 
-    abstract MultiSelectParticipantList createMembersList(T item);
-
     public abstract T compose();
-    
+
+
+    public String getMemberHeight() { return "225px"; }
+
+    public String getSelectMembersHeight() { return "192px"; }
+
 
     public boolean validate() {
-        return validateName() & validateDescription();       // no short circuits
+        return validateName();
     }
 
     public Button getSaveButton() { return _saveButton; }
 
-
     protected boolean isEditing() { return _item != null; }
 
     protected List<T> getExistingItems() { return _existingItems; }
-
-    protected List<Participant> getParticipantList() { return _pList; }
-
+    
     protected T getItem() { return _item; }
 
-    
+    protected String getNameValue() { return _nameField.getValue(); }
+
+    protected String getDescriptionValue() { return _descriptionField.getValue(); }
+
+    protected String getNotesValue() { return _notesField.getValue(); }
+
+    public List<Participant> getStartingMembers() { return _ogMembers; }
+
+    public List<Participant> getUpdatedMembers() { return _updatedMembers; }
+
+    public boolean hasUpdatedMembers() { return ! _updatedMembers.isEmpty(); }
+
+
+
     private String getTitle() {
         return (isEditing() ? "Edit " : "Add ") + _title;
     }
@@ -108,39 +127,18 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
         form.add(_notesField, 2);
         addGroupCombo(form, _item);
 
-        _membersList = createMembersList(_item);
-        if (_membersList != null) {
-            _membersList.setPadding(false);
-            _membersList.getStyle().set("border", "1px solid lightgray");
-            Label label = new Label(buildLabelText());
-            label.getStyle().set("color", "var(--lumo-secondary-text-color)");
-            label.getStyle().set("font-weight", "500");
-            label.getStyle().set("font-size", "var(--lumo-font-size-s)");
-            label.getStyle().set("margin-top", "7px");
-            label.getStyle().set("margin-bottom", "2px");
-            _membersList.getListbox().addValueChangeListener(v ->
-                    label.setText(buildLabelText()));
-//            HorizontalLayout headLayout = new HorizontalLayout();
-//            headLayout.setSpacing(false);
-//            Checkbox selectedOnly = new Checkbox("Selected Only",
-//                    e -> {
-//                if (e.getValue())
-//                    }
-//            );
-            VerticalLayout vLayout = new UnpaddedVerticalLayout("tb",
-                    label, _membersList);
-            vLayout.setSpacing(false);
-            vLayout.setWidth("60%");
-            vLayout.setHeight("200px");
-            return new HorizontalLayout(form, vLayout);
+        if (_ogMembers != null) {
+            _memberList = new ResourceMemberList(_ogMembers);
+            _memberList.setHeight(getMemberHeight());
+            _memberList.addAddButtonListener(e -> showSelectNewMembersList());
+            _memberList.addRemovebuttonListener(e -> removeSelectedMember());
+            _layout = new HorizontalLayout(form, _memberList);
+            _layout.setFlexGrow(1, form);
+            return _layout;
         }
         return form;
     }
 
-
-    private String buildLabelText() {
-        return String.format("Members (%d)", _membersList.getSelection().size());
-    }
 
     protected void populateForm() {
         if (_item != null) {
@@ -160,6 +158,44 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
     }
 
 
+    private void showSelectNewMembersList() {
+        VerticalLayout container = new UnpaddedVerticalLayout();
+        container.setSpacing(false);
+
+        MultiSelectParticipantList listPanel = new MultiSelectParticipantList(
+                _allParticipants, null);
+        listPanel.getElement().getStyle().set("padding", "0 5px 0 5px");
+        listPanel.getElement().getStyle().set("border-left", "3px solid lightgray");
+        listPanel.getListbox().setRenderer(new ComponentRenderer<>(p -> {
+            Span span = new Span(p.getFullName());
+            span.getStyle().set("padding-bottom", "0");
+            return span;
+        }));
+        listPanel.setWidthFull();
+        listPanel.setHeight(getSelectMembersHeight());
+        listPanel.smaller();
+        listPanel.setSelected(_updatedMembers);
+        listPanel.addCancelListener(e -> _layout.remove(container));
+        listPanel.addOKListener(e -> {
+            _layout.remove(container);
+            _updatedMembers = new ArrayList<>(listPanel.getSelection());
+            _memberList.refresh(_updatedMembers);
+        });
+
+        container.add(new Prompt("Select Members"), listPanel);
+        _layout.add(container);
+    }
+
+
+    private void removeSelectedMember() {
+        Participant p = _memberList.getSelected();
+        if (p != null) {
+            _updatedMembers.remove(p);
+            _memberList.refresh(_updatedMembers);
+        }
+    }
+
+
     private boolean validateName() {
         _nameField.setInvalid(false);
         if (_nameField.isEmpty()) {
@@ -172,17 +208,7 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
         }
         return !_nameField.isInvalid();
     }
-
-
-    private boolean validateDescription() {
-        _descriptionField.setInvalid(false);
-        if (_descriptionField.isEmpty()) {
-            _descriptionField.setErrorMessage("A description is required");
-            _descriptionField.setInvalid(true);
-        }
-        return !_descriptionField.isInvalid();
-    }
-
+    
 
     private boolean isUniqueName(String name) {
         for (T item : _existingItems) {
@@ -195,5 +221,27 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
         }
         return true;
     }
+
+    protected void initCombo(ComboBox<T> combo, List<T> items, T value, T nil) {
+        items.add(0, nil);
+        combo.setItems(items);
+        combo.setItemLabelGenerator(T::getName);
+        if (isEditing() && value != null) {
+            combo.setValue(value);
+        }
+        else {
+            combo.setValue(nil);
+        }
+    }
+
+
+    protected boolean validateCombo(ComboBox<T> combo, String object, String verb) {
+        combo.setInvalid(false);
+         if (getNameValue().equals(combo.getValue().getName())) {
+             combo.setErrorMessage(String.format("A %s cannot %s to itself", object, verb));
+             combo.setInvalid(true);
+         }
+         return ! combo.isInvalid();
+     }
 
 }

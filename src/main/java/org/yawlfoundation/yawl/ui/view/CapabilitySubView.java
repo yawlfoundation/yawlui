@@ -6,6 +6,7 @@ import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.orgdata.AbstractOrgDataDialog;
+import org.yawlfoundation.yawl.ui.dialog.orgdata.CapabilityDialog;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 
@@ -42,6 +43,35 @@ public class CapabilitySubView extends AbstractOrgDataView<Capability> {
 
 
     @Override
+    void addMembers(List<Participant> pList, Capability item) {
+        pList.forEach(p -> {
+            try {
+                getResourceClient().addParticipantToCapability(p.getID(), item.getID());
+            }
+            catch (IOException e) {
+                Announcement.error("Failed to add % to Capability : %s",
+                        p.getFullName(), e.getMessage());
+            }
+        });
+    }
+
+
+    @Override
+    void removeMembers(List<Participant> pList, Capability item) {
+        pList.forEach(p -> {
+            try {
+                getResourceClient().removeParticipantFromCapability(
+                        p.getID(), item.getID());
+            }
+            catch (IOException e) {
+                Announcement.error("Failed to remove % from Capability : %s",
+                        p.getFullName(), e.getMessage());
+            }
+        });
+    }
+
+
+    @Override
     String getTitle() {
         return "Capabilities";
     }
@@ -52,11 +82,13 @@ public class CapabilitySubView extends AbstractOrgDataView<Capability> {
         // no belongs relation for capabilities
     }
 
+    
     @Override
-    AbstractOrgDataDialog<Capability> createDialog(List<Capability> existingItems, Capability item) {
-        return null;
+    AbstractOrgDataDialog<Capability> createDialog(
+            List<Capability> existingItems, Capability item) {
+        return new CapabilityDialog(existingItems, item,
+                getAllParticipants(), getMembers(item));
     }
-
 
 
     @Override
@@ -74,14 +106,14 @@ public class CapabilitySubView extends AbstractOrgDataView<Capability> {
 
 
     @Override
-    boolean addItem(Capability item) {
+    Capability addItem(Capability item) {
         try {
-            return successful(getResourceClient().addCapability(item));
+            return getResourceClient().addCapability(item);
         }
         catch (IOException e) {
             Announcement.error("Failed to add Capability : %s", e.getMessage());
         }
-        return false;
+        return item;
     }
 
 
