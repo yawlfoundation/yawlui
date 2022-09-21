@@ -1,5 +1,6 @@
 package org.yawlfoundation.yawl.ui.view;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -19,6 +20,7 @@ import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.AppShellSettings;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
+import org.yawlfoundation.yawl.resourcing.resource.UserPrivileges;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.DrawerMenu;
@@ -69,7 +71,7 @@ public class MainView extends AppLayout implements
             case "My Worklist" : setContent(new UserWorklistView(
                     _resClient, _engClient, _user)); break;
             case "My Profile" : setContent(null); break;
-            case "My Team's Worklist" : setContent(new TeamWorklistView(_resClient, _user)); break;
+            case "My Team's Worklist" : setContent(chooseGroupView()); break;
             case "Case Mgt" : setContent(new CasesView(_resClient, _engClient)); break;
             case "Admin Worklist" : setContent(new AdminWorklistView(_resClient, _user)); break;
             case "Participants" : setContent(new ParticipantsView(_resClient)); break;
@@ -166,6 +168,24 @@ public class MainView extends AppLayout implements
         footer.setText("YAWL v5.0");
         getElement().insertChild(lastIndex, footer.getElement());
         return footer;
+    }
+
+
+    private Component chooseGroupView() {
+        if (_user != null) {
+            UserPrivileges up = _user.getUserPrivileges();
+            if (_user.isAdministrator() || (
+                    up.canViewOrgGroupItems() && up.canViewOrgGroupItems())) {
+                return new GroupWorklistTabbedView(_resClient, _user);
+            }
+            else if (up.canViewTeamItems()) {
+                return new TeamWorklistView(_resClient, _user);
+            }
+            else if (up.canViewOrgGroupItems()) {
+                return new OrgGroupWorklistView(_resClient, _user);
+            }
+        }
+        return new Div();
     }
 
 

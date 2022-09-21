@@ -1,27 +1,20 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.dom.Element;
-import com.vaadin.flow.server.InputStreamFactory;
-import com.vaadin.flow.server.StreamResource;
 import org.yawlfoundation.yawl.engine.YSpecificationID;
 import org.yawlfoundation.yawl.engine.interfce.SpecificationData;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.DelayedStartDialog;
 import org.yawlfoundation.yawl.ui.dialog.SpecInfoDialog;
-import org.yawlfoundation.yawl.ui.dialog.UploadDialog;
+import org.yawlfoundation.yawl.ui.dialog.UploadSpecificationDialog;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
-import org.yawlfoundation.yawl.ui.view.AbstractGridView;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
@@ -91,7 +84,8 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
     @Override
     void addFooterActions(ActionRibbon ribbon) {
         ribbon.add(createAddAction(event -> {
-            new UploadDialog(getEngineClient(), getLoadedItems(), e -> refresh()).open();
+            new UploadSpecificationDialog(getEngineClient(), getLoadedItems(),
+                    e -> refresh()).open();
             ribbon.reset();
         }));
 
@@ -161,28 +155,9 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
 
             String fileName = String.format("%s_v%s.xes", specData.getSpecURI(),
                                         specData.getSpecVersion());
-            InputStreamFactory isFactory = () -> new ByteArrayInputStream(
-                    log.getBytes(StandardCharsets.UTF_8));
-            StreamResource resource = new StreamResource(fileName, isFactory);
-            resource.setContentType("text/xml");
-            resource.setCacheTime(0);
-            resource.setHeader("Content-Disposition",
-                    "attachment;filename=\"" + fileName + "\"");
 
-            Anchor downloadAnchor = new Anchor(resource, "");
-            Element element = downloadAnchor.getElement();
-            element.setAttribute("download", true);
-            element.getStyle().set("display", "none");
-            add(downloadAnchor);
-
-            // simulate a click & remove anchor after file downloaded
-            element.executeJs("return new Promise(resolve =>{this.click(); " +
-                    "setTimeout(() => resolve(true), 150)})", element)
-                    .then(jsonValue -> {
-                        remove(downloadAnchor);
-                        Announcement.success("XES log downloaded");
-                    });
-
+            downloadFile(fileName, log);
+            Announcement.success("XES log downloaded");
         }
         catch (IOException ioe) {
             announceError(ioe.getMessage());

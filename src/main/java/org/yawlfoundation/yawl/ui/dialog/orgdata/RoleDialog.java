@@ -33,6 +33,8 @@ public class RoleDialog extends AbstractOrgDataDialog<Role> {
         Role nilRole = new Role("nil");
         nilRole.setID("RO-nil");
         initCombo(_belongsCombo, allRoles, _belongsTo, nilRole);
+        _belongsCombo.addValueChangeListener(v ->
+                validateCombo(_belongsCombo, "role", "belong"));
         form.add(_belongsCombo, 1);
     }
 
@@ -62,6 +64,22 @@ public class RoleDialog extends AbstractOrgDataDialog<Role> {
     public boolean validate() {
         return super.validate() &
                 validateCombo(_belongsCombo, "role", "belong") ;
+    }
+
+
+    @Override
+    String checkCyclicReferences(List<Role> items, Role item) {
+        List<String> hierarchy = new ArrayList<>();
+        hierarchy.add(getItem().getName());
+        Role belongsTo = _belongsCombo.getValue();
+        while (belongsTo != null) {
+            hierarchy.add(belongsTo.getName());
+            if (belongsTo.equals(getItem())) {
+                return assembleCyclicErrorMessage(hierarchy);
+            }
+            belongsTo = findItem(belongsTo.get_belongsToID());
+        }
+        return null;
     }
 
 }

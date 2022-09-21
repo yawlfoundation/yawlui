@@ -1,51 +1,39 @@
 package org.yawlfoundation.yawl.ui.view;
 
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
-import com.vaadin.flow.component.tabs.Tabs;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
+
+import java.util.List;
 
 /**
  * @author Michael Adams
  * @date 5/9/2022
  */
-public class OrgDataView extends AbstractView {
+public class OrgDataView extends AbstractTabbedView {
 
-    private final Tab _tabRoles = new Tab("Roles");
-    private final Tab _tabCapabilities = new Tab("Capabilities");
-    private final Tab _tabPositions = new Tab("Positions");
-    private final Tab _tabOrgGroups = new Tab("Org Groups");
-    private final VerticalLayout content = new VerticalLayout();
+    private Tab _tabRoles;
+    private Tab _tabCapabilities;
+    private Tab _tabPositions;
+    private Tab _tabOrgGroups;
 
 
-    public OrgDataView(ResourceClient resClient) {
-        super(resClient, null);
-        add(createLayout());
-        setSizeFull();
+    public OrgDataView(ResourceClient client) {
+        super(client, null, null);
     }
+
 
     @Override
-    Component createLayout() {
-        enlargeLabel(_tabRoles);
-        enlargeLabel(_tabCapabilities);
-        enlargeLabel(_tabPositions);
-        enlargeLabel(_tabOrgGroups);
-
-        Tabs tabs = new Tabs(_tabRoles, _tabCapabilities, _tabPositions, _tabOrgGroups);
-        tabs.addSelectedChangeListener(event -> setContent(event.getSelectedTab()));
-
-        content.setSpacing(false);
-        content.setSizeFull();
-        setContent(tabs.getSelectedTab());
-        VerticalLayout layout = new VerticalLayout(tabs, content);
-        layout.setSizeFull();
-        return layout;
+    protected List<Tab> getTabs() {
+        if (_tabRoles == null) _tabRoles = new Tab("Roles");
+        if (_tabCapabilities == null) _tabCapabilities = new Tab("Capabilities");
+        if (_tabPositions == null) _tabPositions = new Tab("Positions");
+        if (_tabOrgGroups == null) _tabOrgGroups = new Tab("Org Groups");
+        return List.of(_tabRoles, _tabCapabilities, _tabPositions, _tabOrgGroups);
     }
 
 
-    private void setContent(Tab tab) {
-        content.removeAll();
+    @Override
+    protected void setContent(Tab tab) {
         if (tab.equals(_tabRoles)) {
             content.add(new RoleSubView(getResourceClient(), getEngineClient()));
         }
@@ -58,11 +46,6 @@ public class OrgDataView extends AbstractView {
         else {
             content.add(new OrgGroupSubView(getResourceClient(), getEngineClient()));
         }
-    }
-
-
-    private void enlargeLabel(Tab tab) {
-        tab.getStyle().set("font-size", "var(--lumo-font-size-l)");
     }
 
 }

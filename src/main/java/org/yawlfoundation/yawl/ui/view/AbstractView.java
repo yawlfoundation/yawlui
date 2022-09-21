@@ -1,14 +1,21 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
+import com.vaadin.flow.dom.Element;
+import com.vaadin.flow.server.InputStreamFactory;
+import com.vaadin.flow.server.StreamResource;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.util.StringUtil;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author Michael Adams
@@ -54,6 +61,28 @@ public abstract class AbstractView extends VerticalLayout {
 
     protected boolean successful(String xmlMsg) {
         return getResourceClient().successful(xmlMsg);
+    }
+
+
+    protected void downloadFile(String fileName, String content) {
+        InputStreamFactory isFactory = () -> new ByteArrayInputStream(
+                content.getBytes(StandardCharsets.UTF_8));
+        StreamResource resource = new StreamResource(fileName, isFactory);
+        resource.setContentType("text/xml");
+        resource.setCacheTime(0);
+        resource.setHeader("Content-Disposition",
+                "attachment;filename=\"" + fileName + "\"");
+
+        Anchor downloadAnchor = new Anchor(resource, "");
+        Element element = downloadAnchor.getElement();
+        element.setAttribute("download", true);
+        element.getStyle().set("display", "none");
+        add(downloadAnchor);
+
+        // simulate a click & remove anchor after file downloaded
+        element.executeJs("return new Promise(resolve =>{this.click(); " +
+                "setTimeout(() => resolve(true), 150)})", element)
+                .then(jsonValue -> remove(downloadAnchor));
     }
     
 }

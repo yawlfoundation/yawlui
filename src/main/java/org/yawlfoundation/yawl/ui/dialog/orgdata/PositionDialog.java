@@ -4,6 +4,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import org.yawlfoundation.yawl.resourcing.resource.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,8 +41,11 @@ public class PositionDialog extends AbstractOrgDataDialog<Position> {
         Position nilPosition = new Position("nil");
         nilPosition.setID("PO-nil");
         initCombo(_reportsCombo, allPositions, _reportsTo, nilPosition);
+        _reportsCombo.addValueChangeListener(v ->
+                validateCombo(_reportsCombo, "position", "report"));
         form.add(_reportsCombo, 1);
     }
+
 
     @Override
     void addGroupCombo(FormLayout form, Position item) {
@@ -96,6 +100,22 @@ public class PositionDialog extends AbstractOrgDataDialog<Position> {
     public boolean validate() {
         return super.validate() &
                 validateCombo(_reportsCombo, "position", "report");
+    }
+
+
+    @Override
+    String checkCyclicReferences(List<Position> items, Position item) {
+        List<String> hierarchy = new ArrayList<>();
+        hierarchy.add(getItem().getName());
+        Position reportsTo = _reportsCombo.getValue();
+        while (reportsTo != null) {
+            hierarchy.add(reportsTo.getName());
+            if (reportsTo.equals(getItem())) {
+                return assembleCyclicErrorMessage(hierarchy);
+            }
+            reportsTo = findItem(reportsTo.get_reportsToID());
+        }
+        return null;
     }
 
 }

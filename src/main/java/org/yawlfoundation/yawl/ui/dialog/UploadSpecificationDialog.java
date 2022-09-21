@@ -3,15 +3,6 @@ package org.yawlfoundation.yawl.ui.dialog;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextArea;
-import com.vaadin.flow.component.textfield.TextAreaVariant;
-import com.vaadin.flow.component.upload.Upload;
-import com.vaadin.flow.component.upload.receivers.MultiFileMemoryBuffer;
-import org.apache.commons.io.IOUtils;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.Namespace;
@@ -25,83 +16,34 @@ import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
  * @author Michael Adams
  * @date 11/12/20
  */
-public class UploadDialog extends Dialog {
+public class UploadSpecificationDialog extends AbstractUploadDialog {
 
     private final EngineClient _client;
     private final List<SpecificationData> _loadedSpecs;
 
-    private final TextArea _msgArea = new TextArea("Messages");
 
-    public UploadDialog(EngineClient client, List<SpecificationData> loadedSpecs,
-                        ComponentEventListener<ClickEvent<Button>> listener) {
-        super();
+    public UploadSpecificationDialog(EngineClient client, List<SpecificationData> loadedSpecs,
+                                     ComponentEventListener<ClickEvent<Button>> listener) {
+        super("Upload Specifications", ".yawl", ".xml");
         _client = client;
         _loadedSpecs = loadedSpecs;
-
-        setCloseOnOutsideClick(false);
-        setWidth("700px");
-        setHeight("515px");
-        add(getContent(listener));
-    }
-
-
-    private VerticalLayout getContent(ComponentEventListener<ClickEvent<Button>> listener) {
-        VerticalLayout layout = new VerticalLayout();
-        layout.add(new H3("Upload Specifications"));
-        layout.add(createUpload());
-        layout.add(createMsgArea());
-        layout.add(createButton(listener));
-        layout.setSizeFull();
-        return layout;
-    }
-
-
-    private Upload createUpload() {
-        MultiFileMemoryBuffer buffer = new MultiFileMemoryBuffer();
-        Upload upload = new Upload(buffer);
-        upload.setAcceptedFileTypes(".yawl", ".xml");
-        upload.setHeight("60%");
-        upload.setWidthFull();
-
-        upload.addSucceededListener(event -> {
+        addCloseButtonListener(listener);
+        addSucceedListener(event -> {
             String fileName = event.getFileName();
             uploadSpecification(fileName, buffer.getInputStream(fileName));
         });
-        return upload;
-    }
-
-
-    private TextArea createMsgArea() {
-        _msgArea.setReadOnly(true);
-        _msgArea.setHeight("30%");
-        _msgArea.addThemeVariants(TextAreaVariant.LUMO_SMALL);
-        _msgArea.setWidthFull();
-        return _msgArea;
-    }
-
-    
-    private HorizontalLayout createButton(ComponentEventListener<ClickEvent<Button>> listener) {
-        HorizontalLayout layout = new HorizontalLayout();
-        Button b = new Button("Close", event -> {
-            close();
-        });
-        b.addClickListener(listener);
-        layout.add(b);
-        return layout;
     }
 
 
     private void uploadSpecification(String fileName, InputStream stream) {
          try {
-             String fileContent = validateUpload(IOUtils.toString(stream,
-                     StandardCharsets.UTF_8));
+             String fileContent = validateUpload(readFile(stream));
              UploadResult result = _client.uploadSpecification(fileContent);
              processResult(result, fileName);
          }
@@ -226,12 +168,6 @@ public class UploadDialog extends Dialog {
     }
 
 
-    private void appendMessage(String msg) {
-        String existing = _msgArea.getValue();
-        _msgArea.setValue(msg + existing);
-    }
-
-
     private String unwrap(String s) {
         if (s == null) return s;
         while (s.trim().startsWith("<")) {
@@ -239,6 +175,5 @@ public class UploadDialog extends Dialog {
         }
         return s;
     }
-
-
+    
 }

@@ -5,6 +5,7 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import org.yawlfoundation.yawl.resourcing.resource.OrgGroup;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -41,6 +42,8 @@ public class OrgGroupDialog extends AbstractOrgDataDialog<OrgGroup> {
         nilGroup.setLabel("nil");
         nilGroup.setID("OG-nil");
         initCombo(_belongsCombo, allGroups, _belongsTo, nilGroup);
+        _belongsCombo.addValueChangeListener(v ->
+                validateCombo(_belongsCombo, "org group", "belong"));
         form.add(_belongsCombo, 1);
     }
 
@@ -81,5 +84,21 @@ public class OrgGroupDialog extends AbstractOrgDataDialog<OrgGroup> {
     public boolean validate() {
         return super.validate() &
                 validateCombo(_belongsCombo, "org group", "belong");
+    }
+
+
+    @Override
+    String checkCyclicReferences(List<OrgGroup> items, OrgGroup item) {
+        List<String> hierarchy = new ArrayList<>();
+        hierarchy.add(getItem().getName());
+        OrgGroup belongsTo = _belongsCombo.getValue();
+        while (belongsTo != null) {
+            hierarchy.add(belongsTo.getName());
+            if (belongsTo.equals(getItem())) {
+                return assembleCyclicErrorMessage(hierarchy);
+            }
+            belongsTo = findItem(belongsTo.get_belongsToID());
+        }
+        return null;
     }
 }

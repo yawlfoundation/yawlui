@@ -1,14 +1,18 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.grid.FooterRow;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import org.apache.commons.lang3.StringUtils;
 import org.yawlfoundation.yawl.resourcing.resource.AbstractResourceAttribute;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
+import org.yawlfoundation.yawl.ui.dialog.UploadOrgDataDialog;
 import org.yawlfoundation.yawl.ui.dialog.orgdata.AbstractOrgDataDialog;
+import org.yawlfoundation.yawl.ui.layout.JustifiedButtonLayout;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
@@ -32,7 +36,7 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
 
 
     protected AbstractOrgDataView(ResourceClient resClient, EngineClient engClient) {
-        super(resClient, engClient);
+        super(resClient, engClient, false);
         build();
     }
 
@@ -127,9 +131,16 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
         ribbon.add(createRefreshAction());
     }
 
+
     @Override
-    protected boolean showHeader() {
-        return false;
+    protected void addGridFooter(Grid<?> grid, Component... components) {
+        super.addGridFooter(grid, components);
+
+        // add upload and download buttons to 2nd last footer cell
+        FooterRow footerRow = grid.getFooterRows().get(0);
+        int lastColIndex = grid.getColumns().size() - 2;
+        footerRow.getCell(grid.getColumns().get(lastColIndex)).setComponent(
+                new JustifiedButtonLayout(createFileActions()));
     }
 
     abstract void addBelongsToColumn(Grid<T> grid);
@@ -167,6 +178,18 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
     }
 
 
+    protected ActionRibbon createFileActions() {
+        ActionRibbon ribbon = new ActionRibbon();
+        ribbon.add(VaadinIcon.UPLOAD_ALT, "Upload from backup file", e -> {
+            UploadOrgDataDialog dialog = new UploadOrgDataDialog(getResourceClient());
+            dialog.addCloseButtonListener(b -> refresh());
+            dialog.open();
+        });
+        ribbon.add(VaadinIcon.DOWNLOAD_ALT, "Download to backup file", e -> download());
+        return ribbon;
+    }
+
+
     protected List<Participant> getAllParticipants() {
         try {
             return getResourceClient().getParticipants();
@@ -192,6 +215,18 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
                                  List<Participant> newList, T item) {
         removeMembers(notInOther(oldList, newList), item);
         addMembers(notInOther(newList, oldList), item);
+    }
+
+
+    protected void download() {
+        try {
+            String content = getResourceClient().exportOrgData();
+            downloadFile("YAWLOrgDataExport.ybkp", content);
+            Announcement.success("Org data successfully downloaded");
+        }
+        catch (IOException e) {
+            Announcement.error("Failed to download org data: %s", e.getMessage());
+        }
     }
 
 

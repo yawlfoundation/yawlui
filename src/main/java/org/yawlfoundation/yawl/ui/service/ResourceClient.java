@@ -448,6 +448,15 @@ public class ResourceClient extends AbstractClient {
     }
 
 
+    public String importOrgData(String xml) throws IOException {
+        return _resAdapter.importOrgData(xml, getHandle());
+    }
+
+    public String exportOrgData() throws IOException {
+        return _resAdapter.exportOrgData(getHandle());
+    }
+
+
     public boolean successful(String msg) { return _resAdapter.successful(msg); }
 
 

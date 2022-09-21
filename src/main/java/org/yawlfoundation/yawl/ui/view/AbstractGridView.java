@@ -36,9 +36,18 @@ abstract class AbstractGridView<T> extends AbstractView {
     private Grid<T> _grid;
     private H4 _header;
 
+    private final boolean _showHeader;
+
 
     protected AbstractGridView(ResourceClient resClient, EngineClient engClient) {
+        this(resClient, engClient, true);
+    }
+
+
+    protected AbstractGridView(ResourceClient resClient, EngineClient engClient,
+                               boolean showHeader) {
         super(resClient, engClient);
+        _showHeader = showHeader;
     }
 
 
@@ -72,7 +81,7 @@ abstract class AbstractGridView<T> extends AbstractView {
     protected H4 getHeader() { return _header; }
 
 
-    protected boolean showHeader() { return true; }
+    protected boolean showHeader() { return _showHeader; }
     
 
     protected Component createLayout() {

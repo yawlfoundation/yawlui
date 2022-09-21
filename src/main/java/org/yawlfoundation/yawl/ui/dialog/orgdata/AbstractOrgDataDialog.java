@@ -73,6 +73,8 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
 
     abstract void addGroupCombo(FormLayout form, T item);
 
+    abstract String checkCyclicReferences(List<T> items, T item);
+
     public abstract T compose();
 
 
@@ -104,6 +106,16 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
     public List<Participant> getUpdatedMembers() { return _updatedMembers; }
 
     public boolean hasUpdatedMembers() { return ! _updatedMembers.isEmpty(); }
+
+    
+    protected T findItem(String id) {
+        for (T item : _existingItems) {
+            if (id.equals(item.getID())) {
+                return item;
+            }
+        }
+        return null;
+    }
 
 
 
@@ -224,6 +236,9 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
 
     protected void initCombo(ComboBox<T> combo, List<T> items, T value, T nil) {
         items.add(0, nil);
+        if (isEditing()) {
+            items.remove(getItem());     // can't belong to or report to self
+        }
         combo.setItems(items);
         combo.setItemLabelGenerator(T::getName);
         if (isEditing() && value != null) {
@@ -237,11 +252,27 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
 
     protected boolean validateCombo(ComboBox<T> combo, String object, String verb) {
         combo.setInvalid(false);
-         if (getNameValue().equals(combo.getValue().getName())) {
-             combo.setErrorMessage(String.format("A %s cannot %s to itself", object, verb));
-             combo.setInvalid(true);
-         }
-         return ! combo.isInvalid();
-     }
+        if (getNameValue().equals(combo.getValue().getName())) {
+            combo.setErrorMessage(String.format("A %s cannot %s to itself", object, verb));
+            combo.setInvalid(true);
+        }
+        else {
+            String cyclicErrorMessage = checkCyclicReferences(getExistingItems(), getItem());
+            if (cyclicErrorMessage != null) {
+                combo.setErrorMessage(cyclicErrorMessage);
+                combo.setInvalid(true);
+            }
+        }
+        return ! combo.isInvalid();
+    }
+
+
+    protected String assembleCyclicErrorMessage(List<String> chain) {
+        StringBuilder chainStr = new StringBuilder(chain.get(0));
+        for (int i=1; i<chain.size(); i++) {
+            chainStr.append("->").append(chain.get(i));
+        }
+        return String.format("Invalid reference to self via the hierarchy '%s'", chainStr);
+    }
 
 }

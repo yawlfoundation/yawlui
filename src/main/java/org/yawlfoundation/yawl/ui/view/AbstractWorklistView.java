@@ -52,11 +52,18 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
 
     
     public AbstractWorklistView(ResourceClient resClient, EngineClient engClient,
-                                Participant p) {
-        super(resClient, engClient);
-        _user = p;
+                                Participant participant) {
+        this(resClient, engClient, participant, true);
+    }
+
+
+    public AbstractWorklistView(ResourceClient resClient, EngineClient engClient,
+                                Participant participant, boolean showHeader) {
+        super(resClient, engClient, showHeader);
+        _user = participant;
         build();
     }
+
 
      abstract QueueSet refreshQueueSet(Participant p);
 

@@ -31,6 +31,12 @@ public class CapabilityDialog extends AbstractOrgDataDialog<Capability> {
 
 
     @Override
+    String checkCyclicReferences(List<Capability> items, Capability item) {
+        return null;          // no belongs to -> no check required
+    }
+
+
+    @Override
     public Capability compose() {
         Capability capability = isEditing() ? getItem() : new Capability();
         capability.setCapability(getNameValue());
