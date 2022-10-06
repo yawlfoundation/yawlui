@@ -6,12 +6,14 @@ import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
+import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.ByteArrayInputStream;
@@ -50,6 +52,14 @@ public abstract class AbstractView extends VerticalLayout {
     }
 
 
+    public H4 createHeader(String title) {
+        H4 header = new H4(title);
+        UiUtil.removeTopMargin(header);
+        UiUtil.setStyle(header, "margin-bottom", "20px");
+        return header;
+    }
+
+
     protected void refreshHeader(H4 header, String text, int count) {
         header.getElement().setText(String.format("%s (%d)", text, count));
     }
@@ -59,6 +69,7 @@ public abstract class AbstractView extends VerticalLayout {
         Announcement.error(StringUtil.unwrap(msg));
     }
 
+    
     protected boolean successful(String xmlMsg) {
         return getResourceClient().successful(xmlMsg);
     }

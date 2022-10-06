@@ -1,7 +1,9 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.contextmenu.ContextMenu;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import org.yawlfoundation.yawl.elements.data.YParameter;
 import org.yawlfoundation.yawl.engine.interfce.TaskInformation;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
@@ -9,13 +11,16 @@ import org.yawlfoundation.yawl.resourcing.QueueSet;
 import org.yawlfoundation.yawl.resourcing.TaskPrivileges;
 import org.yawlfoundation.yawl.resourcing.WorkQueue;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
+import org.yawlfoundation.yawl.resourcing.resource.UserPrivileges;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.component.SingleSelectParticipantList;
 import org.yawlfoundation.yawl.ui.dialog.SingleValueDialog;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
+import org.yawlfoundation.yawl.ui.service.ChainedCase;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
+import org.yawlfoundation.yawl.ui.service.PiledTask;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.util.StringUtil;
 
@@ -30,7 +35,12 @@ import java.util.Set;
  * @date 2/11/20
  */
 public class UserWorklistView extends AbstractWorklistView {
-    
+
+    private ActionIcon _chainedIcon;
+    private ActionIcon _piledIcon;
+    private ContextMenu _chainedList;
+    private ContextMenu _piledList;
+
 
     public UserWorklistView(ResourceClient resClient, EngineClient engClient, Participant p) {
         super(resClient, engClient, p);
@@ -63,6 +73,106 @@ public class UserWorklistView extends AbstractWorklistView {
             case "Allocated" : createAllocatedRibbon(item, ribbon, taskPrivileges); break;
             case "Started" : createStartedRibbon(item, ribbon, taskPrivileges); break;
             case "Suspended" : createSuspendedRibbon(item, ribbon); break;
+        }
+    }
+
+
+    @Override
+    void addFooterActions(ActionRibbon ribbon) {
+        UserPrivileges up = getParticipant().getUserPrivileges();
+        if (hasAdminPrivileges() || up.canChainExecution()) {
+            createChainedAction(ribbon);
+        }
+        createPiledAction(ribbon);
+        super.addFooterActions(ribbon);
+    }
+
+
+    @Override
+    protected void refresh() {
+        super.refresh();
+        refreshChainedList();
+        refreshPiledList();
+    }
+
+
+    private void createPiledAction(ActionRibbon ribbon) {
+        _piledIcon = ribbon.add(VaadinIcon.STOCK, "Piled Tasks", null);
+        _piledList = createContextMenu(_piledIcon);
+        refreshPiledList();
+    }
+
+
+    private void refreshPiledList() {
+        _piledList.removeAll();
+        try {
+            Set<PiledTask> piledTasks = getResourceClient().getPiledTasks(getParticipantID());
+            if (! piledTasks.isEmpty()) {
+                for (PiledTask piledTask : piledTasks) {
+                    ActionIcon removeIcon = new ActionIcon(VaadinIcon.CLOSE_SMALL,
+                            ActionIcon.RED, "Unpile", event -> {
+                        try {
+                            getResourceClient().unpileTask(piledTask, getParticipantID());
+                            Announcement.success("Unpiled Task: " + piledTask);
+                            refresh();
+                        }
+                        catch (IOException | ResourceGatewayException ioe) {
+                            Announcement.error("Failed to unpile task '%s': %s",
+                                    piledTask, ioe.getMessage());
+                        }
+                    });
+                    removeIcon.getStyle().set("margin-left", "auto");
+                    HorizontalLayout layout = new HorizontalLayout(
+                            new Span(piledTask.toString()), removeIcon);
+                    layout.setPadding(false);
+                    _piledList.addItem(layout);
+                }
+            }
+            _piledIcon.setEnabled(! piledTasks.isEmpty());
+        }
+        catch (ResourceGatewayException | IOException e) {
+            _piledIcon.setEnabled(false);
+        }
+    }
+
+    
+    private void createChainedAction(ActionRibbon ribbon) {
+        _chainedIcon = ribbon.add(VaadinIcon.LINK, "Chained Cases", null);
+        _chainedList = createContextMenu(_chainedIcon);
+        refreshChainedList();
+    }
+
+
+    private void refreshChainedList() {
+        _chainedList.removeAll();
+        try {
+            Set<ChainedCase> chainedCases = getResourceClient()
+                    .getChainedCases(getParticipantID());
+            if (! chainedCases.isEmpty()) {
+                for (ChainedCase chainedCase : chainedCases) {
+                    ActionIcon removeIcon = new ActionIcon(VaadinIcon.CLOSE_SMALL,
+                            ActionIcon.RED, "Unchain", event -> {
+                        try {
+                            getResourceClient().unchainCase(chainedCase.getCaseID());
+                            Announcement.success("Unchained Case: " + chainedCase);
+                            refresh();
+                        }
+                        catch (IOException | ResourceGatewayException ioe) {
+                            Announcement.error("Failed to unchained Case %s: %s",
+                                    chainedCase, ioe.getMessage());
+                        }
+                    });
+                    removeIcon.getStyle().set("margin-left", "auto");
+                    HorizontalLayout layout = new HorizontalLayout(
+                            new Span(chainedCase.toString()), removeIcon);
+                    layout.setPadding(false);
+                    _chainedList.addItem(layout);
+                }
+            }
+            _chainedIcon.setEnabled(! chainedCases.isEmpty());
+        }
+        catch (ResourceGatewayException | IOException e) {
+            _chainedIcon.setEnabled(false);
         }
     }
 
@@ -301,8 +411,12 @@ public class UserWorklistView extends AbstractWorklistView {
 
 
     private ContextMenu addContextMenu(ActionRibbon ribbon) {
-        ActionIcon icon = ribbon.add(VaadinIcon.MENU,
-                "Other Actions", null);
+        ActionIcon icon = ribbon.add(VaadinIcon.MENU,"Other Actions", null);
+        return createContextMenu(icon);
+    }
+
+
+    private ContextMenu createContextMenu(ActionIcon icon) {
         ContextMenu menu = new ContextMenu(icon);
         menu.setOpenOnClick(true);
         return menu;

@@ -1,4 +1,4 @@
-package org.yawlfoundation.yawl.ui.dialog;
+package org.yawlfoundation.yawl.ui.dialog.upload;
 
 import org.jdom2.Element;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;

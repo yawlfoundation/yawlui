@@ -14,9 +14,9 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import org.yawlfoundation.yawl.resourcing.resource.AbstractResourceAttribute;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
+import org.yawlfoundation.yawl.ui.component.ResourceList;
 import org.yawlfoundation.yawl.ui.component.MultiSelectParticipantList;
 import org.yawlfoundation.yawl.ui.component.Prompt;
-import org.yawlfoundation.yawl.ui.component.ResourceMemberList;
 import org.yawlfoundation.yawl.ui.dialog.AbstractDialog;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
 
@@ -43,7 +43,7 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
 
     private List<Participant> _updatedMembers;
     private HorizontalLayout _layout;
-    private ResourceMemberList _memberList;
+    private ResourceList<Participant> _memberList;
     private Button _saveButton;
     
 
@@ -126,7 +126,7 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
     
     private Component createForm() {
         _nameField.setRequired(true);
-
+        _nameField.focus();
         _nameField.setAutocomplete(Autocomplete.OFF);
         _descriptionField.setAutocomplete(Autocomplete.OFF);
         _notesField.setAutocomplete(Autocomplete.OFF);
@@ -140,10 +140,11 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
         addGroupCombo(form, _item);
 
         if (_ogMembers != null) {
-            _memberList = new ResourceMemberList(_ogMembers);
+            _memberList = new ResourceList<>("Members", _ogMembers,
+                    Participant::getFullName);
             _memberList.setHeight(getMemberHeight());
             _memberList.addAddButtonListener(e -> showSelectNewMembersList());
-            _memberList.addRemovebuttonListener(e -> removeSelectedMember());
+            _memberList.addRemoveButtonListener(e -> removeSelectedMember());
             _layout = new HorizontalLayout(form, _memberList);
             _layout.setFlexGrow(1, form);
             return _layout;

@@ -85,6 +85,7 @@ public class DelayedStartDialog extends AbstractDialog {
         numberField.setMax(Long.MAX_VALUE / 1000D);
         numberField.setMin(Long.MIN_VALUE / 1000D);
         numberField.addFocusListener(e -> focussedField = e.getSource());
+        numberField.focus();
     }
 
 

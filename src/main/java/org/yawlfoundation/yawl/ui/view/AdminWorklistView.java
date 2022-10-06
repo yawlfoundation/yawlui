@@ -14,6 +14,7 @@ import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.AddedIcons;
+import org.yawlfoundation.yawl.ui.util.Settings;
 
 import java.io.IOException;
 import java.util.Set;
@@ -24,7 +25,6 @@ import java.util.Set;
  */
 public class AdminWorklistView extends AbstractWorklistView {
 
-    private boolean _directlyToMe;
     private boolean _settingsVisible = false;
     
     public AdminWorklistView(ResourceClient client, Participant participant) {
@@ -46,7 +46,7 @@ public class AdminWorklistView extends AbstractWorklistView {
 
     @Override
     protected String getTitle() {
-        return "Active Work Items";
+        return "Admin Worklist";
     }
 
 
@@ -97,7 +97,7 @@ public class AdminWorklistView extends AbstractWorklistView {
 
 
      private void reassignSingle(WorkItemRecord wir, Action action) {
-        if (_directlyToMe) {
+        if (Settings.isDirectlyToMe()) {
             reassignSingle(wir, getParticipantID(), action);
         }
         else {
@@ -117,7 +117,7 @@ public class AdminWorklistView extends AbstractWorklistView {
 
 
     private void reassignMultiple(WorkItemRecord wir, Action action) {
-        if (_directlyToMe) {
+        if (Settings.isDirectlyToMe()) {
             reassignMultiple(wir, Set.of(getParticipantID()), action);
         }
         else {
@@ -161,24 +161,26 @@ public class AdminWorklistView extends AbstractWorklistView {
                 case Reoffer: getResourceClient().reofferItem(wir.getID(), pids); break;
             }
             refresh();
-            Announcement.success("%ed item '%s' to %d participant%s",
+            Announcement.success("%sed item '%s' to %d participant%s",
                     action.name(), wir.getID(), pids.size(), (pids.size() > 1 ? "s" : ""));
         }
         catch (IOException | ResourceGatewayException ex) {
             Announcement.error(ex.getMessage());
         }
-     }
+    }
 
 
     private void settings() {
+        int colIndex = getGrid().getColumns().size() - 2;               // 2nd last col
+
         Checkbox cbx = null;
         if (! _settingsVisible) {
             cbx = new Checkbox("Directly to me",
-                    e -> _directlyToMe = e.getValue());
-            cbx.setValue(_directlyToMe);
+                    e -> Settings.setDirectlyToMe(e.getValue()));
+            cbx.setValue(Settings.isDirectlyToMe());
+            getGrid().getColumns().get(colIndex).setWidth("145px");
         }
 
-        int colIndex = getGrid().getColumns().size() - 2;               // 2nd last col
         setFooterComponent(colIndex, cbx);
         _settingsVisible = ! _settingsVisible;                          // toggle
     }

@@ -72,7 +72,6 @@ public abstract class AbstractDialog extends Dialog {
         header = new H4(title);
         UiUtil.removeTopMargin(header);
         UiUtil.setStyle(header, "margin-bottom", "20px");
-
     }
 
 

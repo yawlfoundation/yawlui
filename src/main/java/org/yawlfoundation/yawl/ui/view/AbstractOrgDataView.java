@@ -10,7 +10,7 @@ import org.yawlfoundation.yawl.resourcing.resource.AbstractResourceAttribute;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
-import org.yawlfoundation.yawl.ui.dialog.UploadOrgDataDialog;
+import org.yawlfoundation.yawl.ui.dialog.upload.UploadOrgDataDialog;
 import org.yawlfoundation.yawl.ui.dialog.orgdata.AbstractOrgDataDialog;
 import org.yawlfoundation.yawl.ui.layout.JustifiedButtonLayout;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;

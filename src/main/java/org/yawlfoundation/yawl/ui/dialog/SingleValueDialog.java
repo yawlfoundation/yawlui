@@ -19,6 +19,9 @@ public class SingleValueDialog extends AbstractDialog {
         super(title, text);
         addComponent(_field);
         createButtons();
+        setWidth("350px");
+        _field.focus();
+        _field.setWidthFull();
     }
 
     public void setPrompt(String prompt) {

@@ -24,13 +24,15 @@ public class DrawerMenu extends Tabs {
 
 
     private void addItems(Participant p) {
-        if (p != null) {// normal user
+
+        // normal user
+        if (p != null) {
             initialItem = createTab(VaadinIcon.INBOX, "My Worklist");
             add(initialItem);
             add(createTab(VaadinIcon.USER_CHECK, "My Profile"));
         }
 
-        // show quasi-admin privileges
+        // quasi-admin privileges
         if (canViewTeamQueues(p)) {
             add(createTab(VaadinIcon.CLIPBOARD_USER, "My Team's Worklist"));
         }
@@ -58,7 +60,9 @@ public class DrawerMenu extends Tabs {
         icon.setSize("12px");
         Span span = new Span(label);
         layout.add(icon, span);
-        return new Tab(layout);
+        Tab tab = new Tab(layout);
+        tab.setLabel(label);
+        return tab;
     }
 
 

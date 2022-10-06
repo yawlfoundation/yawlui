@@ -1,4 +1,4 @@
-package org.yawlfoundation.yawl.ui.dialog;
+package org.yawlfoundation.yawl.ui.dialog.upload;
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.ComponentEventListener;

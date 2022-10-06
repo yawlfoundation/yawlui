@@ -11,7 +11,9 @@ import com.vaadin.flow.component.textfield.Autocomplete;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
-import org.yawlfoundation.yawl.resourcing.resource.*;
+import org.yawlfoundation.yawl.resourcing.resource.AbstractResourceAttribute;
+import org.yawlfoundation.yawl.resourcing.resource.Participant;
+import org.yawlfoundation.yawl.resourcing.resource.UserPrivileges;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.component.MultiSelectResourceList;
@@ -233,7 +235,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
                 createGroupPanel(_roleList, "Roles"),
                 createGroupPanel(_capabilityList, "Capabilities"),
                 createGroupPanel(_positionList, "Positions")
-                );
+        );
     }
 
 
@@ -250,9 +252,14 @@ public class ParticipantDetailsDialog extends AbstractDialog {
     private VerticalLayout createGroupPanel(MultiSelectResourceList list, String title) {
         VerticalLayout layout = new UnpaddedVerticalLayout();
         layout.setHeight("220px");
-        layout.add(new H5(title));
+        H5 header = new H5(String.format("%s (%d)", title, list.getSelectedItems().size()));
+        layout.add(header);
         layout.add(list);
         list.setReadOnly(viewing());
+
+        list.addValueChangeListener(e -> header.getElement().setText(
+                String.format("%s (%d)", title, list.getSelectedItems().size())));
+ 
         return layout;
     }
 

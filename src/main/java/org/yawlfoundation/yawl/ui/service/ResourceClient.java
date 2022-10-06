@@ -11,21 +11,18 @@ import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
 import org.yawlfoundation.yawl.resourcing.TaskPrivileges;
 import org.yawlfoundation.yawl.resourcing.resource.*;
+import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanCategory;
+import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanResource;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayClientAdapter;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceLogGatewayClient;
 import org.yawlfoundation.yawl.resourcing.rsInterface.WorkQueueGatewayClientAdapter;
 import org.yawlfoundation.yawl.ui.util.TaskPrivilegesCache;
-import org.yawlfoundation.yawl.util.JDOMUtil;
-import org.yawlfoundation.yawl.util.PasswordEncryptor;
-import org.yawlfoundation.yawl.util.StringUtil;
+import org.yawlfoundation.yawl.util.*;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ResourceClient extends AbstractClient {
 
@@ -41,7 +38,9 @@ public class ResourceClient extends AbstractClient {
     public final TaskPrivilegesCache _taskPrivilegesCache = new TaskPrivilegesCache(this);
 
 
-    public ResourceClient() { super(); }
+    public ResourceClient() {
+        super();
+    }
 
 
     public QueueSet getAdminWorkQueues() throws IOException, ResourceGatewayException {
@@ -97,71 +96,114 @@ public class ResourceClient extends AbstractClient {
 
 
     public void acceptItem(String itemID, String pid)
-                throws IOException, ResourceGatewayException {
+            throws IOException, ResourceGatewayException {
         _wqAdapter.acceptOffer(pid, itemID, getHandle());
     }
 
 
     public void suspendItem(String itemID, String pid)
-                    throws IOException, ResourceGatewayException {
+            throws IOException, ResourceGatewayException {
         _wqAdapter.suspendItem(pid, itemID, getHandle());
     }
 
 
     public void unsuspendItem(String itemID, String pid)
-                    throws IOException, ResourceGatewayException {
+            throws IOException, ResourceGatewayException {
         _wqAdapter.unsuspendItem(pid, itemID, getHandle());
     }
 
 
     public void chainCase(String itemID, String pid)
-                    throws IOException, ResourceGatewayException {
+            throws IOException, ResourceGatewayException {
         _wqAdapter.chainCase(pid, itemID, getHandle());
     }
 
 
     public void skipItem(String itemID, String pid)
-                    throws IOException, ResourceGatewayException {
+            throws IOException, ResourceGatewayException {
         _wqAdapter.skipItem(pid, itemID, getHandle());
     }
 
 
     public void delegateItem(String itemID, String pidFrom, String pidTo)
-                    throws IOException, ResourceGatewayException {
+            throws IOException, ResourceGatewayException {
         _wqAdapter.delegateItem(pidFrom, pidTo, itemID, getHandle());
     }
 
 
     public void deallocateItem(String itemID, String pid)
-                    throws IOException, ResourceGatewayException {
+            throws IOException, ResourceGatewayException {
         _wqAdapter.deallocateItem(pid, itemID, getHandle());
     }
 
 
     public void reallocateItem(String itemID, String pidFrom, String pidTo, boolean stateful)
-                    throws IOException, ResourceGatewayException {
+            throws IOException, ResourceGatewayException {
         _wqAdapter.reallocateItem(pidFrom, pidTo, itemID, stateful, getHandle());
     }
 
 
     public void pileItem(String itemID, String pid)
-                    throws IOException, ResourceGatewayException {
+            throws IOException, ResourceGatewayException {
         _wqAdapter.pileItem(pid, itemID, getHandle());
     }
 
 
     public void completeItem(WorkItemRecord wir, String pid)
-                    throws IOException, ResourceGatewayException {
+            throws IOException, ResourceGatewayException {
 
         // have to put output data on the server first
         Element e = wir.getUpdatedData() != null ? wir.getUpdatedData() : wir.getDataList();
         String data = JDOMUtil.elementToStringDump(e);
         _wqAdapter.updateWorkItemData(wir.getID(), data, getHandle());
-        
+
         _wqAdapter.completeItem(pid, wir.getID(), getHandle());
     }
 
 
+    public Set<ChainedCase> getChainedCases(String pid)
+            throws IOException, ResourceGatewayException {
+        Set<String> cases = _wqAdapter.getChainedCases(pid, getHandle());
+        List<SpecificationData> specs = getLoadedSpecificationData();
+        Set<ChainedCase> chainedCases = new HashSet<>();
+        for (String caseID : cases) {
+             String[] parts = caseID.split("::");  //  caseid::specid
+             for (SpecificationData spec : specs) {
+                 if (spec.getSpecIdentifier().equals(parts[1])) {
+                     chainedCases.add(new ChainedCase(spec.getID(), parts[0]));
+                 }
+             }
+        }
+        return chainedCases;
+    }
+
+
+    public Set<PiledTask> getPiledTasks(String pid)
+            throws IOException, ResourceGatewayException {
+        String xml = _wqAdapter.getPiledItems(pid, getHandle());
+        XNode node = new XNodeParser().parse(xml);
+        if (node == null) {
+            throw new ResourceGatewayException("Malformed XML returned from service");
+        }
+        Set<PiledTask> taskSet = new HashSet<>();
+        node.getChildren().forEach(child -> taskSet.add(new PiledTask(child)));
+        return taskSet;
+    }
+
+
+    public String unchainCase(String caseID)
+                throws IOException, ResourceGatewayException {
+        return _wqAdapter.unchainCase(caseID, getHandle());
+    }
+
+
+    public String unpileTask(PiledTask piledTask, String pid)
+            throws IOException, ResourceGatewayException {
+        return _wqAdapter.unpileTask(piledTask.getSpecID(), piledTask.getTaskID(),
+                pid, getHandle());
+    }
+
+    
     public Set<Participant> getAssignedParticipants(String itemID, int queue)
             throws IOException, ResourceGatewayException {
         return _wqAdapter.getParticipantsAssignedWorkItem(itemID, queue, getHandle());
@@ -415,7 +457,8 @@ public class ResourceClient extends AbstractClient {
 
     public void removeClient(YClient client) throws IOException {
         if (client instanceof YAWLServiceReference) {
-            _wqAdapter.removeRegisteredService(((YAWLServiceReference) client).getServiceID(), getHandle());
+            _wqAdapter.removeRegisteredService(
+                    ((YAWLServiceReference) client).getServiceID(), getHandle());
         }
         else if (client instanceof YExternalClient) {
             _wqAdapter.removeExternalClient(client.getUserName(), getHandle());
@@ -429,10 +472,101 @@ public class ResourceClient extends AbstractClient {
     }
 
 
+    public List<NonHumanResource> getNonHumanResources()
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.getNonHumanResources(getHandle());
+    }
+
+    public NonHumanResource addNonHumanResource(NonHumanResource resource) throws IOException {
+        String id = _resAdapter.addNonHumanResource(resource, getHandle());
+        if (successful(id)) {
+            resource.setID(id);
+            return resource;
+        }
+        throw new IOException(StringUtil.unwrap(id));
+    }
+
+    public void updateNonHumanResource(NonHumanResource resource) throws IOException {
+        String msg = _resAdapter.updateNonHumanResource(resource, getHandle());
+        if (! successful(msg)) {
+            throw new IOException(StringUtil.unwrap(msg));
+        }
+    }
+
+    public void removeNonHumanResource(NonHumanResource resource) throws IOException {
+        String msg = _resAdapter.removeNonHumanResource(resource, getHandle());
+        if (! successful(msg)) {
+            throw new IOException(StringUtil.unwrap(msg));
+        }
+    }
+
+
+    public List<NonHumanCategory> getNonHumanCategories()
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.getNonHumanCategories(getHandle());
+    }
+
+
+    public List<String> getNonHumanSubCategories(String catID)
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.getNonHumanSubCategories(catID, getHandle());
+    }
+
+
+    public List<NonHumanResource> getNonHumanCategoryMembers(String catID, String subCategory)
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.getNonHumanCategoryMembers(catID, subCategory, getHandle());
+    }
+
+
+    public void addNonHumanCategory(NonHumanCategory category)
+            throws IOException, ResourceGatewayException {
+
+        // create it
+        String id = _resAdapter.addNonHumanCategory(category.getName(), getHandle());
+        category.setID(id);
+
+        // add content
+        updateNonHumanCategory(category);
+
+        // add sub-categories
+        for (String subName : category.getSubCategoryNames()) {
+            addNonHumanSubCategory(id, subName);
+        }
+    }
+
+
+    public void updateNonHumanCategory(NonHumanCategory category)
+            throws IOException, ResourceGatewayException {
+        String msg = _resAdapter.updateNonHumanCategory(category, getHandle());
+        if (! successful(msg)) {
+            throw new IOException(StringUtil.unwrap(msg));
+        }
+    }
+
+
+    public boolean removeNonHumanCategory(NonHumanCategory category)
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.removeNonHumanCategory(category.getID(), getHandle());
+    }
+
+
+    public void addNonHumanSubCategory(String catID, String subName)
+            throws IOException, ResourceGatewayException {
+        _resAdapter.addNonHumanSubCategory(catID, subName, getHandle());
+    }
+
+
+    public void removeNonHumanSubCategory(String catID, String subName)
+            throws IOException, ResourceGatewayException {
+        _resAdapter.removeNonHumanSubCategory(catID, subName, getHandle());
+    }
+
+
     public boolean authenticate(String userName, String password)
             throws IOException, ResourceGatewayException, NoSuchAlgorithmException {
-        String result = _resAdapter.validateUserCredentials(userName, PasswordEncryptor.encrypt(password),
-                false, getHandle());
+        String result = _resAdapter.validateUserCredentials(userName,
+                PasswordEncryptor.encrypt(password),false, getHandle());
         return _resAdapter.successful(result);
     }
 

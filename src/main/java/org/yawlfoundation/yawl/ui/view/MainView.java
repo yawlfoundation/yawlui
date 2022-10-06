@@ -19,6 +19,7 @@ import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.AppShellSettings;
+import com.vaadin.flow.theme.Theme;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.resource.UserPrivileges;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
@@ -35,6 +36,7 @@ import java.security.NoSuchAlgorithmException;
 //@PWA(name = "Project Base for Vaadin", shortName = "Project Base", enableInstallPrompt = false)
 @JsModule("@vaadin/vaadin-lumo-styles/presets/compact.js")
 //@Theme(value = Lumo.class)
+@Theme("common-theme")
 //@CssImport(value = "./styles/vaadin-text-field-styles.css", themeFor = "vaadin-text-field")
 public class MainView extends AppLayout implements
         ComponentEventListener<Tabs.SelectedChangeEvent>, AppShellConfigurator {
@@ -63,22 +65,22 @@ public class MainView extends AppLayout implements
     // notification from DrawerMenu of an item selection
     @Override
     public void onComponentEvent(Tabs.SelectedChangeEvent event) {
-        Tab tab = event.getSelectedTab();
+        Tab tab = event.getSelectedTab();          
 
         // tab's element's root has two children: an icon and a span (i.e. the label)
-        String label = tab.getElement().getChild(0).getChild(1).getText();
-        switch (label) {
+//        String label = tab.getElement().getChild(0).getChild(1).getText();
+        switch (tab.getLabel()) {
             case "My Worklist" : setContent(new UserWorklistView(
                     _resClient, _engClient, _user)); break;
-            case "My Profile" : setContent(null); break;
+            case "My Profile" : setContent(new ProfileView(_resClient, _user)); break;
             case "My Team's Worklist" : setContent(chooseGroupView()); break;
             case "Case Mgt" : setContent(new CasesView(_resClient, _engClient)); break;
             case "Admin Worklist" : setContent(new AdminWorklistView(_resClient, _user)); break;
             case "Participants" : setContent(new ParticipantsView(_resClient)); break;
             case "Org Data" : setContent(new OrgDataView(_resClient)); break;
-            case "Non-Human Resources" : setContent(null); break;
+            case "Non-Human Resources" : setContent(new NonHumanResourcesView(_resClient)); break;
             case "Calendar" : setContent(null); break;
-            case "Services / Clients"   : setContent(new ServicesView(_resClient, _engClient)); break;
+            case "Services / Clients" : setContent(new ServicesView(_resClient, _engClient)); break;
             case "About" : setContent(null); break;
             case "Logout" : event.getSource().setSelectedIndex(0); exit();
         }

@@ -76,6 +76,8 @@ public class ClientDetailsDialog<T extends YClient> extends AbstractDialog {
         _passwordField.setRevealButtonVisible(false);
         _pwConfirmField.setRevealButtonVisible(false);
 
+        _nameField.focus();
+
         FormLayout form = new FormLayout();
         form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 2));
         form.add(_nameField, 2);

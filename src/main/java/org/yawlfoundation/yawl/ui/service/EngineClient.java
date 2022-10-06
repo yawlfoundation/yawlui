@@ -129,6 +129,19 @@ public class EngineClient extends AbstractClient {
     }
 
 
+    public YSpecificationID getSpecificationIDForCase(String caseID) throws IOException {
+        String xml = _ibClient.getSpecificationIDForCase(caseID, getHandle());
+        if (! successful(xml))  {
+            throw new IOException("Malformed specification id returned from engine");
+        }
+        XNode specNode = new XNodeParser().parse(xml);
+        if (specNode == null)  {
+            throw new IOException("Malformed specification id returned from engine");
+        }
+        return new YSpecificationID(specNode);
+    }
+
+
     private boolean successful(String xml) { return _ibClient.successful(xml); }
 
 

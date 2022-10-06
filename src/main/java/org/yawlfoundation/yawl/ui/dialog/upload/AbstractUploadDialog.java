@@ -1,4 +1,4 @@
-package org.yawlfoundation.yawl.ui.dialog;
+package org.yawlfoundation.yawl.ui.dialog.upload;
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.ComponentEventListener;
@@ -10,6 +10,7 @@ import com.vaadin.flow.component.upload.SucceededEvent;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MultiFileMemoryBuffer;
 import org.apache.commons.io.IOUtils;
+import org.yawlfoundation.yawl.ui.dialog.AbstractDialog;
 
 import java.io.IOException;
 import java.io.InputStream;

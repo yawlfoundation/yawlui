@@ -7,7 +7,7 @@ import org.yawlfoundation.yawl.engine.interfce.SpecificationData;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.DelayedStartDialog;
 import org.yawlfoundation.yawl.ui.dialog.SpecInfoDialog;
-import org.yawlfoundation.yawl.ui.dialog.UploadSpecificationDialog;
+import org.yawlfoundation.yawl.ui.dialog.upload.UploadSpecificationDialog;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
@@ -118,7 +118,7 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
     private boolean launchCase(SpecificationData spec) {
         try {
             String caseID = getEngineClient().launchCase(spec.getID(), null);
-            Announcement.success("Case " + caseID + " cancelled");
+            Announcement.success("Case " + caseID + " launched");
             return true;
         }
         catch (IOException ioe) {

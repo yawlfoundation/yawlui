@@ -109,7 +109,7 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
     }
 
 
-
+    // this is here because it is used by 2 views
     protected Grid<WorkItemRecord> createAdminGrid() {
         Grid<WorkItemRecord> grid = super.createGrid();
         grid.addComponentColumn(this::getAssignedParticipants).setAutoWidth(true)
