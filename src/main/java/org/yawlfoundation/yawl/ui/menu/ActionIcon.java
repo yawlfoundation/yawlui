@@ -108,6 +108,14 @@ public class ActionIcon extends Icon {
         getStyle().set("margin-left", px + "px");
     }
 
+
+    public void setTooltip(String tip) {
+        tooltip = tip;
+        if (isEnabled()) {
+            getElement().setAttribute("title", tooltip);
+        }
+    }
+
     
     private void init() {
         init(DISABLED_COLOR);

@@ -61,8 +61,21 @@ public class UiUtil {
     }
 
 
+    public static void copyTooltip(Component from, Component to) {
+        String tip = getAttributeValue(from, "title");
+        if (tip != null) {
+            setTooltip(to, tip);
+        }
+    }
+
+
     public static void setAttribute(Component c, String key, String value) {
         c.getElement().setAttribute(key, value);
+    }
+
+
+    public static String getAttributeValue(Component c, String key) {
+        return c.getElement().getAttribute(key);
     }
 
 

@@ -1,6 +1,8 @@
 package org.yawlfoundation.yawl.ui.service;
 
 import org.yawlfoundation.yawl.authentication.YExternalClient;
+import org.yawlfoundation.yawl.documentStore.DocumentStoreClient;
+import org.yawlfoundation.yawl.documentStore.YDocument;
 import org.yawlfoundation.yawl.engine.YSpecificationID;
 import org.yawlfoundation.yawl.engine.interfce.Marshaller;
 import org.yawlfoundation.yawl.engine.interfce.TaskInformation;
@@ -27,6 +29,9 @@ public class EngineClient extends AbstractClient {
 
     private final InterfaceB_EnvironmentBasedClient _ibClient = new InterfaceB_EnvironmentBasedClient(
             "http://localhost:8080/yawl/ib");
+
+    private final DocumentStoreClient _docStoreClient = new DocumentStoreClient(
+            "http://localhost:8080/documentStore/");
 
 
     public EngineClient() { super(); }
@@ -139,6 +144,19 @@ public class EngineClient extends AbstractClient {
             throw new IOException("Malformed specification id returned from engine");
         }
         return new YSpecificationID(specNode);
+    }
+
+
+    public YDocument getStoredDocument(long docID) throws IOException {
+        return _docStoreClient.getDocument(docID, getHandle());
+    }
+
+    public long putStoredDocument(YDocument doc) throws IOException {
+        String id = _docStoreClient.putDocument(doc, getHandle());
+        if (successful(id)) {
+            return Long.parseLong(StringUtil.unwrap(id));
+        }
+        throw new IOException(StringUtil.unwrap(id));
     }
 
 

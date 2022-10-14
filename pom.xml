@@ -11,7 +11,7 @@
 
     <properties>
         <java.version>11</java.version>
-        <vaadin.version>23.2.0</vaadin.version>
+        <vaadin.version>23.2.3</vaadin.version>
         <log4j2.version>2.17.2</log4j2.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -154,6 +154,15 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/yawl-lib-4.5.1.jar</systemPath>
         </dependency>
+
+        <dependency>
+             <groupId>net.sf.saxon</groupId>
+             <artifactId>s9api</artifactId>
+             <version>1</version>
+             <scope>system</scope>
+             <systemPath>${project.basedir}/lib/saxon9-s9api.jar</systemPath>
+         </dependency>
+
 
         <dependency>
             <groupId>org.apache.maven.plugins</groupId>

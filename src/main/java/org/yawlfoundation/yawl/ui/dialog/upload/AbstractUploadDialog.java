@@ -69,7 +69,9 @@ public abstract class AbstractUploadDialog extends AbstractDialog {
     private Upload createUpload(String... fileTypes) {
         buffer = new MultiFileMemoryBuffer();
         upload = new Upload(buffer);
-        upload.setAcceptedFileTypes(fileTypes);
+        if (fileTypes != null) {
+            upload.setAcceptedFileTypes(fileTypes);
+        }
         upload.setWidthFull();
         return upload;
     }

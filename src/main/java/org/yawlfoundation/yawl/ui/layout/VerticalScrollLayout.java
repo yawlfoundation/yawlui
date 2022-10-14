@@ -24,50 +24,58 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
  * @date 26/5/21
  */
 public class VerticalScrollLayout extends VerticalLayout {
-    private VerticalLayout content;
+    private VerticalLayout _content;
 
-    public VerticalScrollLayout(){
+    public VerticalScrollLayout() {
         preparePanel();
+        prepareContent(null);
+    }
+
+    public VerticalScrollLayout(VerticalLayout content) {
+        preparePanel();
+        prepareContent(null);
     }
 
     public VerticalScrollLayout(Component... children){
-        preparePanel();
+        this();
         this.add(children);
     }
 
     private void preparePanel() {
         setWidth("100%");
-        setHeight("100%");
+//        setHeight("100%");
         getStyle().set("overflow", "auto");
+    }
 
-        content = new VerticalLayout();
-        content.getStyle().set("display", "block");
-        content.setWidth("100%");
-        content.setPadding(false);
-        super.add(content);
+    private void prepareContent(VerticalLayout content) {
+        _content = content != null ? content : new VerticalLayout();
+        _content.getStyle().set("display", "block");
+        _content.setWidth("100%");
+        _content.setPadding(false);
+        super.add(_content);
     }
 
     public VerticalLayout getContent(){
-        return content;
+        return _content;
     }
 
     @Override
     public void add(Component... components){
-        content.add(components);
+        _content.add(components);
     }
 
     @Override
     public void remove(Component... components){
-        content.remove(components);
+        _content.remove(components);
     }
 
     @Override
     public void removeAll(){
-        content.removeAll();
+        _content.removeAll();
     }
 
     @Override
     public void addComponentAsFirst(Component component) {
-        content.addComponentAtIndex(0, component);
+        _content.addComponentAtIndex(0, component);
     }
 }

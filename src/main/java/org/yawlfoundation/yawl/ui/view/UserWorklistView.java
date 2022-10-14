@@ -16,6 +16,7 @@ import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.component.SingleSelectParticipantList;
 import org.yawlfoundation.yawl.ui.dialog.SingleValueDialog;
+import org.yawlfoundation.yawl.ui.dynform.DynForm;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.ChainedCase;
@@ -229,7 +230,10 @@ public class UserWorklistView extends AbstractWorklistView {
     private void createStartedRibbon(WorkItemRecord wir, ActionRibbon ribbon,
                                      TaskPrivileges privileges) {
         if (userMayEdit(wir)) {
-            ribbon.add(createEditAction(event -> edit(wir)));
+            ribbon.add(createEditAction(event -> {
+                edit(wir);
+                ribbon.reset();
+            }));
         }
         else {
             ribbon.add(VaadinIcon.PENCIL);   // show disabled
@@ -406,7 +410,14 @@ public class UserWorklistView extends AbstractWorklistView {
 
     //todo
     private void edit(WorkItemRecord wir) {
-
+        try {
+            String schema = getResourceClient().getWorkItemDataSchema(wir.getID());
+            DynForm dynForm = new DynForm(getEngineClient(), getParticipant(), wir, schema);
+            dynForm.open();
+        }
+        catch (ResourceGatewayException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

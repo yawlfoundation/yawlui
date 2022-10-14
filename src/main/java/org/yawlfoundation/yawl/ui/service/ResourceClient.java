@@ -203,6 +203,18 @@ public class ResourceClient extends AbstractClient {
                 pid, getHandle());
     }
 
+
+    public String getWorkItemDataSchema(String itemID)
+            throws IOException, ResourceGatewayException {
+        return _wqAdapter.getWorkItemDataSchema(itemID, getHandle());
+    }
+
+
+    public String getCaseParamsDataSchema(YSpecificationID specID)
+            throws IOException, ResourceGatewayException {
+        return _wqAdapter.getCaseDataSchema(specID, getHandle());
+    }
+
     
     public Set<Participant> getAssignedParticipants(String itemID, int queue)
             throws IOException, ResourceGatewayException {
