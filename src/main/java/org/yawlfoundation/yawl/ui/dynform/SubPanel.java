@@ -53,6 +53,7 @@ public class SubPanel extends VerticalLayout implements Cloneable {
         super();
         _form = new DynFormLayout();
         _factory = factory;
+        getStyle().set("margin-top", "10px");
     }
 
 
@@ -90,6 +91,11 @@ public class SubPanel extends VerticalLayout implements Cloneable {
     }
 
     public DynFormLayout getForm() { return _form; }
+
+
+    public double calculateHeight() {
+        return DynFormLayout.HEADING_HEIGHT + getForm().calculateHeight();
+    }
 
     /***************************************************************************/
 

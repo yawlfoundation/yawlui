@@ -74,6 +74,7 @@ public class DynFormComponentBuilder {
         String name = field.getName();
         SubPanel subPanel = new SubPanel(_factory);
         subPanel.setName(name);
+        subPanel.getStyle().set("border", "1px solid lightgray");
         if ((! name.startsWith("choice")) && field.isFieldContainer())
             subPanel.addHeader(makeHeaderText(field.getLabel(), name)) ;
 
@@ -221,6 +222,7 @@ public class DynFormComponentBuilder {
         checkbox.setEnabled(! isDisabled(input));
         checkbox.setClassName("dynformInput");
         setStyles(checkbox, input);
+        checkbox.getStyle().set("margin-top", "10px");
         checkbox.setVisible(isVisible(input));
         UiUtil.setTooltip(checkbox, input.getToolTip());
         return checkbox;

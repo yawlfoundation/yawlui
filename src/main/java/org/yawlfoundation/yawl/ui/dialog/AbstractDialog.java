@@ -69,9 +69,14 @@ public abstract class AbstractDialog extends Dialog {
     
 
     public void setHeader(String title) {
+        setHeader(title, true);
+    }
+
+
+    public void setHeader(String title, boolean removeTopMargin) {
         header = new H4(title);
-        UiUtil.removeTopMargin(header);
         UiUtil.setStyle(header, "margin-bottom", "20px");
+        if (removeTopMargin) UiUtil.removeTopMargin(header);
     }
 
 
@@ -93,9 +98,13 @@ public abstract class AbstractDialog extends Dialog {
 
 
     private void pack() {
-        if (header != null) add(header);
+        if (header != null) {
+            add(header);
+        }
         content.forEach(this::add);
-        add(buttonBar);
+        if (buttonBar.getChildren().findAny().isPresent()) {
+            add(buttonBar);
+        }
     }
 
 }
