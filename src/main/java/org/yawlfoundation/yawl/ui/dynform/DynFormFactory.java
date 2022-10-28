@@ -20,15 +20,13 @@ package org.yawlfoundation.yawl.ui.dynform;
 
 /**
  * This class is responsible for generating dynamic forms
- *
  * Author: Michael Adams
  * Creation Date: 19/01/2008
- * Refactored 10/08/2008 - 04/2010 - 09/2014
+ * Refactored 10/08/2008 - 04/2010 - 09/2014 - 10/2022
  */
 
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import org.jdom2.Element;
 import org.yawlfoundation.yawl.elements.data.YParameter;
@@ -39,8 +37,6 @@ import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.ui.dynform.dynattributes.DynAttributeFactory;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.util.JDOMUtil;
-import org.yawlfoundation.yawl.util.XNode;
-import org.yawlfoundation.yawl.util.XNodeParser;
 
 import java.awt.*;
 import java.io.IOException;
@@ -66,8 +62,9 @@ public class DynFormFactory {
     private WorkItemRecord _wir;
 
     // the top-level container
-    private final DynFormLayout _container = new DynFormLayout();
+    private DynFormLayout _container;
 
+    // a YAWL Engine API client
     private final EngineClient _engineClient;
 
 
@@ -76,17 +73,14 @@ public class DynFormFactory {
     }
 
 
-    /*******************************************************************************/
-    // INTERFACE METHOD IMPLEMENTATIONS
-
     /**
-     * Build and show a form to capture the work item's output data values.
+     * Build a form to capture the work item's output data values from a user.
      *
      * @param schema An XSD schema of the data types and attributes to display
-     * @param wir    the work item record
-     * @return true if form creation is successful
+     * @param wir the work item record
+     * @return the generated form
      */
-    public DynFormLayout makeForm(String schema, WorkItemRecord wir, Participant p)
+    public DynFormLayout createForm(String schema, WorkItemRecord wir, Participant p)
             throws DynFormException {
         _wir = wir;
         _userAttributes.set(wir.getAttributeTable());
@@ -95,25 +89,25 @@ public class DynFormFactory {
 
 
     /**
-     * Build and show a form to capture the input data values on a case start.
+     * Build a form to capture the input data values on a case start from a user.
      *
-     * @param schema     An XSD schema of the data types and attributes to display
+     * @param schema An XSD schema of the data types and attributes to display
      * @param parameters a list of the root net's input parameters
-     * @return true if form creation is successful
+     * @return the generated form
      */
-    public DynFormLayout makeForm(String schema, List<YParameter> parameters, Participant p)
+    public DynFormLayout createForm(String schema, List<YParameter> parameters, Participant p)
             throws DynFormException {
         return buildForm(schema, null, getCaseParamMap(parameters), p);
     }
 
 
     /**
-     * Gets the form's data list on completion of the form. The data list must be
+     * Gets the form's data list on completion of the form. The data list will be
      * a well-formed XML string representing the expected data structure for the work
-     * item or case start. The opening and closing tag must be the name of task of which
-     * the work item is an instance, or of the root net name of the case instance.
+     * item output or case start. The opening and closing tag must be the name of task of
+     * which the work item is an instance, or of the root net name of the case instance.
      *
-     * @return A well-formed XML String of the work item's output data values
+     * @return A well-formed XML String of the form's data values
      */
     public String getDataList() {
         return new DataListGenerator(this).generate(_container,
@@ -129,10 +123,8 @@ public class DynFormFactory {
     }
 
 
-    /***********************************************************************************/
 
-
-    public boolean validateInputs(boolean reportErrors) {
+    public boolean validate() {
         return new DynFormValidator().validate(_container, _componentFieldTable);
     }
 
@@ -143,6 +135,15 @@ public class DynFormFactory {
     protected DynFormField getFieldForComponent(Component component) {
         return (component != null) ? _componentFieldTable.get(component) : null;
     }
+
+    protected EngineClient getEngineClient() { return _engineClient; }
+
+    /* @return the decomposition-level extended attributes */
+    protected DynFormUserAttributes getUserAttributes() { return _userAttributes; }
+
+
+    /* @return the data of the displayed workitem */
+    protected String getWorkItemData() { return getWorkItemData(_wir); }
 
 
     protected void addSubPanelControllerMap(Map<String, SubPanelController> map) {
@@ -160,34 +161,85 @@ public class DynFormFactory {
     }
 
 
-    protected String enspace(String text) { return replaceInternalChars(text, '_', ' '); }
+    protected Map<String, String> getUserDefinedFormFontStyles() {
+        return _userAttributes.getUserDefinedFontStyles();
+    }
 
+
+    protected Map<String, String> getUserDefinedHeaderFontStyles() {
+        return _userAttributes.getUserDefinedFontStyles(true);
+    }
+
+
+    protected String getCaseID() {
+        return _wir != null ? _wir.getRootCaseID() : null;
+    }
+
+
+    protected String getFormName() {
+        if (_wir != null) {
+            String udLabel = getTaskLabel();
+            return enspace(_wir.getCaseID() + ":" +
+                    (udLabel != null ? udLabel : _fieldAssembler.getFormName()));
+        }
+        return _fieldAssembler.getFormName();
+    }
+
+
+    protected String enspace(String text) { return replaceInternalChars(text, '_', ' '); }
 
     protected String despace(String text) { return replaceInternalChars(text, ' ', '_'); }
 
 
-    private void reset() {
-        IdGenerator.clear();
-        _container.removeAll();
-        _subPanelTable.clear();
-        _wir = null;
-        _userAttributes = null;
-    }
-
-
     private DynFormLayout buildForm(String schema, String data,
-                                     Map<String, FormParameter> paramMap,
-                                     Participant participant)
-            throws DynFormException {
+                                    Map<String, FormParameter> paramMap,
+                                    Participant participant) throws DynFormException {
         _fieldAssembler = new DynFormFieldAssembler(schema, data, paramMap);
         buildForm(participant);
         return _container;
     }
 
 
-    /**
-     * @return a map of workitem parameters [param name, param] *
-     */
+    private void buildForm(Participant participant) {
+        setFormBackgroundColour();
+        DynFormComponentBuilder builder = new DynFormComponentBuilder(this);
+        List<DynFormField> fieldList = _fieldAssembler.getFieldList();
+        DynAttributeFactory.adjustFields(fieldList, _wir, participant);   // 1st pass
+        _container = new DynFormLayout(getDefaultFormName());
+        _container.add(buildInnerForm(builder, fieldList));
+        DynAttributeFactory.applyAttributes(_container, _wir, participant);  // 2nd pass
+        _componentFieldTable = builder.getComponentFieldMap();
+    }
+
+
+    private DynFormComponentList buildInnerForm(DynFormComponentBuilder builder,
+                                                List<DynFormField> fieldList) {
+        DynFormComponentList componentList = new DynFormComponentList();
+        if (fieldList == null) return componentList;
+
+        for (DynFormField field : fieldList) {
+            if (field.isFieldContainer()) {
+
+                // new complex type - recurse in a new sub-container
+                componentList.addAll(buildSubPanel(builder, field));
+            }
+            else if (!field.isEmptyOptionalInputOnly()) {  // create the field (inside a panel)
+
+                // if min and/or max defined at the field level, enclose it in a subpanel
+                if (field.isGroupedField()) {
+                    componentList.addAll(buildSubPanel(builder, field));
+                }
+                else {
+                    componentList.addAll(builder.makeInputField(field));
+                }
+            }
+        }
+        componentList.consolidateChoiceComponents(fieldList);
+        return componentList;
+    }
+
+    
+    /* @return a map of workitem parameters [param name, param] */
     private Map<String, FormParameter> getParamInfo(WorkItemRecord wir) {
         try {
             TaskInformation taskInfo = _engineClient.getTaskInformation(wir);
@@ -204,20 +256,6 @@ public class DynFormFactory {
     }
 
 
-    public EngineClient getEngineClient() { return _engineClient; }
-
-    /**
-     * @return the decomposition-level extended attributes *
-     */
-    public DynFormUserAttributes getUserAttributes() { return _userAttributes; }
-
-
-    /**
-     * @return the data of the displayed workitem *
-     */
-    protected String getWorkItemData() { return getWorkItemData(_wir); }
-
-
     private String getWorkItemData(WorkItemRecord wir) {
         if (wir == null) return null;
         Element data = wir.getUpdatedData() != null ? wir.getUpdatedData() :
@@ -226,85 +264,12 @@ public class DynFormFactory {
     }
 
 
-    public Map<String, String> getUserDefinedFormFontStyles() {
-        return _userAttributes.getUserDefinedFontStyles();
-    }
-
-    public Map<String, String> getUserDefinedHeaderFontStyles() {
-         return _userAttributes.getUserDefinedFontStyles(true);
-     }
-
-
-     public String getCaseID() {
-        return _wir != null ? _wir.getRootCaseID() : null;
-     }
-
-    public String getFormName() {
-        if (_wir != null) {
-            String udLabel = getTaskLabel();
-            return enspace(_wir.getCaseID() + ":" +
-                    (udLabel != null ? udLabel : _fieldAssembler.getFormName()));
-        }
-        return _fieldAssembler.getFormName();
-    }
-
-    private void buildForm(Participant participant) {
-        setFormBackgroundColour();
-        DynFormComponentBuilder builder = new DynFormComponentBuilder(this);
-        List<DynFormField> fieldList = _fieldAssembler.getFieldList();
-        DynAttributeFactory.adjustFields(fieldList, _wir, participant);   // 1st pass
-//        _container.add(builder.makeHeaderText(getTaskLabel(), _fieldAssembler.getFormName()));
-        _container.add(buildInnerForm(null, builder, fieldList));
-        DynAttributeFactory.applyAttributes(_container, _wir, participant);  // 2nd pass
-        _componentFieldTable = builder.getComponentFieldMap();
-    }
-
 
     private void setFormBackgroundColour() {
-        String udBgColour = getFormBackgroundColour();
+        String udBgColour = getPanelBackgroundColour();
         if (udBgColour != null) {
             _container.getStyle().set("background-color", udBgColour);
         }
-    }
-
-
-    private DynFormComponentList buildInnerForm(SubPanel container,
-                                                DynFormComponentBuilder builder,
-                                                List<DynFormField> fieldList) {
-        DynFormComponentList componentList = new DynFormComponentList();
-        if (fieldList == null) return componentList;
-
-        for (DynFormField field : fieldList) {
-            if (field.isChoiceField()) {
-                componentList.addAll(buildChoiceSelector(container, builder, field));
-            }
-            if (field.isFieldContainer()) {
-
-                // new complex type - recurse in a new sub-container
-                componentList.addAll(buildSubPanel(builder, field));
-            } else if (!field.isEmptyOptionalInputOnly()) {  // create the field (inside a panel)
-
-                // if min and/or max defined at the field level, enclose it in a subpanel
-                if (field.isGroupedField()) {
-                    componentList.addAll(buildSubPanel(builder, field));
-                } else {
-                    componentList.addAll(builder.makeInputField(field));
-                }
-            }
-        }
-        componentList.ensureRadioButtonSelection();
-        return componentList;
-    }
-
-
-    private DynFormComponentList buildChoiceSelector(SubPanel container,
-                                                     DynFormComponentBuilder builder,
-                                                     DynFormField field) {
-        DynFormComponentList compList = new DynFormComponentList();
-//        RadioButtonGroup<Component> rGroup = builder.makeRadioButton(field);
-//        rGroup.setValue(container == null || isMatchingRadioForData(field));
-//        compList.add(rGroup);
-        return compList;
     }
 
 
@@ -316,7 +281,7 @@ public class DynFormFactory {
         _subPanelTable.put(field.getGroupID(), subPanel.getController());
         DynFormComponentList innerContent;
         if (field.isFieldContainer()) {
-            innerContent = buildInnerForm(subPanel, builder, field.getSubFieldList());
+            innerContent = buildInnerForm(builder, field.getSubFieldList());
         } else {
             innerContent = builder.makeInputField(field);
             field.addSubField(field.clone());
@@ -328,64 +293,11 @@ public class DynFormFactory {
         return compList;
     }
 
-
-    private boolean isMatchingRadioForData(DynFormField field) {
-        String name = field.getName();
-        String data = field.getParam().getValue();
-        if (data !=  null) {
-            XNodeParser parser = new XNodeParser();
-            XNode dNode = parser.parse(data);
-            if (dNode != null) {
-                XNode child = dNode.getChild(0);
-                return child != null && child.getName().equals(name);
-            }
-        }
-        return false;
-    }
-
-
+    
     private String createUniqueID(String id) { return IdGenerator.uniquify(id); }
 
 
-
-
-    private int getMaxDepthLevel() {
-        int result = -1;
-        for (SubPanelController spc : _subPanelTable.values())
-            result = Math.max(result, spc.getDepthlevel());
-
-        return result;
-    }
-
-
-    private VerticalLayout getContainer(SubPanel panel) {
-        Optional<Component> parent = panel.getParent();
-        return (VerticalLayout) parent.orElse(null);
-    }
-
-
-    private void addSubPanel(SubPanel panel) {
-        SubPanel newPanel = new SubPanelCloner().clone(panel, this);
-
-        // get container of this panel
-        VerticalLayout parent = getContainer(panel);
-        List<Component> children = parent.getChildren().collect(Collectors.toList());
-
-        // insert the new panel directly after the cloned one
-        parent.addComponentAtIndex(children.indexOf(panel) + 1, newPanel);
-
-        panel.getController().addSubPanel(newPanel);
-    }
-
-
-    private void removeSubPanel(SubPanel panel) {
-        panel.getController().removeSubPanel(panel);
-        removeOrphanedControllers(panel);
-        getContainer(panel).remove(panel);
-    }
-
-
-    private void removeSubPanelController(SubPanel panel) {
+     private void removeSubPanelController(SubPanel panel) {
         _subPanelTable.remove(panel.getName());
     }
 
@@ -430,12 +342,12 @@ public class DynFormFactory {
     }
 
 
-    protected String getFormBackgroundColour() {
+    protected String getPanelBackgroundColour() {
         return getAttributeValue("background-color");
     }
 
 
-    protected String getFormAltBackgroundColour() {
+    protected String getPanelAltBackgroundColour() {
         return getAttributeValue("background-alt-color");
     }
 

@@ -22,6 +22,9 @@ package org.yawlfoundation.yawl.ui.dynform;
 import com.vaadin.flow.component.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Maintains a list of components and their combined height
@@ -32,33 +35,41 @@ import java.util.ArrayList;
 
 public class DynFormComponentList extends ArrayList<Component> {
 
-    private int _height;
-
-
     public DynFormComponentList() {
         super();
     }
     
 
-    public int getHeight() { return _height; }
+    public void consolidateChoiceComponents(List<DynFormField> fieldList) {
+        Map<String, List<Component>> componentMap = new HashMap<>();
+        Map<String, String> paramMap = new HashMap<>();
+        for (int i = 0; i < fieldList.size(); i++) {
+            DynFormField field = fieldList.get(i);
+            if (field.isChoiceField()) {
+                List<Component> choices = componentMap.computeIfAbsent(field.getChoiceID(),
+                        k -> new ArrayList<>());
+                choices.add(this.get(i));
 
-    public void setHeight(int height) { _height = height; }
+                // all choice components with same choiceID have same param
+                paramMap.put(field.getChoiceID(), field.getParam().getValue());
+            }
+        }
 
-
-    public void ensureRadioButtonSelection() {
-//        RadioButton first = null;
-//        for (UIComponent component : this) {
-//            if (component instanceof RadioButton) {
-//                RadioButton rb = (RadioButton) component;
-//                if ((Boolean) rb.getSelected()) {
-//                    return;                              // one's selected
-//                }
-//                if (first == null) first = rb;
-//            }
-//        }
-//
-//        // if there's one or more radios, and none is selected, select first
-//        if (first != null) first.setSelected(true);
+        for (String choiceID : componentMap.keySet()) {
+            List<Component> choices = componentMap.get(choiceID);
+            int insertionIndex = findInsertionIndex(choices);
+            this.removeAll(choices);
+            this.add(insertionIndex, new ChoiceComponent(choices, paramMap.get(choiceID)));
+        }
     }
 
+
+    private int findInsertionIndex(List<Component> choices) {
+        int index = Integer.MAX_VALUE;
+        for (Component choice : choices) {
+            index = Math.min(index, this.indexOf(choice));
+        }
+        return index;
+    }
+    
 }

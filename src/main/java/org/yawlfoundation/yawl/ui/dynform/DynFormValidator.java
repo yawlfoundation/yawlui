@@ -22,6 +22,7 @@ package org.yawlfoundation.yawl.ui.dynform;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasValidation;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import org.xml.sax.SAXException;
@@ -81,36 +82,37 @@ public class DynFormValidator {
 
     private boolean validateInputs(DynFormLayout panel) {
         AtomicBoolean finalResult = new AtomicBoolean(true);
-        boolean ignoring = false ;
 
         // checkboxes & dropdowns are self validating - only need to do textfields
-            // & calendars (calendars only for non-empty required values)
-            panel.getChildren().forEach(component -> {
+        // & calendars (calendars only for non-empty required values)
+        panel.getChildren().forEach(component -> {
 
-                // if a choice is involved, the unselected field(s) must be ignored
-//                if (component instanceof RadioButton) {
-//                    ignoring = ! ((RadioButton) component).isChecked();
-//                }
+            boolean subResult = true;
+            if (component instanceof SubPanel) {
+                subResult = validateInputs(((SubPanel) component).getForm());
+            }
+            else if (component instanceof ChoiceComponent) {
+                subResult = validateInputs(
+                        ((ChoiceComponent) component).getChosenPanel().getForm());
+            }
+            else if (component instanceof TextField) {
+                subResult = validateTextField((TextField) component);
+            }
+            else if (component instanceof TextArea) {
+                subResult = validateTextArea((TextArea) component);
+            }
 
-                boolean subResult = true;
-                if (! ignoring) {
-                    if (component instanceof SubPanel) {
-                        subResult = validateInputs(((SubPanel) component).getForm());
-                    }
-                    else if (component instanceof TextField) {
-                         subResult = validateTextField((TextField) component);
-                    }
-                    else if (component instanceof TextArea) {
-                        subResult = validateTextArea((TextArea) component);
-                    }
+            // need to check that if its required it has a value
+            else if ((component instanceof DatePicker)) {
+                subResult = validateDatePicker((DatePicker) component);
+            }
+            else if ((component instanceof DateTimePicker)) {
+                subResult = validateDateTimePicker((DateTimePicker) component);
+            }
 
-                    // need to check that if its required it has a value
-                    else if ((component instanceof DatePicker)) {
-                        subResult = validateDatePicker((DatePicker) component);
-                    }
-                    finalResult.set(finalResult.get() && subResult);
-                }    
-            });
+            finalResult.set(finalResult.get() && subResult);
+
+        });
 
         return finalResult.get();
     }
@@ -125,21 +127,6 @@ public class DynFormValidator {
                         validateField(field, input, text);
             }
         }
-//        else {
-//
-//            // strip type out of tooltip - this construct was necessary
-//            // since the whole string is passed with an offset, causing
-//            // equals to fail in the validateField method
-//            String toolTip = field.getToolTip();
-//            if (toolTip != null) {
-//                String[] parts = toolTip.split("\\s+");
-//                if (parts.length > 5) {
-//                    String type = parts[5];
-//                    result = validateBase(field.getId(), type, text, true);
-//                }
-//            }
-//        }
-
         return true;
     }
 
@@ -182,9 +169,22 @@ public class DynFormValidator {
     }
 
 
-    private boolean validateExpiry(TextField field) {
+    private boolean validateDateTimePicker(DateTimePicker field) {
         field.setInvalid(false);
         DynFormField input = _componentFieldLookup.get(field);
+        if ((input != null) && (! input.hasSkipValidationAttribute())) {
+            if (input.isRequired() && field.getValue() == null) {
+                field.setErrorMessage("A date time is required");
+                field.setInvalid(true);
+            }
+        }
+        return ! field.isInvalid();
+    }
+
+
+
+    private boolean validateExpiry(TextField field) {
+        field.setInvalid(false);
         String value = field.getValue();
         try {
             DatatypeFactory.newInstance().newDuration(value);    // try duration 1st
@@ -400,20 +400,7 @@ public class DynFormValidator {
          return new String(result);
      }
 
-    
-    private String getStyleClass(DynFormField input, boolean valid) {
-        String result;
-        if (valid) {
-            if ((input != null) && input.isRequired())
-                result = "dynformInputRequired";
-            else
-                result = "dynformInput" ;
-        }
-        else result = "dynformInputError" ;
-
-        return result;
-    }
-
+     
 
     private boolean isEmptyValue(String value) {
         return ((value == null) || (value.length() < 1));

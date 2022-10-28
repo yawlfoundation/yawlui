@@ -29,16 +29,21 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * a panel layout with a few extra members
+ * A vertical layout that consists of an optional button bar (plus and minus),
+ * an optional header (H5) and a form (DynFormLayout).
  *
  * @author Michael Adams
- * Date: 26/02/2008
+ * Date: 26/02/2008  (extended for v5 01/10/2022)
  */
 
 public class SubPanel extends VerticalLayout implements Cloneable {
 
+    public static final double HEADING_HEIGHT = 46.39;               // includes spacing
+    public static final double OCCURS_BAR_HEIGHT = 22.0;
+    
     private final DynFormLayout _form;
-    private String name ;
+    private final String _name;
+    private String label;
 
     private SubPanelController controller;
     private final DynFormFactory _factory;
@@ -49,40 +54,43 @@ public class SubPanel extends VerticalLayout implements Cloneable {
 
 
     // Constructor //
-    public SubPanel(DynFormFactory factory) {
+    public SubPanel(DynFormFactory factory, String name) {
         super();
-        _form = new DynFormLayout();
+        _form = new DynFormLayout(name);
         _factory = factory;
+        _name = name;
         getStyle().set("margin-top", "10px");
+        getStyle().set("border", "1px solid lightgray");
     }
 
 
-    public void addHeader(H5 header) { add(header); }
+    public void addHeader(H5 header) { if (header != null) add(header); }
 
-    public String getName() { return name; }
 
-    public void setName(String name) {this.name = name;}
+    public H5 getHeader() {
+        return (H5) getChildren().filter(child ->
+                child instanceof H5).findFirst().orElse(null);
+    }
+
+    public String getName() { return _name; }
+
+    public void setLabel(String label) { this.label = label; }
+
+    public String getLabel() { return label != null ? label : getName(); }
 
     public ActionIcon getBtnPlus() { return btnPlus; }
 
-    public void setBtnPlus(ActionIcon btnPlus) { this.btnPlus = btnPlus; }
-
     public ActionIcon getBtnMinus() { return btnMinus; }
-
-    public void setBtnMinus(ActionIcon btnMinus) { this.btnMinus = btnMinus; }
 
     public SubPanelController getController() { return controller; }
 
     public void setController(SubPanelController controller) {
         this.controller = controller;
     }
-
-    public boolean isChoicePanel() {
-        return getName().equals("choicePanel");
-    }
+    
 
     public boolean isEmpty() {
-        return ! getChildren().findAny().isPresent();
+        return ! _form.getChildren().findAny().isPresent();
     }
 
     public void addContent(List<Component> components) {
@@ -94,20 +102,9 @@ public class SubPanel extends VerticalLayout implements Cloneable {
 
 
     public double calculateHeight() {
-        return DynFormLayout.HEADING_HEIGHT + getForm().calculateHeight();
-    }
-
-    /***************************************************************************/
-
-     public void assignStyle() {
-
-        // set user-defined background colour (if given)
-        String backColour = controller.getUserDefinedBackgroundColour();
-        if (backColour != null) {
-            getStyle().set("background-color", backColour);
-        }
-        
-        setClassName(controller.getSubPanelStyleClass());
+        long headers = getChildren().filter(c -> c instanceof H5).count();    // 0 or 1
+        double occurs = controller.canVaryOccurs() ? OCCURS_BAR_HEIGHT : 0;
+        return headers * HEADING_HEIGHT + occurs + getForm().calculateHeight();
     }
 
 
@@ -118,16 +115,15 @@ public class SubPanel extends VerticalLayout implements Cloneable {
 
     public SubPanel clone() throws CloneNotSupportedException {
         super.clone();
-        SubPanel cloned = new SubPanel(_factory);
-        cloned.setName(name);
-        cloned.setController(controller);
+        SubPanel cloned = new SubPanel(_factory, _name);
         this.getStyle().getNames().forEach(name ->
                 cloned.getStyle().set(name, this.getStyle().get(name)));
-        cloned.setClassName(this.getClassName());
+        controller.addSubPanel(cloned);
         return cloned;
     }
 
 
+    // initial enablement from panel creation
     public void enableOccursButtons(boolean enable) {
         if (btnPlus != null) btnPlus.setEnabled(enable);
         if (btnMinus != null) btnMinus.setEnabled(enable);
@@ -137,7 +133,9 @@ public class SubPanel extends VerticalLayout implements Cloneable {
     private JustifiedButtonLayout createOccursButtons() {
         btnPlus = createAddOccursButton();
         btnMinus = createRemoveOccursButton();
-        return new JustifiedButtonLayout(btnPlus, btnMinus);
+        JustifiedButtonLayout buttonLayout = new JustifiedButtonLayout(btnPlus, btnMinus);
+        buttonLayout.setWidthFull();
+        return buttonLayout;
     }
 
 
@@ -146,7 +144,13 @@ public class SubPanel extends VerticalLayout implements Cloneable {
             SubPanel newPanel = new SubPanelCloner().clone(this, _factory);
             DynFormLayout parent = getContainer();
             if (parent != null) {
-                parent.addComponentAtIndex(controller.getPanelIndex(this), newPanel);
+                int indexAfterThis = controller.getPanelIndex(this) + 1;
+                if (indexAfterThis == controller.getSubPanels().size()) {
+                    parent.add(newPanel);       // add as last
+                }
+                else {
+                    parent.addComponentAtIndex(indexAfterThis, newPanel);  // add under this
+                }
             }
         });
         icon.setSize("12px");

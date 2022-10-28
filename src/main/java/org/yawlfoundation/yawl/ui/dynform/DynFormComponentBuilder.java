@@ -51,17 +51,9 @@ import java.util.Map;
 public class DynFormComponentBuilder {
 
     // for setting focus on first available component
-    private DynFormFactory _factory ;
+    private final DynFormFactory _factory ;
     private DynTextParser _textParser;
     private final Map<Component, DynFormField> _componentFieldTable;
-
-    private int _maxDropDownWidth = 0;
-    private int _maxLabelWidth = 0;
-    private int _maxTextValueWidth = 0;
-    private int _maxImageWidth = 0;
-    private boolean _hasCheckboxOnly = true;
-
-    private final int DROPDOWN_BUTTON_WIDTH = 15;
 
 
     public DynFormComponentBuilder(DynFormFactory factory) {
@@ -70,32 +62,30 @@ public class DynFormComponentBuilder {
     }
 
 
-    public SubPanel makeSubPanel(DynFormField field, SubPanelController spc) {
+    public SubPanel makeSubPanel(DynFormField field, SubPanelController controller) {
         String name = field.getName();
-        SubPanel subPanel = new SubPanel(_factory);
-        subPanel.setName(name);
-        subPanel.getStyle().set("border", "1px solid lightgray");
-        if ((! name.startsWith("choice")) && field.isFieldContainer())
-            subPanel.addHeader(makeHeaderText(field.getLabel(), name)) ;
-
-        if (spc != null) {
-            spc.storeSubPanel(subPanel);
+        SubPanel subPanel = new SubPanel(_factory, name);
+        if ((! field.isChoiceField()) && field.isFieldContainer()) {
+            subPanel.addHeader(makeHeaderText(field.getLabel(), name));
+        }
+        if (controller != null) {
+            controller.storeSubPanel(subPanel);
         }
         else {
-            spc = new SubPanelController(subPanel, field.getMinoccurs(),
+            controller = new SubPanelController(subPanel, field.getMinoccurs(),
                                          field.getMaxoccurs(), field.getLevel(),
-                                         _factory.getFormBackgroundColour(),
-                                         _factory.getFormAltBackgroundColour()) ;
-            subPanel.setController(spc);
+                                         _factory.getPanelBackgroundColour(),
+                                         _factory.getPanelAltBackgroundColour()) ;
+            subPanel.setController(controller);
         }
-        if (spc.canVaryOccurs()) {
+        if (controller.canVaryOccurs()) {
             subPanel.addOccursButtons();
 
             if (isDisabled(field)) {
                 subPanel.enableOccursButtons(false);
             }
             else {
-                spc.setOccursButtonsEnablement();
+                controller.setOccursButtonsEnablement();
             }    
         }
         subPanel.setVisible(! field.isHidden(_factory.getWorkItemData()));
@@ -112,7 +102,6 @@ public class DynFormComponentBuilder {
             field = makeCheckbox(input);
         }
         else {
-            _hasCheckboxOnly = false;
             if (type.equals("date")) {
                 field = makeDatePicker(input);
             }
@@ -177,7 +166,6 @@ public class DynFormComponentBuilder {
             if (justify != null) {
                 styles.put("text-align", justify);
             }
-
         }
 
         if (input.hasBlackoutAttribute()) {
@@ -209,7 +197,6 @@ public class DynFormComponentBuilder {
     public H5 makeHeaderText(String text, String defText) {
         String headerText = text != null ? text : _factory.enspace(defText);
         H5 header = new H5(headerText);
-        header.setClassName("dynFormPanelHeader");
         setStyles(header, _factory.getUserDefinedHeaderFontStyles());
         return header;
     }
@@ -220,7 +207,6 @@ public class DynFormComponentBuilder {
         checkbox.setValue((input.getValue() != null) &&
                           input.getValue().equalsIgnoreCase("true")) ;
         checkbox.setEnabled(! isDisabled(input));
-        checkbox.setClassName("dynformInput");
         setStyles(checkbox, input);
         checkbox.getStyle().set("margin-top", "10px");
         checkbox.setVisible(isVisible(input));
@@ -235,7 +221,6 @@ public class DynFormComponentBuilder {
         datePicker.setEnabled(!isDisabled(input));
         datePicker.setMin(getMinDate(input));
         datePicker.setMax(getMaxDate(input));
-        datePicker.setClassName(getInputStyleClass(input));
         setStyles(datePicker, input);
         datePicker.setVisible(isVisible(input));
         UiUtil.setTooltip(datePicker, input.getToolTip());
@@ -249,7 +234,6 @@ public class DynFormComponentBuilder {
         dateTimePicker.setEnabled(!isDisabled(input));
         dateTimePicker.setMin(getMinDateTime(input));
         dateTimePicker.setMax(getMaxDateTime(input));
-        dateTimePicker.setClassName(getInputStyleClass(input));
         setStyles(dateTimePicker, input);
         dateTimePicker.setVisible(isVisible(input));
         UiUtil.setTooltip(dateTimePicker, input.getToolTip());
@@ -333,7 +317,6 @@ public class DynFormComponentBuilder {
 
     public ComboBox<String> makeEnumeratedList(DynFormField input) {
         ComboBox<String> comboBox = new ComboBox<>(input.getLabel());
-        comboBox.setClassName(getInputStyleClass(input));
         setStyles(comboBox, input);
         comboBox.setItems(input.getEnumeratedValues());
         if (! StringUtil.isNullOrEmpty(input.getValue())) {
@@ -348,7 +331,6 @@ public class DynFormComponentBuilder {
     
     public TextArea makeTextArea(DynFormField input) {
         TextArea textarea = new TextArea();
-        textarea.setClassName(getInputStyleClass(input));
         setStyles(textarea, input);
         textarea.setEnabled(! isDisabled(input));
         UiUtil.setTooltip(textarea, input.getToolTip());
@@ -363,7 +345,6 @@ public class DynFormComponentBuilder {
 
     public TextField makeTextField(DynFormField input) {
         TextField textField = new TextField(input.getLabel()) ;
-        textField.setClassName(getInputStyleClass(input));
         setStyles(textField, input);
         textField.setEnabled(! isDisabled(input));
         UiUtil.setTooltip(textField, input.getToolTip());
@@ -383,22 +364,8 @@ public class DynFormComponentBuilder {
         boolean inputOnly = input.isInputOnly();
         DocComponent docField = new DocComponent(_factory.getEngineClient(),
                 _factory.getCaseID(), id.getValue(), textField, inputOnly);
-        docField.setClassName("dynformDocComponent");
         return docField;
     }
-
-
-//    public RadioButton makeRadioButton(DynFormField input) {
-//        RadioButton rb = new RadioButton();
-//        rb.setId(createUniqueID("rb" + input.getName()));
-//        rb.setLabel("");
-//        rb.setName(input.getChoiceID());               // same name means same rb group
-//        rb.setStyle(makeStyle(rb, input));
-//        rb.setDisabled(isDisabled(input));
-//        rb.setStyleClass("dynformRadioButton");
-//        rb.setVisible(isVisible(input));
-//        return rb;
-//    }
 
 
     private Div makeTextBlock(DynFormField input, String text) {
@@ -477,62 +444,6 @@ public class DynFormComponentBuilder {
             }
         }
         return LocalDateTime.now();
-    }
-
-
-    private String getInputStyleClass(DynFormField input) {
-        if (isDisabled(input)) {
-            return "dynformInputReadOnly";
-        }
-        else if (input.isRequired()) {
-            return "dynformInputRequired";
-        }
-        else {                                         // read-write and not required
-            return "dynformInput";
-        }    
-    }
-
-    private void setMaxLabelWidth(DynFormField input) {
-        _maxLabelWidth = Math.max(_maxLabelWidth, getTextWidth(input,
-                input.getLabel() + ":"));
-    }
-
-    public int getMaxLabelWidth() {
-        return _maxLabelWidth;
-    }
-
-
-    private void setMaxDropDownWidth(DynFormField input, String text) {
-        _maxDropDownWidth = Math.max(_maxDropDownWidth, getTextWidth(input, text));
-    }
-
-    public int getMaxDropDownWidth() {
-        return _maxDropDownWidth + DROPDOWN_BUTTON_WIDTH;
-    }
-
-
-    private void setMaxTextValueWidth(DynFormField input, String text, int buffer) {
-        _maxTextValueWidth = Math.max(_maxTextValueWidth, getTextWidth(input, text) + buffer);
-    }
-
-    public int getMaxTextValueWidth() {
-        return _maxTextValueWidth;
-    }
-
-    public void setMaxImageWidth(int width) {
-        _maxImageWidth = Math.max(_maxImageWidth, width);
-    }
-
-    public int getMaxImageWidth() {
-        return _maxImageWidth;
-    }
-
-    public boolean hasOnlyCheckboxes() {
-        return _hasCheckboxOnly ;
-    }
-
-    public int getMaxFieldWidth() {
-        return Math.max(getMaxDropDownWidth(), getMaxTextValueWidth());
     }
 
 

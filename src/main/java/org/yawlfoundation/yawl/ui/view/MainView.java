@@ -142,7 +142,7 @@ public class MainView extends AppLayout implements
         _menu = new DrawerMenu(p);
         _menu.addSelectedChangeListener(this); 
         addToDrawer(_menu);
-        setDrawerOpened(false);
+//        setDrawerOpened(false);
         _menu.selectInitialItem();
     }
 

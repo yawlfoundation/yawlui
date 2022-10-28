@@ -151,12 +151,18 @@ public class EngineClient extends AbstractClient {
         return _docStoreClient.getDocument(docID, getHandle());
     }
 
+
     public long putStoredDocument(YDocument doc) throws IOException {
         String id = _docStoreClient.putDocument(doc, getHandle());
         if (successful(id)) {
             return Long.parseLong(StringUtil.unwrap(id));
         }
         throw new IOException(StringUtil.unwrap(id));
+    }
+
+
+    public void removeStoredDocument(long docID) throws IOException {
+        _docStoreClient.removeDocument(docID, getHandle());
     }
 
 

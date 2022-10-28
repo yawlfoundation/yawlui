@@ -34,56 +34,35 @@ public class SubPanelController {
 
     private long _minOccurs ;
     private long _maxOccurs ;
-    private long _currOccurs ;            // current display count (min <= curr <= max)
     private int _depthlevel ;             // the nested level of this panel set
     private String _name;
-    private String _bgColour;             // user-defined colours via extended attributes
-    private String _altBgColour;
+    private final String _bgColour;             // user-defined colours via extended attributes
+    private final String _altBgColour;
 
-    // the list of subpanel instances (i.e. all instances of the same subpanel)
-    private List<SubPanel> _panelList = new ArrayList<>();
+    // a list of instances of the same sub-panel
+    private final List<SubPanel> _panelList = new ArrayList<>();
 
-    public SubPanelController() {}
-
+    
     public SubPanelController(SubPanel panel, long minOccurs, long maxOccurs, int level,
                               String udBgColour, String udAltBgColour) {
         _panelList.add(panel);
         _minOccurs = minOccurs;
         _maxOccurs = maxOccurs;
         _depthlevel = level;
-        _currOccurs = 1;
         _name = panel.getName();
         _bgColour = udBgColour;
         _altBgColour = udAltBgColour;
+        setBackgroundColour(panel);
     }
 
+    
+    private void setMinOccurs(long minOccurs) { _minOccurs = minOccurs; }
 
-    /********************************************************************************/
+    private void setMaxOccurs(long maxOccurs) { _maxOccurs = maxOccurs; }
 
-    // Getters & Setters //
-
-    public long getMinOccurs() { return _minOccurs; }
-
-    public void setMinOccurs(long minOccurs) { _minOccurs = minOccurs; }
-
-    public void setMinOccurs(String minOccurs) { _minOccurs = convertOccurs(minOccurs); }
-
-
-    public long getMaxOccurs() { return _maxOccurs; }
-
-    public void setMaxOccurs(long maxOccurs) { _maxOccurs = maxOccurs; }
-
-    public void setMaxOccurs(String maxOccurs) { _maxOccurs = convertOccurs(maxOccurs); }    
-
-
-    public long getCurrOccurs() { return _currOccurs; }
-
-    public void setCurrOccurs(long currOccurs) { _currOccurs = currOccurs; }
-
+    private void setDepthlevel(int depthlevel) { _depthlevel = depthlevel; }
 
     public int getDepthlevel() { return _depthlevel; }
-
-    public void setDepthlevel(int depthlevel) { _depthlevel = depthlevel; }
 
 
     public String getName() { return _name; }
@@ -91,19 +70,7 @@ public class SubPanelController {
     public void setName(String name) { _name = name; }
 
 
-    public String getAltBgColour() { return _altBgColour; }
-
-    public void setAltBgColour(String colour) { _altBgColour = colour; }
-
-
-    public String getBgColour() { return _bgColour; }
-
-    public void setBgColour(String colour) { _bgColour = colour; }
-
-    
-
     public List<SubPanel> getSubPanels() { return _panelList; }
-    
 
     public boolean hasPanel(SubPanel panel) {
         return _panelList.contains(panel);
@@ -124,27 +91,18 @@ public class SubPanelController {
     }
 
 
-    /** @return the appropriate style class for this depthlevel */
-    public String getSubPanelStyleClass() {
-        return (_depthlevel % 2 == 0) ? "dynformSubPanelAlt" : "dynformSubPanel";
-    }
-
-
-    /** @return the user-defined bg colour (if any) for this depthlevel */
-    public String getUserDefinedBackgroundColour() {
-        return (_depthlevel % 2 == 0) ? _altBgColour : _bgColour;        
+    /** @return the appropriate colour for this depth level */
+    public String getBackgroundColour() {
+        if (_depthlevel % 2 == 0) {
+            return _altBgColour != null ? _altBgColour : "var(--lumo-shade-5pct)";
+        }
+        return _bgColour != null ? _bgColour : "white";
     }
 
 
     /** @return true if this subpanel can appear more times that it currently is */
     public boolean canVaryOccurs() {
         return ((_maxOccurs > 1) && (_minOccurs < _maxOccurs));
-    }
-
-
-    
-    public void assignStyleToSubPanels(int maxLevel) {
-        _panelList.forEach(SubPanel::assignStyle);
     }
 
 
@@ -155,11 +113,9 @@ public class SubPanelController {
      * @return the outermost containing subpanel of the one added 
      */
     public void addSubPanel(SubPanel newPanel) {
-        _currOccurs++;
         _panelList.add(newPanel);
-
-        // enable/disable buttons as required
-        setOccursButtonsEnablement();
+        newPanel.setController(this);
+        setBackgroundColour(newPanel);
     }
 
     /**
@@ -168,7 +124,6 @@ public class SubPanelController {
      * @return the outermost containing subpanel of the one removed
      */
     public void removeSubPanel(SubPanel oldPanel) {
-        _currOccurs--;
         _panelList.remove(oldPanel);
         setOccursButtonsEnablement();
     }
@@ -176,10 +131,10 @@ public class SubPanelController {
     
     /** enable/disable the occurs buttons as required */
     public void setOccursButtonsEnablement() {
-        _currOccurs = _panelList.size();
+        int currOccurs = _panelList.size();
         _panelList.forEach(panel -> {
-            panel.getBtnMinus().setEnabled(_currOccurs > 1 && _currOccurs > _minOccurs);
-            panel.getBtnPlus().setEnabled(_currOccurs < _maxOccurs);
+            panel.getBtnMinus().setEnabled(currOccurs > 1 && currOccurs > _minOccurs);
+            panel.getBtnPlus().setEnabled(currOccurs < _maxOccurs);
         });
     }
 
@@ -187,7 +142,6 @@ public class SubPanelController {
     /** clone this controller */
     public SubPanelController clone() throws CloneNotSupportedException {
         SubPanelController clone = (SubPanelController) super.clone();
-        clone.setCurrOccurs(_currOccurs);
         clone.setMaxOccurs(_maxOccurs);
         clone.setMinOccurs(_minOccurs);
         clone.setDepthlevel(_depthlevel);
@@ -204,7 +158,17 @@ public class SubPanelController {
     public void storeSubPanel(SubPanel panel) {
         _panelList.add(panel) ;
         panel.setController(this);
+        setBackgroundColour(panel);
     }
 
+
+    // set bg colour if required
+    private void setBackgroundColour(SubPanel panel) {
+        String backColour = getBackgroundColour();
+        if (backColour != null) {
+            panel.getStyle().set("background-color", backColour);
+        }
+
+    }
 
 }

@@ -23,11 +23,16 @@ import com.vaadin.flow.component.HasStyle;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H5;
 import com.vaadin.flow.component.textfield.TextField;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -51,66 +56,71 @@ public class SubPanelCloner {
     private SubPanel cloneSubPanel(SubPanel panel)  {
         try {
             SubPanel newPanel = panel.clone();
+            newPanel.addHeader(cloneHeader(panel));
 
             // clone panel content
             List<Component> content = cloneContent(panel);
             if (!content.isEmpty()) {
                 newPanel.addContent(content);
             }
-//        if (newPanel.getController().canVaryOccurs()) {
-//            newPanel.addOccursButton(_factory.makeOccursButton(name, "+"));
-//            newPanel.addOccursButton(_factory.makeOccursButton(name, "-"));
-//            newPanel.getBtnPlus().setStyle(panel.getBtnPlus().getStyle());
-//            newPanel.getBtnMinus().setStyle(panel.getBtnMinus().getStyle());
-//        }
+            if (newPanel.getController().canVaryOccurs()) {
+                newPanel.addOccursButtons();
+                newPanel.getController().setOccursButtonsEnablement();
+            }
             return newPanel;
         }
         catch (CloneNotSupportedException e) {
-            return new SubPanel(_factory);
+            return new SubPanel(_factory, panel.getName());
         }
     }
 
 
     private List<Component> cloneContent(SubPanel panel) {
         List<Component> clonedContent = new ArrayList<>();
-        panel.getChildren().forEach(child -> {
-            if (child instanceof SubPanel) {
-                clonedContent.add(cloneSubPanel((SubPanel) child));               // recurse
-            }
-            else {
-                List<Component> newContent = cloneSimpleComponent(child);
-                if (newContent != null) {
-                    clonedContent.addAll(newContent);
-                }
+        panel.getForm().getChildren().forEach(child -> {
+            Component cloned = cloneComponent(child);
+            if (cloned != null) {
+                clonedContent.add(cloned);
             }
         });
         return clonedContent;
     }
 
 
-    private List<Component> cloneSimpleComponent(Component component) {
-        List<Component> clonedComponents = new ArrayList<>();
-        Component clonedComponent = null ;
-
-//        else if (component instanceof RadioButton)
-//            clonedComponent = cloneRadioButton(component);
-
-        if (component instanceof TextField)
-            clonedComponent = cloneTextField((TextField) component);
-        else if (component instanceof DatePicker)
-            clonedComponent = cloneDatePicker((DatePicker) component);
-        else if (component instanceof Checkbox)
-            clonedComponent = cloneCheckbox((Checkbox) component);
-        else if (component instanceof ComboBox)
-            clonedComponent = cloneComboBox((ComboBox<?>) component);
-        else if (component instanceof Div)
-            clonedComponent = cloneTextBlock((Div) component) ;
-
-        if (clonedComponent != null) {
-            clonedComponents.add(clonedComponent);
-            return clonedComponents ;
+    private Component cloneComponent(Component component) {
+        if (component instanceof SubPanel) {
+            return cloneSubPanel((SubPanel) component);               // recurse
         }
-        else return null ;
+        else {
+            return cloneSimpleComponent(component);
+        }
+    }
+
+    
+    private Component cloneSimpleComponent(Component component) {
+        if (component instanceof TextField) {
+            return cloneTextField((TextField) component);
+        }
+        if (component instanceof DatePicker) {
+            return cloneDatePicker((DatePicker) component);
+        }
+        if (component instanceof DateTimePicker) {
+            return cloneDateTimePicker((DateTimePicker) component);
+        }
+        if (component instanceof Checkbox) {
+            return cloneCheckbox((Checkbox) component);
+        }
+        if (component instanceof ComboBox) {
+            return cloneComboBox((ComboBox<?>) component);
+        }
+        if (component instanceof ChoiceComponent) {
+            return cloneChoiceComponent((ChoiceComponent) component);
+        }
+        if (component instanceof Div) {
+            return cloneTextBlock((Div) component);
+        }
+
+        return null;
     }
 
 
@@ -119,9 +129,8 @@ public class SubPanelCloner {
         clonedField.setValue(oldField.getValue());
         clonedField.setRequired(oldField.isRequired());
         clonedField.setEnabled(oldField.isEnabled());
-        clonedField.setClassName(oldField.getClassName());
         UiUtil.copyTooltip(oldField, clonedField);
-        cloneStyle(oldField, clonedField);
+        cloneStyles(oldField, clonedField);
         _factory.addClonedFieldToTable(oldField, clonedField);      // for later validation
         return clonedField;
     }
@@ -130,14 +139,25 @@ public class SubPanelCloner {
     public DatePicker cloneDatePicker(DatePicker oldField) {
         DatePicker clonedField = new DatePicker(oldField.getLabel());
         clonedField.setValue(oldField.getValue());
-        clonedField.setEnabled(oldField.isEnabled());
         clonedField.setRequired(oldField.isRequired());
+        clonedField.setEnabled(oldField.isEnabled());
         clonedField.setMin(oldField.getMin());
         clonedField.setMax(oldField.getMax());
-        clonedField.setClassName(oldField.getClassName());
         UiUtil.copyTooltip(oldField, clonedField);
-        cloneStyle(oldField, clonedField);
-        return clonedField ;
+        cloneStyles(oldField, clonedField);
+        return clonedField;
+    }
+
+
+    public DateTimePicker cloneDateTimePicker(DateTimePicker oldField) {
+        DateTimePicker clonedField = new DateTimePicker(oldField.getLabel());
+        clonedField.setValue(oldField.getValue());
+        clonedField.setEnabled(oldField.isEnabled());
+        clonedField.setMin(oldField.getMin());
+        clonedField.setMax(oldField.getMax());
+        UiUtil.copyTooltip(oldField, clonedField);
+        cloneStyles(oldField, clonedField);
+        return clonedField;
     }
 
 
@@ -145,9 +165,8 @@ public class SubPanelCloner {
         Checkbox clonedField = new Checkbox(oldField.getLabel()) ;
         clonedField.setValue(oldField.getValue()) ;
         clonedField.setEnabled(oldField.isEnabled());
-        clonedField.setClassName(oldField.getClassName());
         UiUtil.copyTooltip(oldField, clonedField);
-        cloneStyle(oldField, clonedField);
+        cloneStyles(oldField, clonedField);
         return clonedField ;
     }
 
@@ -156,36 +175,44 @@ public class SubPanelCloner {
         ComboBox<T> clonedField = new ComboBox<>(oldField.getLabel()) ;
         clonedField.setItems(oldField.getListDataView().getItems().collect(Collectors.toList()));
         clonedField.setValue(oldField.getValue());
-        clonedField.setClassName(oldField.getClassName());
         UiUtil.copyTooltip(oldField, clonedField);
-        cloneStyle(oldField, clonedField);
+        cloneStyles(oldField, clonedField);
         return clonedField ;
     }
 
 
-//    public RadioButton cloneRadioButton(UIComponent field) {
-//        RadioButton oldRadio = (RadioButton) field;
-//        RadioButton newRadio = new RadioButton();
-//        newRadio.setId(createUniqueID(oldRadio.getId()));
-//        newRadio.setName(oldRadio.getName() + _rbGroupID);                // new rb group
-//        newRadio.setSelected(oldRadio.getSelected());
-//        newRadio.setStyle(oldRadio.getStyle());
-//        newRadio.setStyleClass(oldRadio.getStyleClass());
-//        return newRadio;
-
-//    }
+    public ChoiceComponent cloneChoiceComponent(ChoiceComponent oldComponent) {
+        List<Component> clonedContent = new ArrayList<>();
+        for (Component component : oldComponent.getContent()) {
+            Component cloned = cloneComponent(component);
+            if (cloned != null) {
+                clonedContent.add(cloned);
+            }
+        }
+        return new ChoiceComponent(clonedContent, null);
+    }
 
 
     public Div cloneTextBlock(Div oldField) {
         Div clonedField = new Div();
         clonedField.setText(oldField.getText());
-        clonedField.setClassName(oldField.getClassName());
-        cloneStyle(oldField, clonedField);
+        cloneStyles(oldField, clonedField);
         return clonedField;
     }
 
 
-    private void cloneStyle(HasStyle component, HasStyle cloned) {
+    public H5 cloneHeader(SubPanel panel) {
+        H5 oldHeader = panel.getHeader();
+        if (oldHeader != null) {
+            H5 clonedHeader = new H5(oldHeader.getText());
+            cloneStyles(oldHeader, clonedHeader);
+            return clonedHeader;
+        }
+        return null;
+    }
+
+
+    private void cloneStyles(HasStyle component, HasStyle cloned) {
         component.getStyle().getNames().forEach(name ->
                 cloned.getStyle().set(name, component.getStyle().get(name)));
     }
@@ -199,10 +226,7 @@ public class SubPanelCloner {
                 SubPanel childPanel = (SubPanel) component;
                 String name = childPanel.getName();
                 SubPanelController controller = processed.get(name);
-                if (controller != null) {
-                    controller = processed.get(name) ;
-                }
-                else {
+                if (controller == null) {
                     try {
                         controller = childPanel.getController().clone();
                         processed.put(name, controller);

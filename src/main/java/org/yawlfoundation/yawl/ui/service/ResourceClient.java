@@ -155,8 +155,13 @@ public class ResourceClient extends AbstractClient {
         // have to put output data on the server first
         Element e = wir.getUpdatedData() != null ? wir.getUpdatedData() : wir.getDataList();
         String data = JDOMUtil.elementToStringDump(e);
-        _wqAdapter.updateWorkItemData(wir.getID(), data, getHandle());
+        completeItem(wir, data, pid);
+    }
 
+
+    public void completeItem(WorkItemRecord wir, String data, String pid)
+            throws IOException, ResourceGatewayException {
+        _wqAdapter.updateWorkItemData(wir.getID(), data, getHandle());
         _wqAdapter.completeItem(pid, wir.getID(), getHandle());
     }
 
@@ -213,6 +218,12 @@ public class ResourceClient extends AbstractClient {
     public String getCaseParamsDataSchema(YSpecificationID specID)
             throws IOException, ResourceGatewayException {
         return _wqAdapter.getCaseDataSchema(specID, getHandle());
+    }
+
+
+    public String updateWorkItemData(String itemID, String data)
+            throws IOException, ResourceGatewayException {
+        return _wqAdapter.updateWorkItemData(itemID, data, getHandle());
     }
 
     

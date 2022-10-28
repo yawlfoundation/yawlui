@@ -1,6 +1,7 @@
 package org.yawlfoundation.yawl.ui.dynform;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 
 import java.util.Collection;
@@ -12,13 +13,20 @@ import java.util.stream.Collectors;
  */
 public class DynFormLayout extends FormLayout {
 
-    private static final double FIELD_HEIGHT = 51.5;
-    private static final double PADDING_HEIGHT = 22.0;
+    public static final double FIELD_HEIGHT = 64.5;
+    public static final double CHECKBOX_HEIGHT = 22.8;
+    private static final double PADDING_HEIGHT = 31.0;
     private static final double WINDOW_HEIGHT_FRACTION = 0.65;
     private static final int COLUMN_COUNT = 2;
-    public static final double HEADING_HEIGHT = 59;
 
-    
+    private final String _name;
+
+    public DynFormLayout(String name) {
+        super();
+        _name = name;
+    }
+
+
     @Override
     public void add(Collection<Component> components) {
         super.add(components);
@@ -40,6 +48,9 @@ public class DynFormLayout extends FormLayout {
     }
 
 
+    public String getName() { return _name; }
+
+
     public String getAppropriateWidth() {
         long count = getChildren().count();
         if (count < 2) {
@@ -54,23 +65,32 @@ public class DynFormLayout extends FormLayout {
 
 
     public void setAppropriateHeight(int windowHeight) {
-        double height = Math.min(windowHeight * WINDOW_HEIGHT_FRACTION, calculateHeight());
+        double actualHeight = calculateHeight() - PADDING_HEIGHT;
+        double height = Math.min(windowHeight * WINDOW_HEIGHT_FRACTION, actualHeight);
         setHeight(height + "px");
     }
 
     
     private void setColspan(Component component) {
-        int colspan = (component instanceof SubPanel) ? COLUMN_COUNT : 1;
+        int colspan = (component instanceof SubPanel || component instanceof ChoiceComponent) ?
+                COLUMN_COUNT : 1;
         super.setColspan(component, colspan);
     }
 
 
     public double calculateHeight() {
         double fieldCount = 0;
+        double checkboxCount = 0;
         double subPanelHeight = 0;
         for (Component c : getChildren().collect(Collectors.toList())) {
             if (c instanceof SubPanel) {
                 subPanelHeight += ((SubPanel) c).calculateHeight();
+            }
+            else if (c instanceof ChoiceComponent) {
+                subPanelHeight += ((ChoiceComponent) c).calculateHeight();
+            }
+            else if (c instanceof Checkbox) {
+                checkboxCount++;
             }
             else {
                 fieldCount++;
@@ -78,6 +98,7 @@ public class DynFormLayout extends FormLayout {
         }
         
         return Math.ceil(fieldCount / COLUMN_COUNT) * FIELD_HEIGHT
+                + Math.ceil(checkboxCount / COLUMN_COUNT) * CHECKBOX_HEIGHT
                 + PADDING_HEIGHT + subPanelHeight;
     }
     

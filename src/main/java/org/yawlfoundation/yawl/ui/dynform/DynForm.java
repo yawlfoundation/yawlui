@@ -7,7 +7,6 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.orderedlayout.Scroller;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import org.yawlfoundation.yawl.elements.data.YParameter;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
@@ -15,6 +14,7 @@ import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.AbstractDialog;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -25,15 +25,17 @@ public class DynForm extends AbstractDialog {
 
     private Button _okButton;  // 'Complete' or 'Start'
     private Button _saveButton;
-    private final Button _cancelButton = new Button("Cancel", event -> close());
+    private final Button _cancelButton = new Button("Cancel", event -> cancelform());
 
     private final EngineClient _engClient;
+    private final DynFormFactory _factory;
 
 
     // work item edit
     public DynForm(EngineClient client, Participant p, WorkItemRecord wir, String schema) {
         super();
         _engClient = client;
+        _factory = new DynFormFactory(_engClient);
         createContent(p, wir, schema);
     }
 
@@ -42,6 +44,7 @@ public class DynForm extends AbstractDialog {
     public DynForm(EngineClient client, Participant p, List<YParameter> parameters, String schema) {
         super();
         _engClient = client;
+        _factory = new DynFormFactory(_engClient);
         createContent(p, parameters, schema);
     }
 
@@ -55,14 +58,22 @@ public class DynForm extends AbstractDialog {
         _saveButton.addClickListener(listener);
     }
 
+    public boolean validate() {
+        return _factory.validate();
+    }
+
+
+    public String generateOutputData() {
+        return _factory.getDataList();
+    }
+
 
     private void createContent(Participant p, WorkItemRecord wir, String schema) {
-        DynFormFactory factory = new DynFormFactory(_engClient);
         try {
-            DynFormLayout form = factory.makeForm(schema, wir, p);
+            DynFormLayout form = _factory.createForm(schema, wir, p);
             setFormHeight(form);
             setWidth(form.getAppropriateWidth());
-            setHeader("Edit Work Item " + factory.getFormName(), false);
+            setHeader("Edit Work Item " + _factory.getFormName(), false);
             addComponent(createScroller(form));
             createButtonsForWorkItem();
         }
@@ -74,12 +85,11 @@ public class DynForm extends AbstractDialog {
 
     private void createContent(Participant p, List<YParameter> parameters,
                                                String schema) {
-        DynFormFactory factory = new DynFormFactory(_engClient);
         try {
-            DynFormLayout form = factory.makeForm(schema, parameters, p);
+            DynFormLayout form = _factory.createForm(schema, parameters, p);
             setFormHeight(form);
             setWidth(form.getAppropriateWidth());
-            setHeader("Case Start " + factory.getFormName(), false);
+            setHeader("Case Start " + _factory.getFormName(), false);
             addComponent(createScroller(form));
             createButtonsForCaseStart();
         }
@@ -124,10 +134,26 @@ public class DynForm extends AbstractDialog {
     }
 
 
-    private void pack(VerticalLayout layout) {
-        addComponent(layout);
-        setWidth(layout.getComponentCount() > 1 ? "700px" : "350px");
-        setMaxHeight("75%");
+    private void cancelform() {
+        removeDocsOnCancel();
+        close();
     }
 
+
+    private void removeDocsOnCancel() {
+        List<Long> docIDs = _factory.getDocComponentIDs();
+        if (! docIDs.isEmpty()) {
+            try {
+                for (Long docID : docIDs) {
+
+                    // an id of -1 means no doc was uploaded by the doc component
+                    if (docID > -1) _engClient.removeStoredDocument(docID);
+                }
+            }
+            catch (IOException ioe) {
+                // nothing more can be done
+            }
+        }
+    }
+    
 }

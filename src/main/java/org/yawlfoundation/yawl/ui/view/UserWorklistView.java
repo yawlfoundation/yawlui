@@ -4,6 +4,7 @@ import com.vaadin.flow.component.contextmenu.ContextMenu;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import org.jdom2.Element;
 import org.yawlfoundation.yawl.elements.data.YParameter;
 import org.yawlfoundation.yawl.engine.interfce.TaskInformation;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
@@ -413,10 +414,46 @@ public class UserWorklistView extends AbstractWorklistView {
         try {
             String schema = getResourceClient().getWorkItemDataSchema(wir.getID());
             DynForm dynForm = new DynForm(getEngineClient(), getParticipant(), wir, schema);
+            dynForm.addOkListener(e -> {
+                if (dynForm.validate()) {                                // completion
+                    String outputData = dynForm.generateOutputData();
+                    completeItem(wir, outputData);
+                    dynForm.close();
+                    refresh();
+                }
+            });
+            dynForm.addSaveListener(e -> {
+                if (dynForm.validate()) {                                // completion
+                    String outputData = dynForm.generateOutputData();
+                    saveWorkItemData(wir, outputData);
+                    dynForm.close();
+                }
+            });
+
             dynForm.open();
         }
         catch (ResourceGatewayException | IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+
+    private void completeItem(WorkItemRecord wir, String data) {
+        try {
+            getResourceClient().completeItem(wir, data, getParticipantID());
+        }
+        catch (IOException | ResourceGatewayException e) {
+            Announcement.error("Failed to complete work item: " + e.getMessage());
+        }
+    }
+
+    
+    private void saveWorkItemData(WorkItemRecord wir, String data) {
+        try {
+            getResourceClient().updateWorkItemData(wir.getID(), data);
+        }
+        catch (IOException  | ResourceGatewayException e) {
+            Announcement.error("Failed to save data to work item: " + e.getMessage());
         }
     }
 
@@ -442,6 +479,12 @@ public class UserWorklistView extends AbstractWorklistView {
             e.printStackTrace();
             return null;
         }
+    }
+
+
+    private Element getItemData(WorkItemRecord wir) {
+        Element data = wir.getUpdatedData();
+        return data != null ? data : wir.getDataList();
     }
 
 

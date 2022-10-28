@@ -79,7 +79,6 @@ public class DocComponent extends HorizontalLayout {
 
     private void buildComponent(boolean inputOnly) {
         _textField.setReadOnly(true);                         // can't be edited directly
-        _textField.setClassName("dynformInputReadOnly");
 
         String upTip = inputOnly ? "File is read only" : "Upload file";
         _btnUp = new ActionIcon(VaadinIcon.UPLOAD_ALT, null, upTip,
