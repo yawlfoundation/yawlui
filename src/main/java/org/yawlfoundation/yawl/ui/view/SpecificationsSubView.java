@@ -2,12 +2,15 @@ package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import org.yawlfoundation.yawl.elements.data.YParameter;
 import org.yawlfoundation.yawl.engine.YSpecificationID;
 import org.yawlfoundation.yawl.engine.interfce.SpecificationData;
+import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.DelayedStartDialog;
 import org.yawlfoundation.yawl.ui.dialog.SpecInfoDialog;
 import org.yawlfoundation.yawl.ui.dialog.upload.UploadSpecificationDialog;
+import org.yawlfoundation.yawl.ui.dynform.DynForm;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
@@ -115,16 +118,106 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
     }
 
 
-    private boolean launchCase(SpecificationData spec) {
+    private void launchCase(SpecificationData spec) {
         try {
-            String caseID = getEngineClient().launchCase(spec.getID(), null);
+            if (isLatestLoadedVersion(spec)) {
+                List<YParameter> inputParams = spec.getInputParams();
+                if (! (inputParams.isEmpty() || spec.hasExternalCaseDataGateway())) {
+                    launchCase(spec, inputParams, -1);
+                }
+                else {
+                    launchCase(spec.getID(), null);
+                }
+            }
+        }
+        catch (ResourceGatewayException | IOException e) {
+            announceError(e.getMessage());
+        }
+    }
+
+
+    private void launchCase(SpecificationData spec, List<YParameter> inputParams,
+                            long delay)
+            throws ResourceGatewayException, IOException {
+        String schema = getResourceClient().getCaseParamsDataSchema(spec.getID());
+        DynForm dynForm = new DynForm(getEngineClient(), inputParams, schema);
+        dynForm.addOkListener(e -> {
+            if (dynForm.validate()) {
+                String caseData = dynForm.generateOutputData();
+                if (delay > 0) {
+                    launchCase(spec.getID(), caseData, delay);
+                }
+                else {
+                    launchCase(spec.getID(), caseData);
+                }
+                dynForm.close();
+                refresh();
+            }
+        });
+        dynForm.open();
+    }
+
+
+    private void launchCase(YSpecificationID specID, String caseData) {
+        try {
+            String caseID = getEngineClient().launchCase(specID, caseData);
             Announcement.success("Case " + caseID + " launched");
-            return true;
         }
         catch (IOException ioe) {
             announceError(ioe.getMessage());
-            return false;
         }
+    }
+
+
+    private void launchCase(YSpecificationID specID, String caseData, long delay) {
+        try {
+            getEngineClient().launchCase(specID, caseData, delay);
+        }
+        catch (IOException ioe) {
+            announceError(ioe.getMessage());
+        }
+    }
+
+
+    private void delayedStart(SpecificationData spec) {
+        if (isLatestLoadedVersion(spec)) {
+            DelayedStartDialog dialog = new DelayedStartDialog();
+            dialog.addOkClickListener(e -> {
+                long delay = dialog.getDelay();
+                dialog.close();
+                if (delay > -1) {
+                    List<YParameter> inputParams = spec.getInputParams();
+                    try {
+                        if (! (inputParams.isEmpty() || spec.hasExternalCaseDataGateway())) {
+                            launchCase(spec, inputParams, delay);
+                        }
+                        else {
+                            launchCase(spec.getID(), null, delay);
+                        }
+                    }
+                    catch (ResourceGatewayException | IOException ioe) {
+                        announceError(ioe.getMessage());
+                    }
+                }
+            });
+            dialog.open();
+        }
+    }
+
+    
+    private boolean isLatestLoadedVersion(SpecificationData spec) {
+        YSpecificationID specID = spec.getID();
+        for (SpecificationData item : getLoadedItems()) {
+            if (specID.isPreviousVersionOf(item.getID())) {
+                Announcement.error("Unable to start case. Only the latest version of a " +
+                                "specification may be launched. The latest loaded version " +
+                                "of this specification is '" + item.getSpecVersion() +
+                                "', the selected version is '" + spec.getSpecVersion() +
+                                "'. Please select the latest version.");
+                return false;
+            }
+        }
+        return true;
     }
 
 
@@ -162,24 +255,6 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
         catch (IOException ioe) {
             announceError(ioe.getMessage());
         }
-    }
-
-
-    private void delayedStart(SpecificationData spec) {
-        DelayedStartDialog dialog = new DelayedStartDialog();
-        dialog.addOkClickListener(e -> {
-            long delay = dialog.getDelay();
-            if (delay > -1) {
-                try {
-                    getEngineClient().launchCase(spec.getID(), null, delay);
-                }
-                catch (IOException ioe) {
-                    announceError(ioe.getMessage());
-                }
-                dialog.close();
-            }
-        });
-        dialog.open();
     }
 
 }

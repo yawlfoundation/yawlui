@@ -312,9 +312,6 @@ public class DynFormFactory {
     }
 
 
-    private DynFormUserAttributes getAttributes() { return _userAttributes; }
-
-
     // replaces each internally occurring 'pre' char with a 'post' char
     private String replaceInternalChars(String text, char pre, char post) {
         if ((text == null) || (text.length() < 3) || (text.indexOf(pre) < 0)) return text;
@@ -328,18 +325,8 @@ public class DynFormFactory {
         return new String(chars);
     }
 
-
-
-
+    
     // support for decomposition extended attributes
-
-    public String getPageBackgroundURL() {
-        return getAttributeValue("page-background-image");
-    }
-
-    public String getPageBackgroundColour() {
-        return getAttributeValue("page-background-color");
-    }
 
 
     protected String getPanelBackgroundColour() {

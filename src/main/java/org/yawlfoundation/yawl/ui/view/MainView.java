@@ -44,8 +44,9 @@ public class MainView extends AppLayout implements
     private final ResourceClient _resClient = new ResourceClient();
     private final EngineClient _engClient = new EngineClient();
     private Participant _user;
-    private DrawerMenu _menu;
     private Div _footer;
+
+    public String _customFormHandle = null;
 
 
     public MainView() {
@@ -66,12 +67,9 @@ public class MainView extends AppLayout implements
     @Override
     public void onComponentEvent(Tabs.SelectedChangeEvent event) {
         Tab tab = event.getSelectedTab();          
-
-        // tab's element's root has two children: an icon and a span (i.e. the label)
-//        String label = tab.getElement().getChild(0).getChild(1).getText();
         switch (tab.getLabel()) {
             case "My Worklist" : setContent(new UserWorklistView(
-                    _resClient, _engClient, _user)); break;
+                    _resClient, _engClient, _user, _customFormHandle)); break;
             case "My Profile" : setContent(new ProfileView(_resClient, _user)); break;
             case "My Team's Worklist" : setContent(chooseGroupView()); break;
             case "Case Mgt" : setContent(new CasesView(_resClient, _engClient)); break;
@@ -99,9 +97,12 @@ public class MainView extends AppLayout implements
 
         login.addLoginListener(e -> {
             try {
-                if (_resClient.authenticate(e.getUsername(), e.getPassword())) {
-                    _user = _resClient.getParticipant(e.getUsername());
+                String username = e.getUsername();
+                String password = e.getPassword();
+                if (_resClient.authenticate(username, password)) {
+                    _user = _resClient.getParticipant(username);
                     _user.setUserPrivileges(_resClient.getUserPrivileges(_user.getID()));
+                    _customFormHandle = _resClient.getUserCustomFormHandle(username, password);
                     createMenuBar(_user);
                 }
                 else {
@@ -131,7 +132,7 @@ public class MainView extends AppLayout implements
      }
 
 
-    public Participant getCurrentUser() { return _user; }
+    public Participant getCurrentUserSessionHandle() { return _user; }
 
 
     private void createMenuBar(Participant p) {
@@ -139,7 +140,7 @@ public class MainView extends AppLayout implements
         img.setHeight("44px");
         addToNavbar(new DrawerToggle(), img);
         addLogout();
-        _menu = new DrawerMenu(p);
+        DrawerMenu _menu = new DrawerMenu(p);
         _menu.addSelectedChangeListener(this); 
         addToDrawer(_menu);
 //        setDrawerOpened(false);

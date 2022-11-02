@@ -41,11 +41,11 @@ public class DynForm extends AbstractDialog {
 
 
     // case start
-    public DynForm(EngineClient client, Participant p, List<YParameter> parameters, String schema) {
+    public DynForm(EngineClient client, List<YParameter> parameters, String schema) {
         super();
         _engClient = client;
         _factory = new DynFormFactory(_engClient);
-        createContent(p, parameters, schema);
+        createContent(parameters, schema);
     }
 
 
@@ -83,10 +83,9 @@ public class DynForm extends AbstractDialog {
     }
 
 
-    private void createContent(Participant p, List<YParameter> parameters,
-                                               String schema) {
+    private void createContent(List<YParameter> parameters, String schema) {
         try {
-            DynFormLayout form = _factory.createForm(schema, parameters, p);
+            DynFormLayout form = _factory.createForm(schema, parameters, null);
             setFormHeight(form);
             setWidth(form.getAppropriateWidth());
             setHeader("Case Start " + _factory.getFormName(), false);

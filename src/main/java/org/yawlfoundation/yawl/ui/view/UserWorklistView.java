@@ -17,6 +17,7 @@ import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.component.SingleSelectParticipantList;
 import org.yawlfoundation.yawl.ui.dialog.SingleValueDialog;
+import org.yawlfoundation.yawl.ui.dynform.CustomFormLauncher;
 import org.yawlfoundation.yawl.ui.dynform.DynForm;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
@@ -38,14 +39,18 @@ import java.util.Set;
  */
 public class UserWorklistView extends AbstractWorklistView {
 
+    private final CustomFormLauncher _customFormLauncher;
+
     private ActionIcon _chainedIcon;
     private ActionIcon _piledIcon;
     private ContextMenu _chainedList;
     private ContextMenu _piledList;
 
 
-    public UserWorklistView(ResourceClient resClient, EngineClient engClient, Participant p) {
+    public UserWorklistView(ResourceClient resClient, EngineClient engClient,
+                            Participant p, String customFormHandle) {
         super(resClient, engClient, p);
+        _customFormLauncher = new CustomFormLauncher(customFormHandle);
     }
 
 
@@ -409,9 +414,18 @@ public class UserWorklistView extends AbstractWorklistView {
     }
 
 
-    //todo
+
     private void edit(WorkItemRecord wir) {
         try {
+            if (! StringUtil.isNullOrEmpty(wir.getCustomFormURL())) {
+                String caseData = getResourceClient().getCaseData(wir.getCaseID());
+
+                // if the custom form launches, we're done, otherwise default to dyn form
+                if (_customFormLauncher.show(wir, caseData, getParticipantID())) {
+                    return;
+                }
+                Announcement.warn("Missing or invalid custom form, defaulting to dynamic form");
+            }
             String schema = getResourceClient().getWorkItemDataSchema(wir.getID());
             DynForm dynForm = new DynForm(getEngineClient(), getParticipant(), wir, schema);
             dynForm.addOkListener(e -> {
@@ -423,10 +437,11 @@ public class UserWorklistView extends AbstractWorklistView {
                 }
             });
             dynForm.addSaveListener(e -> {
-                if (dynForm.validate()) {                                // completion
+                if (dynForm.validate()) {                                // save
                     String outputData = dynForm.generateOutputData();
                     saveWorkItemData(wir, outputData);
                     dynForm.close();
+                    refresh();
                 }
             });
 
@@ -564,17 +579,13 @@ public class UserWorklistView extends AbstractWorklistView {
     }
 
 
-    // todo - test this works for empty decomp
     private boolean userMayEdit(WorkItemRecord wir) {
-        return hasAdminPrivileges() ||
-                ! (wir.getDataList() == null && wir.getCustomFormURL() == null);
+        return ! (wir.getDataList() == null && wir.getCustomFormURL() == null);
     }
 
 
-    // todo - when 'save' button used on dyn form, validate data (to ensure any saved
-    //  data is always valid)
     private boolean userMayComplete(WorkItemRecord wir) {
-        return hasAdminPrivileges() || wir.getDataList() == null;
+        return wir.getDataList() == null || wir.getUpdatedData() != null;
     }
 
 

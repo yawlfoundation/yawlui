@@ -163,7 +163,6 @@
              <systemPath>${project.basedir}/lib/saxon9-s9api.jar</systemPath>
          </dependency>
 
-
         <dependency>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-war-plugin</artifactId>

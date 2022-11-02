@@ -209,6 +209,10 @@ public class ResourceClient extends AbstractClient {
     }
 
 
+    public String getCaseData(String caseID) throws IOException {
+        return _wqAdapter.getCaseData(caseID, getHandle());
+    }
+
     public String getWorkItemDataSchema(String itemID)
             throws IOException, ResourceGatewayException {
         return _wqAdapter.getWorkItemDataSchema(itemID, getHandle());
@@ -591,6 +595,12 @@ public class ResourceClient extends AbstractClient {
         String result = _resAdapter.validateUserCredentials(userName,
                 PasswordEncryptor.encrypt(password),false, getHandle());
         return _resAdapter.successful(result);
+    }
+
+
+    public String getUserCustomFormHandle(String userName, String password) {
+        String userHandle = _wqAdapter.userlogin(userName, password);
+        return successful(userHandle) ? userHandle : null;
     }
 
 

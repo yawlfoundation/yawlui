@@ -52,12 +52,12 @@ public abstract class AbstractDynAttribute {
 
     /**
      * Applies modifications to the display of dynamic form fields, as required
-     * @param parentPanel - the top level container of UIComponent objects for the form.
+     * @param container - the top level container of Component objects for the form.
      * Note that panel may contain other panels, hierarchically
      * @param wir the workitem being displayed on the form
      * @param p the participant generating the form
      */
-    public abstract void applyAttributes(DynFormLayout parentPanel, WorkItemRecord wir, Participant p) ;
+    public abstract void applyAttributes(DynFormLayout container, WorkItemRecord wir, Participant p) ;
 
     /*******************************************************************************/
 

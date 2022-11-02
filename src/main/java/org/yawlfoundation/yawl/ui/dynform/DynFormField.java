@@ -117,13 +117,6 @@ public class DynFormField implements Cloneable {
                 datatype.substring(datatype.indexOf(':') + 1) : datatype;
     }
 
-    public String getNamespacePrefix() {
-        if (_datatype.indexOf(':') > -1)
-            return _datatype.split(":")[0] ;
-        else
-            return "" ;
-    }
-
     public String getValue() {
         return _value;
     }
@@ -136,14 +129,6 @@ public class DynFormField implements Cloneable {
         return _minoccurs;
     }
 
-    public void setMinoccurs(long minoccurs) {
-        this._minoccurs = minoccurs;
-    }
-
-    public String getMinOccursStr() {
-        return String.valueOf(_minoccurs) ;
-    }
-
     public void setMinoccurs(String minoccurs) {
         _nullMinoccurs = (minoccurs == null) ;
         this._minoccurs = convertOccurs(minoccurs);
@@ -152,34 +137,9 @@ public class DynFormField implements Cloneable {
         return _maxoccurs;
     }
 
-    public void setMaxoccurs(long maxoccurs) {
-        this._maxoccurs = maxoccurs;
-    }
-
     public void setMaxoccurs(String maxoccurs) {
         _nullMaxoccurs = (maxoccurs == null) ;
         this._maxoccurs = convertOccurs(maxoccurs);
-    }
-
-    public String getMaxOccursStr() {
-        return String.valueOf(_maxoccurs) ;
-    }
-
-
-    public boolean isNullMinoccurs() {
-        return _nullMinoccurs;
-    }
-
-    public void setNullMinoccurs(boolean nullMinoccurs) {
-        this._nullMinoccurs = nullMinoccurs;
-    }
-
-    public boolean isNullMaxoccurs() {
-        return _nullMaxoccurs;
-    }
-
-    public void setNullMaxoccurs(boolean nullMaxoccurs) {
-        this._nullMaxoccurs = nullMaxoccurs;
     }
 
     public FormParameter getParam() {
@@ -205,11 +165,7 @@ public class DynFormField implements Cloneable {
     public void setOrder(int order) {
         this._order = order;
     }
-
-    public long getOccursCount() {
-        return _occursCount;
-    }
-
+    
     public void setOccursCount(long occursCount) {
         this._occursCount = occursCount;
     }
@@ -243,19 +199,10 @@ public class DynFormField implements Cloneable {
     }
 
 
-    public void hide() { _hidden = true; }
-
-    public void show() { _hidden = false; }
-
-
     public boolean hasZeroMinimum() {
         return  (hasParent() && _parent.hasZeroMinimum()) || _minoccurs == 0;
     }
     
-    public void setEnumeratedValues(List<String> enumValues) {
-        if (_restriction != null)
-            _restriction.setEnumeration(enumValues);
-    }
 
     public List<String> getEnumeratedValues() {
         List<String> values = null;
@@ -276,9 +223,6 @@ public class DynFormField implements Cloneable {
                 ((_restriction != null) && _restriction.hasEnumeration()) ;
     }
 
-    public void setSubFieldList(List<DynFormField> subList) {
-        _subFieldList = subList;
-    }
 
     public List<DynFormField> getSubFieldList() {
         return _subFieldList;
@@ -301,7 +245,7 @@ public class DynFormField implements Cloneable {
 
     public void addSubField(DynFormField field) {
         if (_subFieldList == null)
-            _subFieldList = new ArrayList<DynFormField>();
+            _subFieldList = new ArrayList<>();
         field.setParent(this);
         _subFieldList.add(field);
     }
@@ -314,10 +258,6 @@ public class DynFormField implements Cloneable {
         }
     }
 
-    public boolean removeSubField(DynFormField field) {
-        return _subFieldList == null || _subFieldList.remove(field);
-    }
-    
 
     public String getGroupID() {
         return _groupID;
@@ -386,9 +326,6 @@ public class DynFormField implements Cloneable {
         _list.setOwner(this);
     }
 
-    public DynFormFieldListFacet getListType() {
-        return _list;
-    }
 
     public boolean hasListType() {
         return _list != null;
@@ -406,23 +343,10 @@ public class DynFormField implements Cloneable {
         if (occurs == null) {
             return 1;
         }
-        if (occurs.equals("unbounded"))
-           return Long.MAX_VALUE ;
-        else {
-            return StringUtil.strToLong(occurs, 1);
-         }
-    }
-
-    
-    public boolean isPrimitiveType() {
-        String type = getDataTypeUnprefixed();
-        return (type.equals("string")  ||
-                type.equals("double")  ||
-                type.equals("long")    ||
-                type.equals("boolean") ||
-                type.equals("date")    ||
-                type.equals("time")    ||
-                type.equals("duration"));
+        if (occurs.equals("unbounded")) {
+            return Long.MAX_VALUE;
+        }
+        return StringUtil.strToLong(occurs, 1);
     }
 
 
@@ -471,11 +395,7 @@ public class DynFormField implements Cloneable {
         return _hideApplied;
     }
 
-    public boolean isVisible() {
-        return (_hideApplied == null) || (! _hideApplied);
-    }
-
-    public boolean isEmptyOptionalInputOnly() {
+     public boolean isEmptyOptionalInputOnly() {
         return isInputOnly() && _attributes.isOptional() && hasNullValue();
     }
 

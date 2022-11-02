@@ -22,9 +22,13 @@ import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.ui.dynform.DynFormField;
 import org.yawlfoundation.yawl.ui.dynform.DynFormLayout;
+import org.yawlfoundation.yawl.util.PluginLoaderUtil;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -65,10 +69,37 @@ public class DynAttributeFactory {
      */
     private static Set<AbstractDynAttribute> getInstances() {
         if (_instances == null) {
-//todo            _instances = PluginFactory.getDynAttributes();
+            _instances = loadInstances();
         }
-//        return _instances;
+        return _instances;
+    }
+
+
+    private static Set<AbstractDynAttribute> loadInstances() {
+        PluginLoaderUtil loader = new PluginLoaderUtil();
+        String paths = getPathsFromEnv();
+        if (paths != null) {
+            loader.setExternalPaths(paths);
+            return loader.toInstanceSet(loader.load(AbstractDynAttribute.class).values());
+        }
         return Collections.emptySet();
+    }
+
+
+    private static String getPathsFromEnv() {
+        InputStream is = DynAttributeFactory.class.getResourceAsStream(
+                "/dynattributes.properties");
+        if (is != null) {
+            Properties props = new Properties();
+            try {
+                props.load(is);
+                return props.getProperty("pluginpaths");
+            }
+            catch (IOException e) {
+                // no props to load
+            }
+        }
+        return "";
     }
 
 }
