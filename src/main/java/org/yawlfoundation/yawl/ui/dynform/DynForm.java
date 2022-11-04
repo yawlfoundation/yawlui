@@ -76,6 +76,7 @@ public class DynForm extends AbstractDialog {
             setHeader("Edit Work Item " + _factory.getFormName(), false);
             addComponent(createScroller(form));
             createButtonsForWorkItem();
+            applyUserDefinedStyles(form);
         }
         catch (DynFormException dfe) {
             Announcement.warn("Failed to create form: " + dfe.getMessage());
@@ -91,12 +92,12 @@ public class DynForm extends AbstractDialog {
             setHeader("Case Start " + _factory.getFormName(), false);
             addComponent(createScroller(form));
             createButtonsForCaseStart();
+            applyUserDefinedStyles(form);
         }
         catch (DynFormException dfe) {
             Announcement.warn("Failed to create form: " + dfe.getMessage());
         }
     }
-
 
 
     private void createButtonsForWorkItem() {
@@ -130,6 +131,20 @@ public class DynForm extends AbstractDialog {
         _okButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         getButtonBar().add(buttons);
         getButtonBar().getStyle().set("padding-top", "15px");
+    }
+
+
+    private void applyUserDefinedStyles(DynFormLayout form) {
+        String imageURI = _factory.getPageBackgroundURL();
+        if (imageURI != null) {
+            form.getStyle().set("background-image", "url(\"" + imageURI + "\")");
+        }
+        else {
+            String bgColour = _factory.getPageBackgroundColour();
+            if (bgColour != null) {
+                form.getStyle().set("background-color", bgColour);
+            }
+        }
     }
 
 

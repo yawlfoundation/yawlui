@@ -328,6 +328,14 @@ public class DynFormFactory {
     
     // support for decomposition extended attributes
 
+    public String getPageBackgroundURL() {
+        return getAttributeValue("page-background-image");
+    }
+
+    public String getPageBackgroundColour() {
+        return getAttributeValue("page-background-color");
+    }
+
 
     protected String getPanelBackgroundColour() {
         return getAttributeValue("background-color");

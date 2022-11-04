@@ -418,7 +418,7 @@ public class UserWorklistView extends AbstractWorklistView {
     private void edit(WorkItemRecord wir) {
         try {
             if (! StringUtil.isNullOrEmpty(wir.getCustomFormURL())) {
-                String caseData = getResourceClient().getCaseData(wir.getCaseID());
+                String caseData = getResourceClient().getCaseData(wir.getRootCaseID());
 
                 // if the custom form launches, we're done, otherwise default to dyn form
                 if (_customFormLauncher.show(wir, caseData, getParticipantID())) {

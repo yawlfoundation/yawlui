@@ -54,16 +54,14 @@ public class CustomFormLauncher {
                 .append("&participantid=").append(pid)
                 .append("&handle=").append(_userHandle);
         if (_thisURL != null) {
-            redir.append("&wqurl=").append(buildCallbackURL(wir.getID()));
+            redir.append("&callback=").append(buildCallbackURL(wir.getID()));
         }
         return redir.toString();
     }
 
 
     private String buildCallbackURL(String wirID) {
-        String url = _thisURL.getProtocol() + "://" + _thisURL.getHost() + ":" +
-                _thisURL.getPort() + "/resourceService/workqueuegateway";
-        return _thisURL.toExternalForm() + _userHandle + '/' + wirID + '/';
+        return _thisURL.toExternalForm() + "customform/" +_userHandle + '/' + wirID + '/';
     }
 
 

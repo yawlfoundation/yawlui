@@ -4,6 +4,7 @@ import org.jdom2.Element;
 import org.yawlfoundation.yawl.authentication.YClient;
 import org.yawlfoundation.yawl.authentication.YExternalClient;
 import org.yawlfoundation.yawl.elements.YAWLServiceReference;
+import org.yawlfoundation.yawl.elements.data.YParameter;
 import org.yawlfoundation.yawl.engine.YSpecificationID;
 import org.yawlfoundation.yawl.engine.interfce.Marshaller;
 import org.yawlfoundation.yawl.engine.interfce.SpecificationData;
@@ -56,6 +57,12 @@ public class ResourceClient extends AbstractClient {
     public WorkItemRecord getItem(String itemID) throws IOException, ResourceGatewayException {
         String xml = _wqAdapter.getWorkItem(itemID, getHandle());
         return Marshaller.unmarshalWorkItem(xml);
+    }
+
+
+    public Set<WorkItemRecord> getQueuedItems(String pid, int queue)
+            throws IOException, ResourceGatewayException {
+        return _wqAdapter.getQueuedWorkItems(pid, queue, getHandle());
     }
 
 
@@ -227,7 +234,13 @@ public class ResourceClient extends AbstractClient {
 
     public String updateWorkItemData(String itemID, String data)
             throws IOException, ResourceGatewayException {
-        return _wqAdapter.updateWorkItemData(itemID, data, getHandle());
+        return updateWorkItemData(itemID, data, getHandle());
+    }
+
+    // this is for a user-level (custom form) request
+    public String updateWorkItemData(String itemID, String data, String handle)
+            throws IOException, ResourceGatewayException {
+        return _wqAdapter.updateWorkItemData(itemID, data, handle);
     }
 
     
@@ -646,5 +659,38 @@ public class ResourceClient extends AbstractClient {
         connect();
         _resAdapter.disconnect(_handle);
     }
-    
+
+
+    // Custom form interactions v
+
+    public boolean isValidUserSessionHandle(String handle) throws IOException {
+        return _wqAdapter.isValidUserSession(handle);
+    }
+
+
+    public String getWorkItem(String itemID, String handle)
+            throws ResourceGatewayException, IOException {
+        return _wqAdapter.getWorkItem(itemID, handle);
+    }
+
+
+
+    public String getWorkItemParameters(String itemID, String handle)
+            throws ResourceGatewayException, IOException {
+        return toXML(_wqAdapter.getWorkItemParameters(itemID, handle));
+    }
+
+
+    public String getWorkItemOutputOnlyParameters(String itemID, String handle)
+            throws ResourceGatewayException, IOException {
+        return toXML(_wqAdapter.getWorkItemOutputOnlyParameters(itemID, handle));
+    }
+
+
+    private String toXML(Set<YParameter> params) {
+        XNode root = new XNode("params");
+        params.forEach(p -> root.addContent(p.toSummaryXML()));
+        return root.toString();
+    }
+
 }
