@@ -67,7 +67,7 @@ public class MainView extends AppLayout implements
     @Override
     public void configurePage(AppShellSettings settings) {
         settings.addFavIcon(Inline.Position.PREPEND,
-                "icon", "icons/yawlLogo.png", "32x32");
+                "icon", "icons/favicon.png", "32x32");
     }
 
 
@@ -97,9 +97,11 @@ public class MainView extends AppLayout implements
         VerticalLayout layout = new VerticalLayout();
         layout.setAlignItems(FlexComponent.Alignment.CENTER);
         layout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        layout.add(new Image("icons/newYAWL.png", "YAWL Logo"));
+        layout.add(new Image("icons/logo5.png", "YAWL Logo"));
 
-        LoginForm login = new LoginForm();
+        LoginI18n i18n = LoginI18n.createDefault();
+        i18n.getForm().setTitle(null);
+        LoginForm login = new LoginForm(i18n);
         login.setForgotPasswordButtonVisible(false);
         login.addLoginListener(e -> {
             try {
@@ -149,9 +151,8 @@ public class MainView extends AppLayout implements
 
 
     private void createMenuBar(Participant p) {
-        Image img = new Image("icons/yawlLogo.png", "YAWL Logo");
-        img.setHeight("44px");
-        addToNavbar(new DrawerToggle(), img);
+        addToNavbar(new DrawerToggle());
+        addLogo();
         addLogout();
         DrawerMenu _menu = new DrawerMenu(p);
         _menu.addSelectedChangeListener(this); 
@@ -160,6 +161,16 @@ public class MainView extends AppLayout implements
         _menu.selectInitialItem();
     }
 
+
+    private void addLogo() {
+        Div div = new Div();
+        Image img = new Image("icons/logo5.png", "YAWL Logo");
+        img.setHeight("56px");
+        div.add(img);
+        div.getStyle().set("margin-left", "auto");
+        div.getStyle().set("display", "block");
+        addToNavbar(div);
+    }
 
     // add a logout 'button' on the right side of the nav bar
     private void addLogout() {
