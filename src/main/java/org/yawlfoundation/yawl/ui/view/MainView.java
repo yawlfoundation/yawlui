@@ -97,7 +97,9 @@ public class MainView extends AppLayout implements
         VerticalLayout layout = new VerticalLayout();
         layout.setAlignItems(FlexComponent.Alignment.CENTER);
         layout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        layout.add(new Image("icons/logo5.png", "YAWL Logo"));
+        Image logo = new Image("icons/logo5.png", "YAWL Logo");
+        logo.setWidth("500px");
+        layout.add(logo);
 
         LoginI18n i18n = LoginI18n.createDefault();
         i18n.getForm().setTitle(null);
@@ -164,7 +166,7 @@ public class MainView extends AppLayout implements
 
     private void addLogo() {
         Div div = new Div();
-        Image img = new Image("icons/logo5.png", "YAWL Logo");
+        Image img = new Image("icons/logo5unversioned.png", "YAWL Logo");
         img.setHeight("56px");
         div.add(img);
         div.getStyle().set("margin-left", "auto");

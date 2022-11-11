@@ -182,10 +182,16 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
         ActionRibbon ribbon = new ActionRibbon();
         ribbon.add(VaadinIcon.UPLOAD_ALT, "Upload from backup file", e -> {
             UploadOrgDataDialog dialog = new UploadOrgDataDialog(getResourceClient());
-            dialog.addCloseButtonListener(b -> refresh());
+            dialog.addCloseButtonListener(b -> {
+                refresh();
+                ribbon.reset();
+            });
             dialog.open();
         });
-        ribbon.add(VaadinIcon.DOWNLOAD_ALT, "Download to backup file", e -> download());
+        ribbon.add(VaadinIcon.DOWNLOAD_ALT, "Download to backup file", e -> {
+            download();
+            ribbon.reset();
+        });
         return ribbon;
     }
 

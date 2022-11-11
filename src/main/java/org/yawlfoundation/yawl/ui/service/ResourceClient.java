@@ -637,6 +637,17 @@ public class ResourceClient extends AbstractClient {
     }
 
 
+    public XNode getSecondaryResources(String itemID) throws IOException, ResourceGatewayException {
+        String xml = _resAdapter.getSecondaryResources(itemID, getHandle());
+        return new XNodeParser().parse(xml);
+    }
+
+    public List<String> setSecondaryResources(String itemID, XNode resources)
+            throws IOException, ResourceGatewayException {
+        return _resAdapter.setSecondaryResources(itemID, resources.toString(), getHandle());
+    }
+
+
     public boolean successful(String msg) { return _resAdapter.successful(msg); }
 
 

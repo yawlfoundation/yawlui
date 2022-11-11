@@ -62,6 +62,7 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
         super(resClient, engClient, showHeader);
         _user = participant;
         build();
+        initCompleted();
     }
 
 
@@ -103,6 +104,8 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
         return _content;
     }
 
+    // to be overridden as required in subclasses
+    protected void initCompleted() { }
 
     protected HorizontalLayout getContentPanel() {
         return _content;

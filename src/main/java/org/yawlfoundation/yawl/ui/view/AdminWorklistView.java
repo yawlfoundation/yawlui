@@ -3,6 +3,7 @@ package org.yawlfoundation.yawl.ui.view;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import org.yawlfoundation.yawl.engine.YWorkItemStatus;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
@@ -10,13 +11,16 @@ import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.component.MultiSelectParticipantList;
 import org.yawlfoundation.yawl.ui.component.SingleSelectParticipantList;
+import org.yawlfoundation.yawl.ui.dialog.SecondaryResourcesDialog;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.AddedIcons;
 import org.yawlfoundation.yawl.ui.util.Settings;
+import org.yawlfoundation.yawl.util.XNode;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -26,9 +30,24 @@ import java.util.Set;
 public class AdminWorklistView extends AbstractWorklistView {
 
     private boolean _settingsVisible = false;
+    private ActionIcon _secondaryIcon;
     
     public AdminWorklistView(ResourceClient client, Participant participant) {
         super(client, null, participant);
+    }
+
+
+    @Override
+    protected void initCompleted() {
+        getGrid().addSelectionListener(e -> {
+            Set<WorkItemRecord> selected = e.getAllSelectedItems();
+            boolean isEnabled = selected.size() == 1;
+            if (isEnabled) {
+                String status = selected.iterator().next().getStatus();
+                isEnabled = YWorkItemStatus.statusEnabled.toString().equals(status);
+            }
+            _secondaryIcon.setEnabled(isEnabled);
+        });
     }
 
 
@@ -85,6 +104,28 @@ public class AdminWorklistView extends AbstractWorklistView {
         if (getParticipant() != null) {
             ribbon.add(VaadinIcon.COG_O, "Settings", e -> settings());
         }
+
+        _secondaryIcon = new ActionIcon(VaadinIcon.COINS, null,
+                "Select Secondary Resources", e -> {
+            String itemID = getGrid().getSelectedItems().iterator().next().getID();  // only one
+            SecondaryResourcesDialog dialog =
+                    new SecondaryResourcesDialog(getResourceClient(), itemID);
+            dialog.getOkButton().addClickListener(c -> {
+                boolean canClose = true;
+                XNode selections = dialog.getSelections();
+                if (selections != null) {
+                    canClose = setSecondaryResources(itemID, selections);
+                }
+                if (canClose) {
+                    dialog.close();
+                }
+            });
+            dialog.open();
+            ribbon.reset();
+        });
+
+        _secondaryIcon.setEnabled(false);
+        ribbon.add(_secondaryIcon);
 
         super.addFooterActions(ribbon);
     }
@@ -166,6 +207,20 @@ public class AdminWorklistView extends AbstractWorklistView {
         }
         catch (IOException | ResourceGatewayException ex) {
             Announcement.error(ex.getMessage());
+        }
+    }
+
+
+    private boolean setSecondaryResources(String itemID, XNode resourcesNode) {
+        try {
+            List<String> problems = getResourceClient().setSecondaryResources(
+                    itemID, resourcesNode);
+            problems.forEach(Announcement::warn);
+            return problems.isEmpty();
+        }
+        catch (IOException | ResourceGatewayException e) {
+            Announcement.error(e.getMessage());
+            return false;
         }
     }
 

@@ -24,8 +24,11 @@ public class ResourceList<T> extends UnpaddedVerticalLayout {
     private final ListBox<T> _listBox = new ListBox<>();
 
 
-    public ResourceList(String label, List<T> items,
-                        ItemLabelGenerator<T> labelGenerator) {
+    public ResourceList(String label, List<T> items) {
+        this(label, items, null);
+    }
+
+    public ResourceList(String label, List<T> items, ItemLabelGenerator<T> labelGenerator) {
         super();
         _label = label;
         setPadding(false);
@@ -65,6 +68,9 @@ public class ResourceList<T> extends UnpaddedVerticalLayout {
     public ActionIcon getRemoveAction() { return removeAction; }
 
 
+    public void suppressAddAction() { addAction.setVisible(false); }
+
+
     public void refresh(List<T> items) {
         _listBox.setItems(items);
         _listBox.getListDataView().refreshAll();
@@ -82,7 +88,9 @@ public class ResourceList<T> extends UnpaddedVerticalLayout {
 
     protected ListBox<T> createList(List<T> items, ItemLabelGenerator<T> labelGenerator) {
         _listBox.setItems(items);
-        _listBox.setItemLabelGenerator(labelGenerator);
+        if (labelGenerator != null) {
+            _listBox.setItemLabelGenerator(labelGenerator);
+        }
         _listBox.setWidth("210px");
         _listBox.getElement().getStyle().set("overflow-y", "scroll");
         _listBox.getElement().getStyle().set("flex-grow", "1");
