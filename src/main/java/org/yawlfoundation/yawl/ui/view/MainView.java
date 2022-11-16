@@ -85,7 +85,7 @@ public class MainView extends AppLayout implements
             case "Participants" : setContent(new ParticipantsView(_resClient)); break;
             case "Org Data" : setContent(new OrgDataView(_resClient)); break;
             case "Non-Human Resources" : setContent(new NonHumanResourcesView(_resClient)); break;
-            case "Calendar" : setContent(null); break;
+            case "Calendar" : setContent(new CalendarView(_resClient, _user)); break;
             case "Services / Clients" : setContent(new ServicesView(_resClient, _engClient)); break;
             case "About" : setContent(null); break;
             case "Logout" : event.getSource().setSelectedIndex(0); exit();

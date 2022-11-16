@@ -11,13 +11,12 @@ import org.yawlfoundation.yawl.engine.interfce.SpecificationData;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
 import org.yawlfoundation.yawl.resourcing.TaskPrivileges;
+import org.yawlfoundation.yawl.resourcing.calendar.CalendarEntry;
+import org.yawlfoundation.yawl.resourcing.calendar.ResourceCalendar;
 import org.yawlfoundation.yawl.resourcing.resource.*;
 import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanCategory;
 import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanResource;
-import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayClientAdapter;
-import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
-import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceLogGatewayClient;
-import org.yawlfoundation.yawl.resourcing.rsInterface.WorkQueueGatewayClientAdapter;
+import org.yawlfoundation.yawl.resourcing.rsInterface.*;
 import org.yawlfoundation.yawl.ui.util.TaskPrivilegesCache;
 import org.yawlfoundation.yawl.util.*;
 
@@ -35,6 +34,9 @@ public class ResourceClient extends AbstractClient {
 
     private final ResourceLogGatewayClient _logClient = new ResourceLogGatewayClient(
             "http://localhost:8080/resourceService/logGateway");
+
+    private final ResourceCalendarGatewayClient _calClient = new ResourceCalendarGatewayClient(
+            "http://localhost:8080/resourceService/calendarGateway");
 
     public final TaskPrivilegesCache _taskPrivilegesCache = new TaskPrivilegesCache(this);
 
@@ -645,6 +647,64 @@ public class ResourceClient extends AbstractClient {
     public List<String> setSecondaryResources(String itemID, XNode resources)
             throws IOException, ResourceGatewayException {
         return _resAdapter.setSecondaryResources(itemID, resources.toString(), getHandle());
+    }
+
+
+    public List<CalendarEntry> getCalendarEntries(ResourceCalendar.ResourceGroup group,
+                                                  long from, long to) throws IOException {
+        String xml = _calClient.getEntries(group, from, to, true, getHandle());
+        if (! successful(xml)) {
+            throw new IOException(StringUtil.unwrap(xml));
+        }
+        return toCalendarEntryList(xml);
+    }
+
+    public List<CalendarEntry> getCalendarEntries(String resourceID,
+                                                  long from, long to) throws IOException {
+        String xml = _calClient.getEntries(resourceID, from, to, true, getHandle());
+        if (! successful(xml)) {
+            throw new IOException(StringUtil.unwrap(xml));
+        }
+        return toCalendarEntryList(xml);
+    }
+
+    public CalendarEntry addCalendarEntry(CalendarEntry entry) throws IOException {
+        String xml = _calClient.addEntry(entry, getHandle());
+        if (! successful(xml)) {
+            throw new IOException(StringUtil.unwrap(xml));
+        }
+        entry.setEntryID(Long.parseLong(xml));
+        return entry;
+    }
+
+    public boolean updateCalendarEntry(CalendarEntry entry) throws IOException {
+        String xml = _calClient.updateEntry(entry, getHandle());
+        if (! successful(xml)) {
+            throw new IOException(StringUtil.unwrap(xml));
+        }
+        return true;
+    }
+
+    public boolean deleteCalendarEntry(long entryID) throws IOException {
+        String xml = _calClient.deleteEntry(entryID, getHandle());
+        if (! successful(xml)) {
+            throw new IOException(StringUtil.unwrap(xml));
+        }
+        return true;
+    }
+
+    protected List<CalendarEntry> toCalendarEntryList(String xml) {
+        XNode node = new XNodeParser().parse(xml);
+        if (node != null) {
+            List<CalendarEntry> entryList = new ArrayList<>();
+            for (XNode child : node.getChildren()) {
+                CalendarEntry entry = new CalendarEntry();
+                entry.fromXNode(child);
+                entryList.add(entry);
+            }
+            return entryList;
+        }
+        return Collections.emptyList();
     }
 
 

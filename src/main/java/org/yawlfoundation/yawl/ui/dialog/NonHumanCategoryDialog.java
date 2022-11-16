@@ -1,7 +1,6 @@
 package org.yawlfoundation.yawl.ui.dialog;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.textfield.Autocomplete;
@@ -52,7 +51,7 @@ public class NonHumanCategoryDialog extends AbstractDialog {
         if (isEditing()) {
             populateForm();
         }
-        createButtons();
+        createButtons(_okButton);
         setWidth("700px");
     }
 
@@ -124,14 +123,6 @@ public class NonHumanCategoryDialog extends AbstractDialog {
         }
         initMembersCombo();
     }
-
-
-    private void createButtons() {
-         getButtonBar().getStyle().set("margin-top", "10px");
-         getButtonBar().add(new Button("Cancel", event -> close()));
-         _okButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-         getButtonBar().add(_okButton);
-     }
 
 
     private boolean validateName() {

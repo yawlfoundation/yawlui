@@ -1,7 +1,6 @@
 package org.yawlfoundation.yawl.ui.dialog;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.listbox.MultiSelectListBox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -58,7 +57,7 @@ public class SecondaryResourcesDialog extends AbstractDialog {
 
         setHeader("Select Secondary Resources for Item " + wirID, false);
         addComponent(createContent());
-        createButtons();
+        createButtons(_okButton);
         setWidth("800px");
     }
 
@@ -171,15 +170,6 @@ public class SecondaryResourcesDialog extends AbstractDialog {
         VerticalLayout layout = createListLayout(title, listbox);
         layout.getStyle().set("margin-top", "15px");
         return layout;
-    }
-
-
-
-    private void createButtons() {
-        getButtonBar().getStyle().set("margin-top", "10px");
-        getButtonBar().add(new Button("Cancel", event -> close()));
-        _okButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        getButtonBar().add(_okButton);
     }
 
 

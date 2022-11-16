@@ -2,7 +2,6 @@ package org.yawlfoundation.yawl.ui.dialog.orgdata;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Span;
@@ -14,9 +13,9 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import org.yawlfoundation.yawl.resourcing.resource.AbstractResourceAttribute;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
-import org.yawlfoundation.yawl.ui.component.ResourceList;
 import org.yawlfoundation.yawl.ui.component.MultiSelectParticipantList;
 import org.yawlfoundation.yawl.ui.component.Prompt;
+import org.yawlfoundation.yawl.ui.component.ResourceList;
 import org.yawlfoundation.yawl.ui.dialog.AbstractDialog;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
 
@@ -34,6 +33,7 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
     private final TextField _nameField = new TextField("Name");
     private final TextArea _descriptionField = new TextArea("Description");
     private final TextArea _notesField = new TextArea("Notes");
+    private final Button _saveButton = new Button("Save");
 
     private final List<T> _existingItems;
     private final T _item;
@@ -44,8 +44,7 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
     private List<Participant> _updatedMembers;
     private HorizontalLayout _layout;
     private ResourceList<Participant> _memberList;
-    private Button _saveButton;
-    
+
 
     public AbstractOrgDataDialog(List<T> items, T item, List<Participant> pList,
                                  List<Participant> members, String title) {
@@ -65,7 +64,7 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
         if (isEditing()) {
             populateForm();
         }
-        createButtons();
+        createButtons(_saveButton);
     }
 
 
@@ -159,15 +158,6 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
             _descriptionField.setValue(_item.getDescription());
             _notesField.setValue(_item.getNotes());
         }
-    }
-
-
-    private void createButtons() {
-        Button cancel = new Button("Cancel", event -> close());
-        _saveButton = new Button("Save");                 // listener added later
-        _saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        getButtonBar().add(cancel, _saveButton);
-        getButtonBar().getStyle().set("padding-top", "15px");
     }
 
 

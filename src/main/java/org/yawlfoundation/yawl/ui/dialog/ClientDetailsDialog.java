@@ -1,7 +1,6 @@
 package org.yawlfoundation.yawl.ui.dialog;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.textfield.Autocomplete;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -26,12 +25,12 @@ public class ClientDetailsDialog<T extends YClient> extends AbstractDialog {
     private final PasswordField _passwordField = new PasswordField("Password");
     private final PasswordField _pwConfirmField = new PasswordField("Confirm Password");
     private final TextArea _descriptionField = new TextArea("Description");
+    private final Button _saveButton = new Button("Save");
 
     private final List<T> _existingItems;
     private final T _client;
     private final boolean _editing;
     private final boolean _isService;
-    private Button _saveButton;
 
     public enum ItemType { Service, Client }
 
@@ -47,7 +46,7 @@ public class ClientDetailsDialog<T extends YClient> extends AbstractDialog {
         if (_editing) {
             populateForm();
         }
-        createButtons();
+        createButtons(_saveButton);
     }
 
 
@@ -101,14 +100,6 @@ public class ClientDetailsDialog<T extends YClient> extends AbstractDialog {
                 _uriField.setValue(((YAWLServiceReference) _client).getServiceID());
             }
         }
-    }
-
-
-    private void createButtons() {
-        Button cancel = new Button("Cancel", event -> close());
-        _saveButton = new Button("Save");                 // listener added later
-        _saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        getButtonBar().add(cancel, _saveButton);
     }
 
 

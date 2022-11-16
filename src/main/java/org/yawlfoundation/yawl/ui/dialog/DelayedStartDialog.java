@@ -5,7 +5,6 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.FocusNotifier;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
@@ -28,14 +27,13 @@ public class DelayedStartDialog extends AbstractDialog {
     private final DateTimePicker dateField = new DateTimePicker("At Exactly:");
     private final Div errDiv = new Div();
     private final Button ok = new Button("OK");
-    private final Button cancel = new Button("Cancel", e-> close());
 
     private Component focussedField;
 
     public DelayedStartDialog() {
         super("Delayed Case Start");
         addComponent(createInputPanel());
-        addButtons();
+        createButtons(ok);
     }
 
 
@@ -114,12 +112,6 @@ public class DelayedStartDialog extends AbstractDialog {
 
     private void configErrorDiv() {
         errDiv.getElement().getStyle().set("color", "red");
-    }
-
-
-    private void addButtons() {
-        ok.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        getButtonBar().add(cancel, ok);
     }
 
 

@@ -18,6 +18,8 @@ package org.yawlfoundation.yawl.ui.dialog;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H4;
@@ -89,6 +91,14 @@ public abstract class AbstractDialog extends Dialog {
         content.addAll(List.of(components));
     }
 
+
+    protected void createButtons(Button ok) {
+        getButtonBar().getStyle().set("margin-top", "10px");
+        getButtonBar().add(new Button("Cancel", event -> close()));
+        ok.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        getButtonBar().add(ok);
+    }
+     
 
     private void configure() {
         setWidth("500px");

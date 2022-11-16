@@ -1,7 +1,6 @@
 package org.yawlfoundation.yawl.ui.dialog;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.textfield.TextField;
 
 /**
@@ -11,14 +10,14 @@ import com.vaadin.flow.component.textfield.TextField;
 public class SingleValueDialog extends AbstractDialog {
 
     private final TextField _field = new TextField();
-    private Button _okButton;
+    private final Button _okButton = new Button("OK");;
 
     public SingleValueDialog() { }
 
     public SingleValueDialog(String title, String text) {
         super(title, text);
         addComponent(_field);
-        createButtons();
+        createButtons(_okButton);
         setWidth("350px");
         _field.focus();
         _field.setWidthFull();
@@ -34,14 +33,6 @@ public class SingleValueDialog extends AbstractDialog {
 
     public String getValue() {
         return _field.getValue();
-    }
-
-    private Button createButtons() {
-        Button cancel = new Button("Cancel", event -> close());
-        _okButton = new Button("OK");                 // listener added later
-        _okButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        getButtonBar().add(cancel, _okButton);
-        return _okButton;
     }
 
 }
