@@ -98,7 +98,7 @@ public class MainView extends AppLayout implements
         layout.setAlignItems(FlexComponent.Alignment.CENTER);
         layout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
         Image logo = new Image("icons/logo5.png", "YAWL Logo");
-        logo.setWidth("500px");
+        logo.setWidth("370px");
         layout.add(logo);
 
         LoginI18n i18n = LoginI18n.createDefault();

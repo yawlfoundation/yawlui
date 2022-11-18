@@ -37,11 +37,12 @@ public class CalendarView extends AbstractGridView<CalendarEntry> {
 
     public static final ZoneOffset ZONE_OFFSET = ZoneOffset.systemDefault().getRules()
             .getOffset(LocalDateTime.now());
-
     private static final DateTimeFormatter TIME_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter TIME_AND_DATE_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm (yyyy-MM-dd)");
+
+    private enum ViewPeriod { Day, Week, Month, Year }
 
     private final ComboBox<Resource> _selectResourceCombo = new ComboBox<>();
     private final ComboBox<String> _filterCombo = new ComboBox<>();
@@ -52,6 +53,7 @@ public class CalendarView extends AbstractGridView<CalendarEntry> {
 
     private ActionIcon _addIcon;
     private LocalDate _viewDate;
+    private ViewPeriod _viewPeriod = ViewPeriod.Day;
     private String _resourceID;
     private ResourceCalendar.ResourceGroup _resourceGroup;
 
@@ -166,7 +168,9 @@ public class CalendarView extends AbstractGridView<CalendarEntry> {
     private HorizontalLayout createFilterBar() {
         HorizontalLayout layout = new HorizontalLayout();
         layout.add(createDateChooser());
+        layout.add(createPeriodCombo());
         layout.add(createFilterLayout());
+        layout.setWidthFull();
         return layout;
     }
 
@@ -205,23 +209,36 @@ public class CalendarView extends AbstractGridView<CalendarEntry> {
     }
 
 
+    private HorizontalLayout createPeriodCombo() {
+        List<String> items = List.of("Day", "Week", "Month", "Year");
+        ComboBox<String> combo = new ComboBox<>();
+        combo.setItems(items);
+        combo.setValue("Day");
+        combo.addValueChangeListener(e -> {
+            _viewPeriod = ViewPeriod.valueOf(e.getValue());
+            refresh();
+        });
+        return new HorizontalLayout(createPrompt("View"), combo);
+    }
+
     private HorizontalLayout createFilterLayout() {
         HorizontalLayout layout = new HorizontalLayout();
-        layout.add(new Prompt("Filter:"));
+        layout.add(createPrompt("Filter"));
         layout.add(createFilterCombo());
         layout.add(createFilterSelectionCombo());
+        layout.getStyle().set("margin-left", "auto");
         return layout;
     }
 
     private ComboBox<String> createFilterCombo() {
-        List<String> items = List.of("None", "All Resources", "All Participants",
+        List<String> items = List.of("Unfiltered", "All Resources", "All Participants",
                 "All Assets", "Select Participant", "Select Asset");
         _filterCombo.setItems(items);
-        _filterCombo.setValue("None");
+        _filterCombo.setValue("Unfiltered");
         _filterCombo.addValueChangeListener(e -> {
-            _addIcon.setEnabled(! e.getValue().equals("None"));
+            _addIcon.setEnabled(! e.getValue().equals("Unfiltered"));
              switch (e.getValue()) {
-                 case "None" :
+                 case "Unfiltered" :
                      setResourceGroup(null);
                      break;
                  case "All Resources" :
@@ -249,11 +266,15 @@ public class CalendarView extends AbstractGridView<CalendarEntry> {
         HorizontalLayout layout = new HorizontalLayout();
         layout.setMargin(false);
         layout.setPadding(false);
-        layout.add(new Prompt("Resource: "));
+        layout.add(createPrompt("Resource"));
         layout.add(_selectResourceCombo);
 
         _selectResourceCombo.setEnabled(false);
-        _selectResourceCombo.addValueChangeListener(e -> setResourceID(e.getValue().id));
+        _selectResourceCombo.addValueChangeListener(e -> {
+            if (e.getValue() != null) {
+                setResourceID(e.getValue().id);
+            }
+        });
 
         return layout;
     }
@@ -268,6 +289,13 @@ public class CalendarView extends AbstractGridView<CalendarEntry> {
             _selectResourceCombo.setValue(items.get(0));
         }
         _selectResourceCombo.setEnabled(true);
+    }
+
+
+    private Prompt createPrompt(String label) {
+        Prompt prompt = new Prompt(label);
+        prompt.getStyle().set("margin-top", "3px");
+        return prompt;
     }
 
 
@@ -305,6 +333,7 @@ public class CalendarView extends AbstractGridView<CalendarEntry> {
     private void setResourceGroup(ResourceCalendar.ResourceGroup group) {
         _resourceID = null;
         _resourceGroup = group;
+        _selectResourceCombo.setValue(null);
         _selectResourceCombo.setEnabled(false);
         refresh();
     }
@@ -336,6 +365,19 @@ public class CalendarView extends AbstractGridView<CalendarEntry> {
     private long dateTimeToMilli(LocalDateTime dateTime) {
         return dateTime.toEpochSecond(ZONE_OFFSET) * 1000;
     }
+
+
+    private long periodEnd() {
+        LocalDate end;
+        switch(_viewPeriod) {
+            case Week: end = _viewDate.plusWeeks(1); break;
+            case Month: end = _viewDate.plusMonths(1); break;
+            case Year: end = _viewDate.plusYears(1); break;
+            default: end = _viewDate;                                           // day
+        }
+        return dateTimeToMilli(end.atTime(23, 59, 59));
+    }
+
 
     private String renderResource(CalendarEntry entry) {
         String id = entry.getResourceID();
@@ -391,7 +433,7 @@ public class CalendarView extends AbstractGridView<CalendarEntry> {
 
     private List<CalendarEntry> getEntries() {
         long from = dateTimeToMilli(_viewDate.atStartOfDay());
-        long to = dateTimeToMilli(_viewDate.atTime(23, 59, 59));
+        long to = periodEnd();
         try {
             if (_resourceGroup != null) {
                 return getResourceClient().getCalendarEntries(_resourceGroup, from, to);
