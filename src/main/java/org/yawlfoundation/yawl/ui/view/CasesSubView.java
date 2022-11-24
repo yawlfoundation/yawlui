@@ -5,10 +5,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.ClientEvent;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
-import org.yawlfoundation.yawl.ui.service.RunningCase;
+import org.yawlfoundation.yawl.ui.service.*;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
@@ -61,12 +58,17 @@ public class CasesSubView extends AbstractGridView<RunningCase> {
 
     @Override
     void addItemActions(RunningCase item, ActionRibbon ribbon) {
-        ActionIcon icon = ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED,
+        ribbon.add(VaadinIcon.EXCLAMATION_CIRCLE_O, ActionIcon.RED,
+                "Raise Exception", event -> {
+                    new WorkletService().raiseExternalException(item.getCaseID());
+                    ribbon.reset();
+                });
+
+        ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED,
                 "Cancel", event -> {
             cancelCase(item);
             refresh();
         });
-        icon.insertBlank();
     }
 
 

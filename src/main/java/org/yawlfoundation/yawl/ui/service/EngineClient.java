@@ -33,7 +33,6 @@ public class EngineClient extends AbstractClient {
     private final DocumentStoreClient _docStoreClient = new DocumentStoreClient(
             "http://localhost:8080/documentStore/");
 
-
     public EngineClient() { super(); }
 
 
@@ -146,6 +145,7 @@ public class EngineClient extends AbstractClient {
         return new YSpecificationID(specNode);
     }
 
+    // DOC SERVICE METHODS //
 
     public YDocument getStoredDocument(long docID) throws IOException {
         return _docStoreClient.getDocument(docID, getHandle());

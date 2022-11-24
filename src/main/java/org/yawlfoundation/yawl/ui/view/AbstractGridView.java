@@ -20,6 +20,8 @@ import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.service.WorkletService;
+import org.yawlfoundation.yawl.ui.service.WorkletServiceListener;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -30,7 +32,7 @@ import java.util.List;
  * @date 3/8/2022
  */
 @CssImport(value = "./styles/combo-in-grid.css", themeFor = "vaadin-input-container")
-abstract class AbstractGridView<T> extends AbstractView {
+abstract class AbstractGridView<T> extends AbstractView implements WorkletServiceListener {
 
     private List<T> _items;
     private Grid<T> _grid;
@@ -48,6 +50,7 @@ abstract class AbstractGridView<T> extends AbstractView {
                                boolean showHeader) {
         super(resClient, engClient);
         _showHeader = showHeader;
+        WorkletService.addListener(this);
     }
 
 
@@ -58,6 +61,11 @@ abstract class AbstractGridView<T> extends AbstractView {
         setSizeFull();
     }
 
+
+    @Override
+    public void actionCompleted() {
+        refresh();
+    }
 
     abstract List<T> getItems();
 

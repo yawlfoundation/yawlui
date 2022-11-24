@@ -21,10 +21,7 @@ import org.yawlfoundation.yawl.ui.dynform.CustomFormLauncher;
 import org.yawlfoundation.yawl.ui.dynform.DynForm;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.ChainedCase;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.PiledTask;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.service.*;
 import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.IOException;
@@ -194,9 +191,7 @@ public class UserWorklistView extends AbstractWorklistView {
         if (userMayChain(wir)) {
             menu.addItem("Chain", e -> performAction(Action.Chain, wir));
         }
-        else {
-            menu.setEnabled(false);
-        }
+        createRaiseExceptionAction(ribbon, menu, wir);
     }
 
 
@@ -227,9 +222,7 @@ public class UserWorklistView extends AbstractWorklistView {
         if (userMayPile(wir, privileges)) {
             menu.addItem("Pile", e -> performAction(Action.Pile, wir));
         }
-        if (menu.getItems().isEmpty()) {
-            menu.setEnabled(false);
-        }
+        createRaiseExceptionAction(ribbon, menu, wir);
     }
 
 
@@ -265,9 +258,7 @@ public class UserWorklistView extends AbstractWorklistView {
         if (userMayAddNewInstance(wir)) {
             menu.addItem("Add Instance", e -> newInstance(wir));
         }
-        if (menu.getItems().isEmpty()) {
-             menu.setEnabled(false);
-        }
+        createRaiseExceptionAction(ribbon, menu, wir);
     }
 
 
@@ -278,6 +269,15 @@ public class UserWorklistView extends AbstractWorklistView {
         icon.getStyle().set("margin-right", "32px");           // empty space to right
         ribbon.add(icon);
         ribbon.add(VaadinIcon.MENU);
+    }
+
+
+    private void createRaiseExceptionAction(ActionRibbon ribbon, ContextMenu menu,
+                                            WorkItemRecord wir) {
+        menu.addItem("Raise Exception", event -> {
+            new WorkletService().raiseExternalException(wir);
+            ribbon.reset();
+        });
     }
 
 
