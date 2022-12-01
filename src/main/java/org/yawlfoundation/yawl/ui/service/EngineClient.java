@@ -9,14 +9,13 @@ import org.yawlfoundation.yawl.engine.interfce.TaskInformation;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.engine.interfce.interfaceA.InterfaceA_EnvironmentBasedClient;
 import org.yawlfoundation.yawl.engine.interfce.interfaceB.InterfaceB_EnvironmentBasedClient;
+import org.yawlfoundation.yawl.ui.util.ApplicationProperties;
 import org.yawlfoundation.yawl.util.StringUtil;
 import org.yawlfoundation.yawl.util.XNode;
 import org.yawlfoundation.yawl.util.XNodeParser;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Michael Adams
@@ -24,16 +23,23 @@ import java.util.List;
  */
 public class EngineClient extends AbstractClient {
 
-    private final InterfaceA_EnvironmentBasedClient _iaClient = new InterfaceA_EnvironmentBasedClient(
-            "http://localhost:8080/yawl/ia");
+    private final InterfaceA_EnvironmentBasedClient _iaClient;
+    private final InterfaceB_EnvironmentBasedClient _ibClient;
+    private final DocumentStoreClient _docStoreClient;
 
-    private final InterfaceB_EnvironmentBasedClient _ibClient = new InterfaceB_EnvironmentBasedClient(
-            "http://localhost:8080/yawl/ib");
 
-    private final DocumentStoreClient _docStoreClient = new DocumentStoreClient(
-            "http://localhost:8080/documentStore/");
+    public EngineClient() {
+        super();
 
-    public EngineClient() { super(); }
+        String host = ApplicationProperties.getEngineHost();
+        String port = ApplicationProperties.getEnginePort();
+        _iaClient = new InterfaceA_EnvironmentBasedClient(buildURI(host, port, "yawl/ia"));
+        _ibClient = new InterfaceB_EnvironmentBasedClient(buildURI(host, port, "yawl/ib"));
+
+        host = ApplicationProperties.getDocStoreHost();
+        port = ApplicationProperties.getDocStorePort();
+        _docStoreClient = new DocumentStoreClient(buildURI(host, port, "documentStore/"));
+    }
 
 
     public List<YExternalClient> getClientApplications() throws IOException {
@@ -145,6 +151,17 @@ public class EngineClient extends AbstractClient {
         return new YSpecificationID(specNode);
     }
 
+
+    public Map<String, String> getBuildProperties() throws IOException {
+        String props = _iaClient.getBuildProperties(getHandle());
+        if (successful(props)) {
+            return buildPropertiesToMap(StringUtil.unwrap(props));
+        }
+        throw new IOException("Failed to load engine build properties: " +
+                StringUtil.unwrap(props));
+    }
+
+
     // DOC SERVICE METHODS //
 
     public YDocument getStoredDocument(long docID) throws IOException {
@@ -171,8 +188,14 @@ public class EngineClient extends AbstractClient {
 
     @Override
     protected void connect() throws IOException {
+        if (connected()) return;
+
+        _handle = _iaClient.connect(getPair().left, getPair().right);
         if (! connected()) {
-            _handle = _iaClient.connect("admin", "YAWL");
+            _handle = _iaClient.connect(getDefaults().left, getDefaults().right);
+            if (!connected()) {
+                throw new IOException("Failed to connect to YAWL Engine");
+            }
         }
     }
 

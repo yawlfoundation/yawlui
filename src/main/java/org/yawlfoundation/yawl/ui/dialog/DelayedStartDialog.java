@@ -52,7 +52,7 @@ public class DelayedStartDialog extends AbstractDialog {
             else if (focussedField instanceof TextField) {
                 String value = durationField.getValue();
                 if (validateDuration(value)) {
-                    msecs = Duration.parse(value).getSeconds() * 1000;
+                    msecs = Duration.parse(value).toMillis();
                 }
             }
             else {
@@ -81,7 +81,7 @@ public class DelayedStartDialog extends AbstractDialog {
     private void configNumberField() {
         numberField.setClearButtonVisible(true);
         numberField.setMax(Long.MAX_VALUE / 1000D);
-        numberField.setMin(Long.MIN_VALUE / 1000D);
+        numberField.setMin(1);
         numberField.addFocusListener(e -> focussedField = e.getSource());
         numberField.focus();
     }

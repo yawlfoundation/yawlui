@@ -13,26 +13,26 @@ import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.data.provider.SortDirection;
+import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
+import org.yawlfoundation.yawl.ui.announce.Announcement;
+import org.yawlfoundation.yawl.ui.dialog.worklet.RaiseExceptionDialog;
 import org.yawlfoundation.yawl.ui.layout.JustifiedButtonLayout;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
-import org.yawlfoundation.yawl.ui.service.WorkletService;
-import org.yawlfoundation.yawl.ui.service.WorkletServiceListener;
+import org.yawlfoundation.yawl.ui.service.*;
+import org.yawlfoundation.yawl.worklet.admin.AdministrationTask;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * @author Michael Adams
  * @date 3/8/2022
  */
 @CssImport(value = "./styles/combo-in-grid.css", themeFor = "vaadin-input-container")
-abstract class AbstractGridView<T> extends AbstractView implements WorkletServiceListener {
+abstract class AbstractGridView<T> extends AbstractView {
 
     private List<T> _items;
     private Grid<T> _grid;
@@ -42,15 +42,26 @@ abstract class AbstractGridView<T> extends AbstractView implements WorkletServic
 
 
     protected AbstractGridView(ResourceClient resClient, EngineClient engClient) {
-        this(resClient, engClient, true);
+        this(resClient, engClient, null, true);
+    }
+
+
+    protected AbstractGridView(ResourceClient resClient, EngineClient engClient,
+                               WorkletClient wsClient) {
+        this(resClient, engClient, wsClient, true);
     }
 
 
     protected AbstractGridView(ResourceClient resClient, EngineClient engClient,
                                boolean showHeader) {
-        super(resClient, engClient);
+        this(resClient, engClient, null, showHeader);
+    }
+
+
+    protected AbstractGridView(ResourceClient resClient, EngineClient engClient,
+                               WorkletClient wsClient, boolean showHeader) {
+        super(resClient, engClient, wsClient);
         _showHeader = showHeader;
-        WorkletService.addListener(this);
     }
 
 
@@ -61,12 +72,7 @@ abstract class AbstractGridView<T> extends AbstractView implements WorkletServic
         setSizeFull();
     }
 
-
-    @Override
-    public void actionCompleted() {
-        refresh();
-    }
-
+    
     abstract List<T> getItems();
 
     abstract void addColumns(Grid<T> grid);
@@ -215,9 +221,7 @@ abstract class AbstractGridView<T> extends AbstractView implements WorkletServic
         initialSort(grid, 0);
     }
 
-
-
-
+    
     protected ComboBox<Participant> buildParticipantCombo(List<Participant> pList) {
         sortParticipantList(pList);
         ComboBox<Participant> comboBox = new ComboBox<>();
@@ -239,4 +243,93 @@ abstract class AbstractGridView<T> extends AbstractView implements WorkletServic
         pList.sort(Comparator.comparing(Participant::getLastName)
                 .thenComparing(Participant::getFirstName));
     }
+
+
+    protected void addWorkletAdministrationTask(AdministrationTask task) {
+        try {
+            getWorkletClient().addWorkletAdministrationTask(task);
+        }
+        catch (IOException e) {
+            Announcement.error("Failed to raise Exception: " + e.getMessage());
+        }
+    }
+
+
+    protected void raiseExternalException(String id) {
+        raiseExternalException("Case", id, null);
+    }
+
+
+    protected void raiseExternalException(WorkItemRecord wir) {
+        raiseExternalException("Item", wir.getID(), wir.getCaseID());
+    }
+
+
+    // for Case=level, id == caseID, id2 == null
+    // for item-level, id == itemID, id2 == caseID
+    private void raiseExternalException(String level, String id, String id2) {
+        String title = String.format("Raise External Exception for %s: %s", level, id);
+        List<String> triggers = getExternalTriggers(level, id);
+        RaiseExceptionDialog dialog = new RaiseExceptionDialog(title, triggers);
+        dialog.getOKButton().addClickListener(e -> {
+            if (dialog.validate()) {
+                if (dialog.isNewException()) {
+                    String newTitle = dialog.getHeading();
+                    String scenario = dialog.getScenario();
+                    String process = dialog.getProcess();
+                    String caseID = level.equals("Case") ? id : id2;
+                    String itemID = level.equals("Case") ? null : id;
+                    addNewExceptionTask(level, caseID, itemID, newTitle, scenario, process);
+                }
+                else {
+                    String selected = dialog.getSelection();
+                    raiseException(level, id, selected);
+                }
+                dialog.close();
+                refresh();
+                Announcement.success("Exception raised");
+            }
+        });
+        dialog.open();
+    }
+
+
+    private void raiseException(String level, String id, String trigger) {
+        try {
+            if (level.equals("Case")) {
+                getWorkletClient().raiseCaseExternalException(id, trigger);
+            }
+            else {
+               getWorkletClient().raiseItemExternalException(id, trigger);
+            }
+        }
+        catch (IOException e) {
+            Announcement.error("Failed to raise Exception: " + e.getMessage());
+        }
+    }
+
+
+    private void addNewExceptionTask(String level, String caseID, String itemID,
+                                     String title, String scenario, String process) {
+        AdministrationTask task = level.equals("Case") ?
+                new AdministrationTask(caseID, title, scenario, process,
+                        AdministrationTask.TASKTYPE_CASE_EXTERNAL_EXCEPTION) :
+                new AdministrationTask(caseID, itemID, title, scenario, process,
+                        AdministrationTask.TASKTYPE_ITEM_EXTERNAL_EXCEPTION);
+
+        addWorkletAdministrationTask(task);
+    }
+
+
+    private List<String> getExternalTriggers(String level, String id) {
+        try {
+            return level.equals("Case") ?
+                    getWorkletClient().getExternalTriggersForCase(id) :
+                    getWorkletClient().getExternalTriggersForItem(id);
+        }
+        catch (IOException e) {
+            return Collections.emptyList();
+        }
+    }
+
 }

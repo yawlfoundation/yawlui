@@ -7,6 +7,8 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
+import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.util.InstalledServices;
 
 /**
  * @author Michael Adams
@@ -17,13 +19,27 @@ public class DrawerMenu extends Tabs {
     private Tab initialItem;
 
 
-    public DrawerMenu(Participant p) {
+    public DrawerMenu(Participant p, ResourceClient client) {
         setOrientation(Orientation.VERTICAL);
-        addItems(p);
+        addItems(p, client);
     }
 
 
-    private void addItems(Participant p) {
+
+    public void insertWorkletItem() {
+        int insertionIndex = getComponentCount() - 2;
+        this.addComponentAtIndex(insertionIndex,
+                createTab(VaadinIcon.WRENCH, "Worklet Admin"));
+    }
+
+
+    public void removeWorkletItem() {
+        getChildren().filter(tab -> ((Tab) tab).getLabel().equals("Worklet Admin"))
+                .findFirst().ifPresent(this::remove);
+    }
+
+
+    private void addItems(Participant p, ResourceClient client) {
 
         // normal user
         if (p != null) {
@@ -46,8 +62,11 @@ public class DrawerMenu extends Tabs {
             add(createTab(VaadinIcon.USER, "Participants"));
             add(createTab(VaadinIcon.GROUP, "Org Data"));
             add(createTab(VaadinIcon.CLUSTER, "Non-Human Resources"));
-            add(createTab(VaadinIcon.CALENDAR_CLOCK, "Calendar"));
             add(createTab(VaadinIcon.LINK, "Services / Clients"));
+            add(createTab(VaadinIcon.CALENDAR_CLOCK, "Calendar"));
+            if (new InstalledServices(client).hasWorkletService()) {
+                add(createTab(VaadinIcon.WRENCH, "Worklet Admin"));
+            }
         }
         add(createTab(VaadinIcon.QUESTION_CIRCLE_O, "About"));
         add(createTab(VaadinIcon.SIGN_OUT_ALT, "Logout"));
@@ -83,6 +102,7 @@ public class DrawerMenu extends Tabs {
 
 
     public void selectInitialItem() {
+        setSelectedTab(null);
         setSelectedTab(initialItem);
      }
 

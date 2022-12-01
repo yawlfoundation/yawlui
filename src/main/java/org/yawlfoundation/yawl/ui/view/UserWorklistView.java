@@ -22,6 +22,7 @@ import org.yawlfoundation.yawl.ui.dynform.DynForm;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.*;
+import org.yawlfoundation.yawl.ui.util.InstalledServices;
 import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.IOException;
@@ -45,8 +46,8 @@ public class UserWorklistView extends AbstractWorklistView {
 
 
     public UserWorklistView(ResourceClient resClient, EngineClient engClient,
-                            Participant p, String customFormHandle) {
-        super(resClient, engClient, p);
+                            WorkletClient wsClient, Participant p, String customFormHandle) {
+        super(resClient, engClient, wsClient, p);
         _customFormLauncher = new CustomFormLauncher(customFormHandle);
     }
 
@@ -72,10 +73,11 @@ public class UserWorklistView extends AbstractWorklistView {
     @Override
     void addItemActions(WorkItemRecord item, ActionRibbon ribbon) {
         TaskPrivileges taskPrivileges = getTaskPrivileges(item);
+        boolean hasWorklets = new InstalledServices(getResourceClient()).hasWorkletService();
         switch(item.getResourceStatus()) {
-            case "Offered" : createOfferedRibbon(item, ribbon); break;
-            case "Allocated" : createAllocatedRibbon(item, ribbon, taskPrivileges); break;
-            case "Started" : createStartedRibbon(item, ribbon, taskPrivileges); break;
+            case "Offered" : createOfferedRibbon(item, ribbon, hasWorklets); break;
+            case "Allocated" : createAllocatedRibbon(item, ribbon, taskPrivileges, hasWorklets); break;
+            case "Started" : createStartedRibbon(item, ribbon, taskPrivileges, hasWorklets); break;
             case "Suspended" : createSuspendedRibbon(item, ribbon); break;
         }
     }
@@ -181,7 +183,7 @@ public class UserWorklistView extends AbstractWorklistView {
     }
 
 
-    private void createOfferedRibbon(WorkItemRecord wir, ActionRibbon ribbon) {
+    private void createOfferedRibbon(WorkItemRecord wir, ActionRibbon ribbon, boolean hasWorklets) {
         ribbon.add(VaadinIcon.CHECK,"Accept",
                 e -> performAction(Action.Accept, wir));
         ribbon.add(VaadinIcon.CARET_RIGHT, ActionIcon.GREEN,"Accept & Start",
@@ -191,12 +193,12 @@ public class UserWorklistView extends AbstractWorklistView {
         if (userMayChain(wir)) {
             menu.addItem("Chain", e -> performAction(Action.Chain, wir));
         }
-        createRaiseExceptionAction(ribbon, menu, wir);
+        createRaiseExceptionAction(ribbon, menu, wir, hasWorklets);
     }
 
 
     private void createAllocatedRibbon(WorkItemRecord wir, ActionRibbon ribbon,
-                                       TaskPrivileges privileges) {
+                                       TaskPrivileges privileges, boolean hasWorklets) {
         if (userMayStart(wir)) {
             ribbon.add(VaadinIcon.CARET_RIGHT, ActionIcon.GREEN, "Start",
                     event -> startItem(wir, getParticipantID()));
@@ -222,12 +224,12 @@ public class UserWorklistView extends AbstractWorklistView {
         if (userMayPile(wir, privileges)) {
             menu.addItem("Pile", e -> performAction(Action.Pile, wir));
         }
-        createRaiseExceptionAction(ribbon, menu, wir);
+        createRaiseExceptionAction(ribbon, menu, wir, hasWorklets);
     }
 
 
     private void createStartedRibbon(WorkItemRecord wir, ActionRibbon ribbon,
-                                     TaskPrivileges privileges) {
+                                     TaskPrivileges privileges, boolean hasWorklets) {
         if (userMayEdit(wir)) {
             ribbon.add(createEditAction(event -> {
                 edit(wir);
@@ -258,7 +260,7 @@ public class UserWorklistView extends AbstractWorklistView {
         if (userMayAddNewInstance(wir)) {
             menu.addItem("Add Instance", e -> newInstance(wir));
         }
-        createRaiseExceptionAction(ribbon, menu, wir);
+        createRaiseExceptionAction(ribbon, menu, wir, hasWorklets);
     }
 
 
@@ -273,11 +275,13 @@ public class UserWorklistView extends AbstractWorklistView {
 
 
     private void createRaiseExceptionAction(ActionRibbon ribbon, ContextMenu menu,
-                                            WorkItemRecord wir) {
-        menu.addItem("Raise Exception", event -> {
-            new WorkletService().raiseExternalException(wir);
-            ribbon.reset();
-        });
+                                            WorkItemRecord wir, boolean hasWorklets) {
+        if (hasWorklets) {
+            menu.addItem("Raise Exception", event -> {
+                raiseExternalException(wir);
+                ribbon.reset();
+            });
+        }
     }
 
 

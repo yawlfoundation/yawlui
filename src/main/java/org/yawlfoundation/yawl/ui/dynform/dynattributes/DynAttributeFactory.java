@@ -22,13 +22,11 @@ import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.ui.dynform.DynFormField;
 import org.yawlfoundation.yawl.ui.dynform.DynFormLayout;
+import org.yawlfoundation.yawl.ui.util.ApplicationProperties;
 import org.yawlfoundation.yawl.util.PluginLoaderUtil;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -87,19 +85,8 @@ public class DynAttributeFactory {
 
 
     private static String getPathsFromEnv() {
-        InputStream is = DynAttributeFactory.class.getResourceAsStream(
-                "/dynattributes.properties");
-        if (is != null) {
-            Properties props = new Properties();
-            try {
-                props.load(is);
-                return props.getProperty("pluginpaths");
-            }
-            catch (IOException e) {
-                // no props to load
-            }
-        }
-        return "";
+        String paths = ApplicationProperties.get("plugin.paths");
+        return paths != null ? paths : "";
     }
 
 }

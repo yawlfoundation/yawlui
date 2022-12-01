@@ -1,12 +1,17 @@
 package org.yawlfoundation.yawl.ui.view;
 
+import com.vaadin.flow.component.contextmenu.ContextMenu;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
+import org.yawlfoundation.yawl.ui.dialog.worklet.RejectWorkletDialog;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.*;
+import org.yawlfoundation.yawl.ui.util.InstalledServices;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
+import org.yawlfoundation.yawl.worklet.admin.AdministrationTask;
+import org.yawlfoundation.yawl.worklet.selection.WorkletRunner;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -18,8 +23,9 @@ import java.util.List;
  */
 public class CasesSubView extends AbstractGridView<RunningCase> {
 
-    public CasesSubView(ResourceClient resClient, EngineClient engClient) {
-        super(resClient, engClient);
+    public CasesSubView(ResourceClient resClient, EngineClient engClient,
+                        WorkletClient wsClient) {
+        super(resClient, engClient, wsClient);
 
         // update grid when a new case is launched
         engClient.addEventListener(e -> {
@@ -58,17 +64,27 @@ public class CasesSubView extends AbstractGridView<RunningCase> {
 
     @Override
     void addItemActions(RunningCase item, ActionRibbon ribbon) {
-        ribbon.add(VaadinIcon.EXCLAMATION_CIRCLE_O, ActionIcon.RED,
-                "Raise Exception", event -> {
-                    new WorkletService().raiseExternalException(item.getCaseID());
-                    ribbon.reset();
-                });
+        boolean hasWorklets = new InstalledServices(getResourceClient()).hasWorkletService();
+        if (hasWorklets) {
+            ActionIcon exceptionAction = ribbon.add(VaadinIcon.EXCLAMATION_CIRCLE_O,
+                    ActionIcon.RED, "Worklet Actions", null);
+            ContextMenu menu = new ContextMenu(exceptionAction);
+            menu.setOpenOnClick(true);
+            menu.addItem("Raise Exception", event -> {
+                raiseExternalException(item.getCaseID());
+                ribbon.reset();
+            });
+            menu.addItem("Reject Worklet", event -> rejectWorklet(item.getCaseID()));
+        }
 
-        ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED,
+        ActionIcon cancelIcon = ribbon.add(VaadinIcon.CLOSE_SMALL, ActionIcon.RED,
                 "Cancel", event -> {
             cancelCase(item);
             refresh();
         });
+        if (! hasWorklets) {
+            cancelIcon.insertBlank();      // add space to left
+        }
     }
 
 
@@ -97,6 +113,59 @@ public class CasesSubView extends AbstractGridView<RunningCase> {
         }
         catch (IOException ioe) {
             announceError(ioe.getMessage());
+        }
+    }
+
+
+    private boolean isRunningWorklet(String caseID) {
+        try {
+            List<WorkletRunner> runners = getWorkletClient().getRunningWorklets();
+            for (WorkletRunner runner : runners) {
+                if (runner.getCaseID().equals(caseID)) {
+                    return true;
+                }
+            }
+        }
+        catch (IOException ex) {
+            //
+        }
+        return false;
+    }
+
+
+    private void rejectWorklet(String caseID) {
+        if (! isRunningWorklet(caseID)) {
+            Announcement.warn("Case %s is not a running worklet", caseID);
+            return;
+        }
+
+        RejectWorkletDialog dialog = new RejectWorkletDialog(caseID);
+        dialog.getOKButton().addClickListener(e -> {
+            if (dialog.validate()) {
+                String heading = dialog.getHeading();
+                String scenario = dialog.getScenario();
+                String process = dialog.getProcess();
+                AdministrationTask task = new AdministrationTask(caseID, heading,
+                        scenario, process, AdministrationTask.TASKTYPE_REJECTED_SELECTION);
+                if (rejectWorklet(task)) {
+                    dialog.close();
+                    refresh();
+                }
+            }
+        });
+        dialog.open();
+    }
+
+
+    private boolean rejectWorklet(AdministrationTask task) {
+        try {
+            getWorkletClient().addWorkletAdministrationTask(task);
+            Announcement.success("Worklet rejected");
+            return true;
+        }
+        catch (IOException ex) {
+            Announcement.error("Failed to reject worklet: " + ex);
+            return false;
         }
     }
 

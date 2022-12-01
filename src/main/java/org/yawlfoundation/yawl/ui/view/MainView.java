@@ -19,6 +19,7 @@ import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.AppShellSettings;
 import com.vaadin.flow.theme.Theme;
+import org.yawlfoundation.yawl.elements.YAWLServiceReference;
 import org.yawlfoundation.yawl.engine.interfce.ServletUtils;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.WorkQueue;
@@ -29,6 +30,7 @@ import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.DrawerMenu;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.service.WorkletClient;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -51,6 +53,8 @@ public class MainView extends AppLayout implements
 
     private static final ResourceClient _resClient = new ResourceClient();
     private static final EngineClient _engClient = new EngineClient();
+    private static final WorkletClient _wsClient = new WorkletClient();
+
     private Participant _user;
     private Div _footer;
 
@@ -74,20 +78,22 @@ public class MainView extends AppLayout implements
     // notification from DrawerMenu of an item selection
     @Override
     public void onComponentEvent(Tabs.SelectedChangeEvent event) {
-        Tab tab = event.getSelectedTab();          
+        Tab tab = event.getSelectedTab();
+        if (tab == null) return;               // tab is null when user first logs on only
         switch (tab.getLabel()) {
             case "My Worklist" : setContent(new UserWorklistView(
-                    _resClient, _engClient, _user, getCustomformHandle(_user))); break;
+                    _resClient, _engClient, _wsClient, _user, getCustomformHandle(_user))); break;
             case "My Profile" : setContent(new ProfileView(_resClient, _user)); break;
             case "My Team's Worklist" : setContent(chooseGroupView()); break;
-            case "Case Mgt" : setContent(new CasesView(_resClient, _engClient)); break;
+            case "Case Mgt" : setContent(new CasesView(_resClient, _engClient, _wsClient)); break;
             case "Admin Worklist" : setContent(new AdminWorklistView(_resClient, _user)); break;
             case "Participants" : setContent(new ParticipantsView(_resClient)); break;
             case "Org Data" : setContent(new OrgDataView(_resClient)); break;
             case "Non-Human Resources" : setContent(new NonHumanResourcesView(_resClient)); break;
-            case "Calendar" : setContent(new CalendarView(_resClient, _user)); break;
             case "Services / Clients" : setContent(new ServicesView(_resClient, _engClient)); break;
-            case "About" : setContent(null); break;
+            case "Calendar" : setContent(new CalendarView(_resClient, _user)); break;
+            case "Worklet Admin" : setContent(new WorkletAdminView(_wsClient)); break;
+            case "About" : setContent(new AboutView(_resClient, _engClient, _wsClient)); break;
             case "Logout" : event.getSource().setSelectedIndex(0); exit();
         }
     }
@@ -114,7 +120,9 @@ public class MainView extends AppLayout implements
                     _user.setUserPrivileges(_resClient.getUserPrivileges(_user.getID()));
                     _customFormHandleMap.put(_user,
                             _resClient.getUserCustomFormHandle(username, password));
-                    createMenuBar(_user);
+                    createTitleBar();
+                    DrawerMenu menu = createMenuBar();
+                    addWorkletServiceChangeListener(menu);
                 }
                 else {
                     setErrorMessage(login, null);        // sets default error msg
@@ -152,15 +160,19 @@ public class MainView extends AppLayout implements
     public Participant getCurrentUserSessionHandle() { return _user; }
 
 
-    private void createMenuBar(Participant p) {
+    private void createTitleBar() {
         addToNavbar(new DrawerToggle());
         addLogo();
         addLogout();
-        DrawerMenu _menu = new DrawerMenu(p);
-        _menu.addSelectedChangeListener(this); 
-        addToDrawer(_menu);
-//        setDrawerOpened(false);
-        _menu.selectInitialItem();
+    }
+
+
+    private DrawerMenu createMenuBar() {
+        DrawerMenu menu = new DrawerMenu(_user, _resClient);
+        menu.addSelectedChangeListener(this);
+        addToDrawer(menu);
+        menu.selectInitialItem();
+        return menu;
     }
 
 
@@ -174,6 +186,7 @@ public class MainView extends AppLayout implements
         addToNavbar(div);
     }
 
+    
     // add a logout 'button' on the right side of the nav bar
     private void addLogout() {
         Div div = new Div();
@@ -185,6 +198,21 @@ public class MainView extends AppLayout implements
         addToNavbar(div);
     }
 
+
+    // update menu if worklet service is added or removed
+    private void addWorkletServiceChangeListener(DrawerMenu menu) {
+        _resClient.addEventListener(e -> {
+            if (e.getObject() instanceof YAWLServiceReference &&
+                    ((YAWLServiceReference) e.getObject()).getURI()
+                            .contains("workletService")) {
+
+                switch (e.getAction()) {
+                    case ServiceAdd : menu.insertWorkletItem(); break;
+                    case ServiceRemove : menu.removeWorkletItem(); break;
+                }
+            }
+        });
+    }
 
     private Div createFooter() {
         Div footer = new Div();

@@ -17,6 +17,7 @@ import org.yawlfoundation.yawl.resourcing.resource.*;
 import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanCategory;
 import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanResource;
 import org.yawlfoundation.yawl.resourcing.rsInterface.*;
+import org.yawlfoundation.yawl.ui.util.ApplicationProperties;
 import org.yawlfoundation.yawl.ui.util.TaskPrivilegesCache;
 import org.yawlfoundation.yawl.util.*;
 
@@ -26,23 +27,27 @@ import java.util.*;
 
 public class ResourceClient extends AbstractClient {
 
-    private final ResourceGatewayClientAdapter _resAdapter = new ResourceGatewayClientAdapter(
-            "http://localhost:8080/resourceService/gateway");
-
-    private final WorkQueueGatewayClientAdapter _wqAdapter = new WorkQueueGatewayClientAdapter(
-            "http://localhost:8080/resourceService/workqueuegateway");
-
-    private final ResourceLogGatewayClient _logClient = new ResourceLogGatewayClient(
-            "http://localhost:8080/resourceService/logGateway");
-
-    private final ResourceCalendarGatewayClient _calClient = new ResourceCalendarGatewayClient(
-            "http://localhost:8080/resourceService/calendarGateway");
+    private final ResourceGatewayClientAdapter _resAdapter;
+    private final WorkQueueGatewayClientAdapter _wqAdapter;
+    private final ResourceLogGatewayClient _logClient;
+    private final ResourceCalendarGatewayClient _calClient;
 
     public final TaskPrivilegesCache _taskPrivilegesCache = new TaskPrivilegesCache(this);
 
 
     public ResourceClient() {
         super();
+
+        String host = ApplicationProperties.getResourceServiceHost();
+        String port = ApplicationProperties.getResourceServicePort();
+        _resAdapter = new ResourceGatewayClientAdapter(buildURI(host, port,
+                "resourceService/gateway"));
+        _wqAdapter = new WorkQueueGatewayClientAdapter(buildURI(host, port,
+                    "resourceService/workqueuegateway"));
+        _logClient = new ResourceLogGatewayClient(buildURI(host, port,
+                    "resourceService/logGateway"));
+        _calClient = new ResourceCalendarGatewayClient(buildURI(host, port,
+                    "resourceService/calendarGateway"));
     }
 
 
@@ -490,6 +495,7 @@ public class ResourceClient extends AbstractClient {
     public void addClient(YClient client) throws IOException {
         if (client instanceof YAWLServiceReference) {
             _wqAdapter.addRegisteredService((YAWLServiceReference) client, getHandle());
+            announceEvent(ClientEvent.Action.ServiceAdd, client);
         }
         else if (client instanceof YExternalClient) {
             _wqAdapter.addExternalClient((YExternalClient) client, getHandle());
@@ -501,6 +507,7 @@ public class ResourceClient extends AbstractClient {
         if (client instanceof YAWLServiceReference) {
             _wqAdapter.removeRegisteredService(
                     ((YAWLServiceReference) client).getServiceID(), getHandle());
+            announceEvent(ClientEvent.Action.ServiceRemove, client);
         }
         else if (client instanceof YExternalClient) {
             _wqAdapter.removeExternalClient(client.getUserName(), getHandle());
@@ -650,6 +657,23 @@ public class ResourceClient extends AbstractClient {
     }
 
 
+    // forced structure because of overriding abstract method to include Resource exception
+    public Map<String, String> getBuildProperties() throws IOException {
+        String props = null;
+        try {
+            props = _resAdapter.getBuildProperties(getHandle());
+        }
+        catch (ResourceGatewayException e) {
+            throw new IOException(e);
+        }
+        if (successful(props)) {
+            return buildPropertiesToMap(props);
+        }
+        throw new IOException("Failed to load engine build properties: " +
+                StringUtil.unwrap(props));
+    }
+
+
     public List<CalendarEntry> getCalendarEntries(ResourceCalendar.ResourceGroup group,
                                                   long from, long to) throws IOException {
         String xml = _calClient.getEntries(group, from, to, true, getHandle());
@@ -712,9 +736,15 @@ public class ResourceClient extends AbstractClient {
 
 
     @Override
-    protected void connect() {
+    protected void connect() throws IOException {
+        if (connected()) return;
+
+        _handle = _resAdapter.connect(getPair().left, getPair().right);
         if (! connected()) {
-            _handle = _resAdapter.connect("admin", "YAWL");
+            _handle = _resAdapter.connect(getDefaults().left, getDefaults().right);
+            if (! connected()) {
+                throw new IOException("Failed to connect to YAWL Resource Service");
+            }
         }
     }
 
@@ -726,7 +756,7 @@ public class ResourceClient extends AbstractClient {
 
 
     @Override
-    public void disconnect() {
+    public void disconnect() throws IOException {
         connect();
         _resAdapter.disconnect(_handle);
     }

@@ -40,22 +40,22 @@ public class ServicesSubView extends AbstractClientView<YAWLServiceReference> {
     @Override
     List<YAWLServiceReference> getItems() {
         try {
-             List<YAWLServiceReference> services =
-                     getResourceClient().getRegisteredServices();
+            List<YAWLServiceReference> services =
+                    getResourceClient().getRegisteredServices();
 
-             //only include assignable services
-             List<YAWLServiceReference> assignableServices = new ArrayList<>();
-             for (YAWLServiceReference service : services) {
-                 if (service.isAssignable()) {
-                     assignableServices.add(service);
-                 }
-             }
-             return assignableServices;
-         }
-         catch (IOException e) {
-             Announcement.error(e.getMessage());
-             return Collections.emptyList();
-         }
+            //only include assignable services
+            List<YAWLServiceReference> assignableServices = new ArrayList<>();
+            for (YAWLServiceReference service : services) {
+                if (service.isAssignable()) {
+                    assignableServices.add(service);
+                }
+            }
+            return assignableServices;
+        }
+        catch (IOException e) {
+            Announcement.error(e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
 

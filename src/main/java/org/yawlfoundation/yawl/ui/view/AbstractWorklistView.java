@@ -18,6 +18,7 @@ import org.yawlfoundation.yawl.ui.component.SingleSelectParticipantList;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.service.WorkletClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
 
@@ -50,16 +51,27 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
     private UserPrivileges _userPrivileges;
     private QueueSet _queueSet;
 
-    
+
     public AbstractWorklistView(ResourceClient resClient, EngineClient engClient,
                                 Participant participant) {
-        this(resClient, engClient, participant, true);
+        this(resClient, engClient, null, participant, true);
     }
 
+    public AbstractWorklistView(ResourceClient resClient, EngineClient engClient,
+                                WorkletClient wsClient, Participant participant) {
+        this(resClient, engClient, wsClient, participant, true);
+    }
 
     public AbstractWorklistView(ResourceClient resClient, EngineClient engClient,
                                 Participant participant, boolean showHeader) {
-        super(resClient, engClient, showHeader);
+        this(resClient, engClient, null, participant, showHeader);
+     }
+
+
+    public AbstractWorklistView(ResourceClient resClient, EngineClient engClient,
+                                WorkletClient wsClient, Participant participant,
+                                boolean showHeader) {
+        super(resClient, engClient, wsClient, showHeader);
         _user = participant;
         build();
         initCompleted();

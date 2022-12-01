@@ -6,7 +6,8 @@ package org.yawlfoundation.yawl.ui.service;
  */
 public class ClientEvent {
 
-    public enum Action { SpecificationUpload, SpecificationUnload, LaunchCase }
+    public enum Action { SpecificationUpload, SpecificationUnload, LaunchCase,
+        ServiceAdd, ServiceRemove }
 
     private final Action _action;
     private final Object _object;

@@ -47,6 +47,7 @@ public class ClientDetailsDialog<T extends YClient> extends AbstractDialog {
             populateForm();
         }
         createButtons(_saveButton);
+        _saveButton.setText(_editing ? "Update" : "Add");
     }
 
 

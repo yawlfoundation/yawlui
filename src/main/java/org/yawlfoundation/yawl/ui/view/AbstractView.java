@@ -6,13 +6,13 @@ import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
-import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.service.EngineClient;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.service.WorkletClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
 
@@ -27,11 +27,18 @@ public abstract class AbstractView extends VerticalLayout {
 
     private final ResourceClient _resClient;
     private final EngineClient _engClient;
+    private final WorkletClient _wsClient;
 
 
     public AbstractView(ResourceClient resClient, EngineClient engClient) {
+        this(resClient, engClient, null);
+    }
+
+    public AbstractView(ResourceClient resClient, EngineClient engClient,
+                        WorkletClient wsClient) {
         _resClient = resClient;
         _engClient = engClient;
+        _wsClient = wsClient;
     }
 
 
@@ -41,6 +48,8 @@ public abstract class AbstractView extends VerticalLayout {
     protected ResourceClient getResourceClient() { return _resClient; }
 
     protected EngineClient getEngineClient() { return _engClient; }
+
+    protected WorkletClient getWorkletClient() { return _wsClient; }
 
 
     protected SplitLayout createSplitView(Component top, Component bottom) {

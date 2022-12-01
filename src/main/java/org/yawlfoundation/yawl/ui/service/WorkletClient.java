@@ -1,14 +1,17 @@
 package org.yawlfoundation.yawl.ui.service;
 
+import org.yawlfoundation.yawl.ui.util.ApplicationProperties;
 import org.yawlfoundation.yawl.util.StringUtil;
 import org.yawlfoundation.yawl.util.XNode;
 import org.yawlfoundation.yawl.util.XNodeParser;
 import org.yawlfoundation.yawl.worklet.admin.AdministrationTask;
+import org.yawlfoundation.yawl.worklet.selection.WorkletRunner;
 import org.yawlfoundation.yawl.worklet.support.WorkletGatewayClient;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Michael Adams
@@ -16,10 +19,28 @@ import java.util.List;
  */
 public class WorkletClient extends AbstractClient {
 
-    private final WorkletGatewayClient _wsClient = new WorkletGatewayClient();
+    private final WorkletGatewayClient _wsClient;
 
 
-    public WorkletClient() { super(); }
+    public WorkletClient() {
+        super();
+        _wsClient = init();
+    }
+
+    
+    public List<WorkletRunner> getRunningWorklets() throws IOException {
+        String xml = _wsClient.getRunningWorklets(getHandle());
+        if (successful(xml)) {
+            XNode node = new XNodeParser().parse(xml);
+            if (node != null) {
+                List<WorkletRunner> runners = new ArrayList<>();
+                node.getChildren().forEach(child -> runners.add(new WorkletRunner(child)));
+                return runners;
+            }
+            throw new IOException("Unable to retrieve running worklets: malformed XML");
+        }
+        throw new IOException(StringUtil.unwrap(xml));
+    }
 
 
     public AdministrationTask getWorkletAdministrationTask(int id) throws IOException {
@@ -97,8 +118,18 @@ public class WorkletClient extends AbstractClient {
         }
         return xmlToStringList(xml);
     }
-
     
+
+    public Map<String, String> getBuildProperties() throws IOException {
+        String props = _wsClient.getBuildProperties(getHandle());
+        if (successful(props)) {
+            return buildPropertiesToMap(props);
+        }
+        throw new IOException("Failed to load engine build properties: " +
+                StringUtil.unwrap(props));
+    }
+
+
     private AdministrationTask newAdministrationTask(String xml) throws IOException {
         if (successful(xml)) {
             XNode node = new XNodeParser().parse(xml);
@@ -131,8 +162,14 @@ public class WorkletClient extends AbstractClient {
 
     @Override
     protected void connect() throws IOException {
+        if (connected()) return;
+
+        _handle = _wsClient.connect(getPair().left, getPair().right);
         if (! connected()) {
-            _handle = _wsClient.connect("admin", "YAWL");
+            _handle = _wsClient.connect(getDefaults().left, getDefaults().right);
+            if (! connected()) {
+                throw new IOException("Failed to connect to YAWL Worklet Service");
+            }
         }
     }
 
@@ -140,7 +177,7 @@ public class WorkletClient extends AbstractClient {
     @Override
     protected boolean connected() throws IOException {
         return _handle != null && successful(_handle) &&
-                successful(_wsClient.checkConnection(_handle));
+                _wsClient.checkConnection(_handle).equalsIgnoreCase("true");
     }
 
 
@@ -148,6 +185,14 @@ public class WorkletClient extends AbstractClient {
     public void disconnect() throws IOException {
         connect();
         _wsClient.disconnect(_handle);
+    }
+
+
+    private WorkletGatewayClient init() {
+        String host = ApplicationProperties.getWorkletServiceHost();
+        String port = ApplicationProperties.getWorkletServicePort();
+        String uri = buildURI(host, port, "workletService/gateway");
+        return new WorkletGatewayClient(uri);
     }
     
 }
