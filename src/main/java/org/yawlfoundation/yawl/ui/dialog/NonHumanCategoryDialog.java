@@ -13,7 +13,7 @@ import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanSubCategory;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.component.ResourceList;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.service.Clients;
 
 import java.io.IOException;
 import java.util.*;
@@ -32,18 +32,15 @@ public class NonHumanCategoryDialog extends AbstractDialog {
 
     private final List<NonHumanSubCategory> _subCategoryListItems = new ArrayList<>();
 
-    private final ResourceClient _resClient;
     private final List<NonHumanCategory> _allCategories;
     private final List<NonHumanResource> _members;
     private final NonHumanCategory _category;
 
 
-    public NonHumanCategoryDialog(ResourceClient resClient,
-                                  List<NonHumanCategory> allCategories,
+    public NonHumanCategoryDialog(List<NonHumanCategory> allCategories,
                                   List<NonHumanResource> members,
                                   NonHumanCategory category) {
         super((category != null ? "Edit" : "Add") + " Category");
-        _resClient = resClient;
         _allCategories = allCategories;
         _members = members;
         _category = category;
@@ -242,7 +239,7 @@ public class NonHumanCategoryDialog extends AbstractDialog {
 
     private void add(NonHumanCategory category) {
          try {
-             _resClient.addNonHumanCategory(category);
+             Clients.getResourceClient().addNonHumanCategory(category);
              Announcement.success("Non-human category '%s' added", category.getName());
          }
          catch (IOException | ResourceGatewayException ioe) {
@@ -254,7 +251,7 @@ public class NonHumanCategoryDialog extends AbstractDialog {
 
     private void update(NonHumanCategory category) {
         try {
-            _resClient.updateNonHumanCategory(category);
+            Clients.getResourceClient().updateNonHumanCategory(category);
             updateSubCategories(category.getSubCategories(), _subCategoryListItems,
                     _category.getID());
             Announcement.success("Non-human category '%s' updated",
@@ -286,7 +283,7 @@ public class NonHumanCategoryDialog extends AbstractDialog {
     private void addSubCategories(List<NonHumanSubCategory> toAdd, String catID) {
         toAdd.forEach(s -> {
             try {
-                _resClient.addNonHumanSubCategory(catID, s.getName());
+                Clients.getResourceClient().addNonHumanSubCategory(catID, s.getName());
             }
             catch (IOException | ResourceGatewayException e) {
                 Announcement.warn("Failed to add sub-category '%s': %s",
@@ -299,7 +296,7 @@ public class NonHumanCategoryDialog extends AbstractDialog {
     private void removeSubCategories(List<NonHumanSubCategory> toRemove, String catID) {
          toRemove.forEach(s -> {
              try {
-                 _resClient.removeNonHumanSubCategory(catID, s.getName());
+                 Clients.getResourceClient().removeNonHumanSubCategory(catID, s.getName());
              }
              catch (IOException | ResourceGatewayException e) {
                  Announcement.warn("Failed to remove sub-category '%s': %s",

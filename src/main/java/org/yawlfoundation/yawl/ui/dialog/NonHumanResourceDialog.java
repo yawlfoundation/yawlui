@@ -11,7 +11,7 @@ import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanCategory;
 import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanResource;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.service.Clients;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,16 +31,13 @@ public class NonHumanResourceDialog extends AbstractDialog {
     private final ComboBox<String> _subCategoryCombo = new ComboBox<>("Sub-category");
     private final Button _okButton = new Button("OK");
 
-    private final ResourceClient _resClient;
     private final List<NonHumanResource> _allResources;
     private final NonHumanResource _resource;
 
 
-    public NonHumanResourceDialog(ResourceClient resClient,
-                                  List<NonHumanResource> allResources,
+    public NonHumanResourceDialog(List<NonHumanResource> allResources,
                                   NonHumanResource resource) {
         super((resource != null ? "Edit" : "Add") + " Resource");
-        _resClient = resClient;
         _allResources = allResources;
         _resource = resource;
         addComponent(createForm());
@@ -225,7 +222,7 @@ public class NonHumanResourceDialog extends AbstractDialog {
 
     private void update(NonHumanResource resource) {
         try {
-            _resClient.updateNonHumanResource(resource);
+            Clients.getResourceClient().updateNonHumanResource(resource);
             Announcement.success("Non-human resource '%s' updated",
                     resource.getName());
         }
@@ -238,7 +235,7 @@ public class NonHumanResourceDialog extends AbstractDialog {
 
     private void add(NonHumanResource resource) {
         try {
-            _resClient.addNonHumanResource(resource);
+            Clients.getResourceClient().addNonHumanResource(resource);
             Announcement.success("Non-human resource '%s' added", resource.getName());
         }
         catch (IOException ioe) {
@@ -250,7 +247,8 @@ public class NonHumanResourceDialog extends AbstractDialog {
     
     private List<NonHumanCategory> getAllCategories() {
         try {
-            List<NonHumanCategory> catList = _resClient.getNonHumanCategories();
+            List<NonHumanCategory> catList = Clients.getResourceClient()
+                    .getNonHumanCategories();
             Collections.sort(catList);
             return catList;
         }
@@ -265,7 +263,8 @@ public class NonHumanResourceDialog extends AbstractDialog {
 
     private List<String> getSubCategories(NonHumanCategory category) {
         try {
-            List<String> catList = _resClient.getNonHumanSubCategories(category.getID());
+            List<String> catList = Clients.getResourceClient()
+                    .getNonHumanSubCategories(category.getID());
             Collections.sort(catList);
             return catList;
         }

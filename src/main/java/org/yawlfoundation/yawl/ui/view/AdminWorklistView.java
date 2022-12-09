@@ -14,7 +14,6 @@ import org.yawlfoundation.yawl.ui.component.SingleSelectParticipantList;
 import org.yawlfoundation.yawl.ui.dialog.SecondaryResourcesDialog;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.AddedIcons;
 import org.yawlfoundation.yawl.ui.util.Settings;
 import org.yawlfoundation.yawl.util.XNode;
@@ -32,8 +31,8 @@ public class AdminWorklistView extends AbstractWorklistView {
     private boolean _settingsVisible = false;
     private ActionIcon _secondaryIcon;
     
-    public AdminWorklistView(ResourceClient client, Participant participant) {
-        super(client, null, participant);
+    public AdminWorklistView(Participant participant) {
+        super(participant);
     }
 
 
@@ -109,7 +108,7 @@ public class AdminWorklistView extends AbstractWorklistView {
                 "Select Secondary Resources", e -> {
             String itemID = getGrid().getSelectedItems().iterator().next().getID();  // only one
             SecondaryResourcesDialog dialog =
-                    new SecondaryResourcesDialog(getResourceClient(), itemID);
+                    new SecondaryResourcesDialog(itemID);
             dialog.getOkButton().addClickListener(c -> {
                 boolean canClose = true;
                 XNode selections = dialog.getSelections();

@@ -1,7 +1,6 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.tabs.Tab;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 
 import java.util.List;
 
@@ -17,8 +16,8 @@ public class OrgDataView extends AbstractTabbedView {
     private Tab _tabOrgGroups;
 
 
-    public OrgDataView(ResourceClient client) {
-        super(client, null, null);
+    public OrgDataView() {
+        super(null);
     }
 
 
@@ -35,16 +34,16 @@ public class OrgDataView extends AbstractTabbedView {
     @Override
     protected void setContent(Tab tab) {
         if (tab.equals(_tabRoles)) {
-            content.add(new RoleSubView(getResourceClient(), getEngineClient()));
+            content.add(new RoleSubView());
         }
         else if (tab.equals(_tabCapabilities)) {
-            content.add(new CapabilitySubView(getResourceClient(), getEngineClient()));
+            content.add(new CapabilitySubView());
         }
         else if (tab.equals(_tabPositions)) {
-            content.add(new PositionSubView(getResourceClient(), getEngineClient()));
+            content.add(new PositionSubView());
         }
         else {
-            content.add(new OrgGroupSubView(getResourceClient(), getEngineClient()));
+            content.add(new OrgGroupSubView());
         }
     }
 

@@ -1,8 +1,6 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.Component;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 
 /**
  * @author Michael Adams
@@ -10,8 +8,8 @@ import org.yawlfoundation.yawl.ui.service.ResourceClient;
  */
 public class ServicesView extends AbstractView {
 
-    public ServicesView(ResourceClient resClient, EngineClient engClient) {
-        super(resClient, engClient);
+    public ServicesView() {
+        super();
         add(createLayout());
         setSizeFull();
     }
@@ -20,8 +18,8 @@ public class ServicesView extends AbstractView {
     @Override
     Component createLayout() {
         return createSplitView(
-                new ServicesSubView(getResourceClient(), getEngineClient()).createLayout(),
-                new ClientAppSubView(getResourceClient(), getEngineClient()).createLayout()
+                new ServicesSubView().createLayout(),
+                new ClientAppSubView().createLayout()
         );
     }
     

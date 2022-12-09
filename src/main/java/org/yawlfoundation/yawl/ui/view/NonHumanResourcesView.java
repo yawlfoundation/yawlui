@@ -1,7 +1,6 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.tabs.Tab;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 
 import java.util.List;
 
@@ -15,8 +14,8 @@ public class NonHumanResourcesView extends AbstractTabbedView {
     private Tab _tabCategories;
 
 
-    public NonHumanResourcesView(ResourceClient client) {
-        super(client, null, null);
+    public NonHumanResourcesView() {
+        super(null);
     }
 
 
@@ -31,10 +30,10 @@ public class NonHumanResourcesView extends AbstractTabbedView {
     @Override
     protected void setContent(Tab tab) {
         if (tab.equals(_tabResources)) {
-            content.add(new NonHumanResourceSubView(getResourceClient()));
+            content.add(new NonHumanResourceSubView());
         }
         else {
-            content.add(new NonHumanCategorySubView(getResourceClient()));
+            content.add(new NonHumanCategorySubView());
         }
     }
 

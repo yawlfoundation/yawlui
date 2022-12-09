@@ -8,8 +8,6 @@ import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.orgdata.AbstractOrgDataDialog;
 import org.yawlfoundation.yawl.ui.dialog.orgdata.PositionDialog;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
@@ -23,8 +21,8 @@ import java.util.List;
  */
 public class PositionSubView extends AbstractOrgDataView<Position> {
 
-    public PositionSubView(ResourceClient resClient, EngineClient engClient) {
-        super(resClient, engClient);
+    public PositionSubView() {
+        super();
     }
 
 

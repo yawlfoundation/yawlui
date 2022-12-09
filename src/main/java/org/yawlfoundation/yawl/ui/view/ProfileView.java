@@ -17,7 +17,6 @@ import org.yawlfoundation.yawl.ui.component.SingleSelectResourceList;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,8 +46,8 @@ public class ProfileView extends AbstractView {
     private final Participant _participant;
     
 
-    public ProfileView(ResourceClient client, Participant participant) {
-        super(client, null);
+    public ProfileView(Participant participant) {
+        super();
         _participant = participant;
         _roleList = createAttributeList(Attribute.Role);
         _capabilityList = createAttributeList(Attribute.Capability);

@@ -1,9 +1,6 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.Component;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
-import org.yawlfoundation.yawl.ui.service.WorkletClient;
 
 /**
  * @author Michael Adams
@@ -13,8 +10,8 @@ public class CasesView extends AbstractView {
 
 
 
-    public CasesView(ResourceClient resClient, EngineClient engClient, WorkletClient wsClient) {
-        super(resClient, engClient, wsClient);
+    public CasesView() {
+        super();
         add(createLayout());
         setSizeFull();
     }
@@ -23,10 +20,8 @@ public class CasesView extends AbstractView {
     @Override
     Component createLayout() {
         return createSplitView(
-                new SpecificationsSubView(getResourceClient(),
-                        getEngineClient()).createLayout(),
-                new CasesSubView(getResourceClient(), getEngineClient(),
-                        getWorkletClient()).createLayout()
+                new SpecificationsSubView().createLayout(),
+                new CasesSubView().createLayout()
         );
     }
 

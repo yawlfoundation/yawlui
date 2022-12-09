@@ -12,7 +12,7 @@ import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.component.Prompt;
 import org.yawlfoundation.yawl.ui.component.ResourceList;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.service.Clients;
 import org.yawlfoundation.yawl.util.XNode;
 
 import java.io.IOException;
@@ -37,13 +37,13 @@ public class SecondaryResourcesDialog extends AbstractDialog {
     private final SelectionSet _selectionSet = new SelectionSet();
     private final Button _okButton = new Button("OK");
 
-    public SecondaryResourcesDialog(ResourceClient resClient, String wirID) {
+    public SecondaryResourcesDialog(String wirID) {
         super();
 
-        _participants = loadParticipants(resClient);
-        _roles = loadRoles(resClient);
-        _resources = loadResources(resClient);
-        _categories = loadCategories(resClient);
+        _participants = loadParticipants();
+        _roles = loadRoles();
+        _resources = loadResources();
+        _categories = loadCategories();
         _categoryItems = generateCategoryItems(_categories);
 
         _selectedList = createSelectedList();
@@ -52,7 +52,7 @@ public class SecondaryResourcesDialog extends AbstractDialog {
         _resourceList = createResourceList(_resources);
         _categoryList = createCategoryList(_categoryItems);
 
-        loadCurrentResources(resClient, wirID);
+        loadCurrentResources(wirID);
         addSelectionListeners();
 
         setHeader("Select Secondary Resources for Item " + wirID, false);
@@ -173,9 +173,9 @@ public class SecondaryResourcesDialog extends AbstractDialog {
     }
 
 
-    private List<Participant> loadParticipants(ResourceClient client) {
+    private List<Participant> loadParticipants() {
         try {
-            return client.getParticipants();
+            return Clients.getResourceClient().getParticipants();
         }
         catch (ResourceGatewayException | IOException e) {
             Announcement.warn("Failed to retrieve participant list from engine: "
@@ -185,9 +185,9 @@ public class SecondaryResourcesDialog extends AbstractDialog {
     }
 
 
-    private List<AbstractResourceAttribute> loadRoles(ResourceClient client) {
+    private List<AbstractResourceAttribute> loadRoles() {
         try {
-            return client.getRoles();
+            return Clients.getResourceClient().getRoles();
         }
         catch (ResourceGatewayException | IOException e) {
             Announcement.warn("Failed to retrieve role list from engine: "
@@ -197,9 +197,9 @@ public class SecondaryResourcesDialog extends AbstractDialog {
     }
 
 
-    private List<NonHumanResource> loadResources(ResourceClient client) {
+    private List<NonHumanResource> loadResources() {
         try {
-            return client.getNonHumanResources();
+            return Clients.getResourceClient().getNonHumanResources();
         }
         catch (ResourceGatewayException | IOException e) {
             Announcement.warn("Failed to retrieve assets list from engine: "
@@ -209,9 +209,9 @@ public class SecondaryResourcesDialog extends AbstractDialog {
     }
 
 
-    private List<NonHumanCategory> loadCategories(ResourceClient client) {
+    private List<NonHumanCategory> loadCategories() {
         try {
-            return client.getNonHumanCategories();
+            return Clients.getResourceClient().getNonHumanCategories();
         }
         catch (ResourceGatewayException | IOException e) {
             Announcement.warn("Failed to retrieve asset categories list from engine: "
@@ -221,9 +221,9 @@ public class SecondaryResourcesDialog extends AbstractDialog {
     }
 
 
-    private void loadCurrentResources(ResourceClient client, String itemID) {
+    private void loadCurrentResources(String itemID) {
         try {
-            XNode secondary = client.getSecondaryResources(itemID);
+            XNode secondary = Clients.getResourceClient().getSecondaryResources(itemID);
             if (secondary == null) return;
 
             for (XNode node : secondary.getChildren()) {

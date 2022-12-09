@@ -7,8 +7,6 @@ import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.orgdata.AbstractOrgDataDialog;
 import org.yawlfoundation.yawl.ui.dialog.orgdata.CapabilityDialog;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,8 +19,8 @@ import java.util.List;
  */
 public class CapabilitySubView extends AbstractOrgDataView<Capability> {
 
-    public CapabilitySubView(ResourceClient resClient, EngineClient engClient) {
-        super(resClient, engClient);
+    public CapabilitySubView() {
+        super();
     }
 
 

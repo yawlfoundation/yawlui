@@ -23,12 +23,11 @@ import java.util.List;
  */
 public class CasesSubView extends AbstractGridView<RunningCase> {
 
-    public CasesSubView(ResourceClient resClient, EngineClient engClient,
-                        WorkletClient wsClient) {
-        super(resClient, engClient, wsClient);
+    public CasesSubView() {
+        super();
 
         // update grid when a new case is launched
-        engClient.addEventListener(e -> {
+        getEngineClient().addEventListener(e -> {
             if (e.getAction() == ClientEvent.Action.LaunchCase) {
                 refresh();
             }
@@ -64,7 +63,7 @@ public class CasesSubView extends AbstractGridView<RunningCase> {
 
     @Override
     void addItemActions(RunningCase item, ActionRibbon ribbon) {
-        boolean hasWorklets = new InstalledServices(getResourceClient()).hasWorkletService();
+        boolean hasWorklets = new InstalledServices().hasWorkletService();
         if (hasWorklets) {
             ActionIcon exceptionAction = ribbon.add(VaadinIcon.EXCLAMATION_CIRCLE_O,
                     ActionIcon.RED, "Worklet Actions", null);

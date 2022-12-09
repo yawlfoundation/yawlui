@@ -10,9 +10,7 @@ import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
-import org.yawlfoundation.yawl.ui.service.WorkletClient;
+import org.yawlfoundation.yawl.ui.service.*;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
 
@@ -25,31 +23,27 @@ import java.nio.charset.StandardCharsets;
  */
 public abstract class AbstractView extends VerticalLayout {
 
-    private final ResourceClient _resClient;
-    private final EngineClient _engClient;
-    private final WorkletClient _wsClient;
 
-
-    public AbstractView(ResourceClient resClient, EngineClient engClient) {
-        this(resClient, engClient, null);
-    }
-
-    public AbstractView(ResourceClient resClient, EngineClient engClient,
-                        WorkletClient wsClient) {
-        _resClient = resClient;
-        _engClient = engClient;
-        _wsClient = wsClient;
-    }
-
+    public AbstractView() { }
 
     abstract Component createLayout();
 
     
-    protected ResourceClient getResourceClient() { return _resClient; }
+    protected ResourceClient getResourceClient() {
+        return Clients.getResourceClient();
+    }
 
-    protected EngineClient getEngineClient() { return _engClient; }
+    protected EngineClient getEngineClient() {
+        return Clients.getEngineClient();
+    }
 
-    protected WorkletClient getWorkletClient() { return _wsClient; }
+    protected WorkletClient getWorkletClient() {
+        return Clients.getWorkletClient();
+    }
+
+    protected DocStoreClient getDocStoreClient() {
+        return Clients.getDocStoreClient();
+    }
 
 
     protected SplitLayout createSplitView(Component top, Component bottom) {

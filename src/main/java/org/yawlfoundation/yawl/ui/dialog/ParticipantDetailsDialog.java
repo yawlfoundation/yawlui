@@ -18,6 +18,7 @@ import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.component.MultiSelectResourceList;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
+import org.yawlfoundation.yawl.ui.service.Clients;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.util.StringUtil;
 
@@ -58,8 +59,8 @@ public class ParticipantDetailsDialog extends AbstractDialog {
     private final MultiSelectResourceList _roleList;
     private final MultiSelectResourceList _capabilityList;
     private final MultiSelectResourceList _positionList;
-    
-    private final ResourceClient _resClient;
+
+    private final ResourceClient _resClient = Clients.getResourceClient();
     private final List<Participant> _allParticipants;
     private final Participant _participant;
     private final Mode _mode;
@@ -68,21 +69,19 @@ public class ParticipantDetailsDialog extends AbstractDialog {
 
 
     // when adding
-    public ParticipantDetailsDialog(ResourceClient client, List<Participant> pList) {
-        this(client, pList, null);
+    public ParticipantDetailsDialog(List<Participant> pList) {
+        this(pList, null);
     }
 
 
     // when read-only
-    public ParticipantDetailsDialog(ResourceClient client, Participant p) {
-         this(client, null, p);
+    public ParticipantDetailsDialog(Participant p) {
+         this(null, p);
      }
 
 
     // when editing
-    public ParticipantDetailsDialog(ResourceClient client, List<Participant> pList,
-                                    Participant p) {
-        _resClient = client;
+    public ParticipantDetailsDialog(List<Participant> pList, Participant p) {
         _allParticipants = pList;
         _participant = p;
         _mode = deriveMode(pList, p);

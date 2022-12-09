@@ -45,9 +45,8 @@ public class UserWorklistView extends AbstractWorklistView {
     private ContextMenu _piledList;
 
 
-    public UserWorklistView(ResourceClient resClient, EngineClient engClient,
-                            WorkletClient wsClient, Participant p, String customFormHandle) {
-        super(resClient, engClient, wsClient, p);
+    public UserWorklistView(Participant p, String customFormHandle) {
+        super(p);
         _customFormLauncher = new CustomFormLauncher(customFormHandle);
     }
 
@@ -73,7 +72,7 @@ public class UserWorklistView extends AbstractWorklistView {
     @Override
     void addItemActions(WorkItemRecord item, ActionRibbon ribbon) {
         TaskPrivileges taskPrivileges = getTaskPrivileges(item);
-        boolean hasWorklets = new InstalledServices(getResourceClient()).hasWorkletService();
+        boolean hasWorklets = new InstalledServices().hasWorkletService();
         switch(item.getResourceStatus()) {
             case "Offered" : createOfferedRibbon(item, ribbon, hasWorklets); break;
             case "Allocated" : createAllocatedRibbon(item, ribbon, taskPrivileges, hasWorklets); break;
@@ -431,7 +430,7 @@ public class UserWorklistView extends AbstractWorklistView {
                 Announcement.warn("Missing or invalid custom form, defaulting to dynamic form");
             }
             String schema = getResourceClient().getWorkItemDataSchema(wir.getID());
-            DynForm dynForm = new DynForm(getEngineClient(), getParticipant(), wir, schema);
+            DynForm dynForm = new DynForm(getParticipant(), wir, schema);
             dynForm.addOkListener(e -> {
                 if (dynForm.validate()) {                                // completion
                     String outputData = dynForm.generateOutputData();

@@ -12,7 +12,8 @@ import java.io.IOException;
 public class UploadDocumentDialog extends AbstractUploadDialog {
 
     public UploadDocumentDialog() {
-        super("Upload File", (String) null);
+        super("Upload File", "");
+        setMaxFiles(1);
     }
 
 

@@ -21,11 +21,13 @@ import org.yawlfoundation.yawl.ui.layout.JustifiedButtonLayout;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.*;
 import org.yawlfoundation.yawl.worklet.admin.AdministrationTask;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * @author Michael Adams
@@ -41,26 +43,9 @@ abstract class AbstractGridView<T> extends AbstractView {
     private final boolean _showHeader;
 
 
-    protected AbstractGridView(ResourceClient resClient, EngineClient engClient) {
-        this(resClient, engClient, null, true);
-    }
+    protected AbstractGridView() { this(true); }
 
-
-    protected AbstractGridView(ResourceClient resClient, EngineClient engClient,
-                               WorkletClient wsClient) {
-        this(resClient, engClient, wsClient, true);
-    }
-
-
-    protected AbstractGridView(ResourceClient resClient, EngineClient engClient,
-                               boolean showHeader) {
-        this(resClient, engClient, null, showHeader);
-    }
-
-
-    protected AbstractGridView(ResourceClient resClient, EngineClient engClient,
-                               WorkletClient wsClient, boolean showHeader) {
-        super(resClient, engClient, wsClient);
+    protected AbstractGridView(boolean showHeader) {
         _showHeader = showHeader;
     }
 
@@ -272,8 +257,8 @@ abstract class AbstractGridView<T> extends AbstractView {
         List<String> triggers = getExternalTriggers(level, id);
         RaiseExceptionDialog dialog = new RaiseExceptionDialog(title, triggers);
         dialog.getOKButton().addClickListener(e -> {
-            if (dialog.validate()) {
-                if (dialog.isNewException()) {
+            if (dialog.isNewException()) {
+                if (dialog.validate()) {
                     String newTitle = dialog.getHeading();
                     String scenario = dialog.getScenario();
                     String process = dialog.getProcess();
@@ -281,14 +266,16 @@ abstract class AbstractGridView<T> extends AbstractView {
                     String itemID = level.equals("Case") ? null : id;
                     addNewExceptionTask(level, caseID, itemID, newTitle, scenario, process);
                 }
-                else {
-                    String selected = dialog.getSelection();
+            }
+            else {
+                String selected = dialog.getSelection();
+                if (!selected.equals("None")) {
                     raiseException(level, id, selected);
                 }
-                dialog.close();
-                refresh();
-                Announcement.success("Exception raised");
             }
+            dialog.close();
+            refresh();
+            Announcement.success("Exception raised");
         });
         dialog.open();
     }

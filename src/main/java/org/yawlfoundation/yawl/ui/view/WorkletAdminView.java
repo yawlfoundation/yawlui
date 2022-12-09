@@ -12,7 +12,6 @@ import com.vaadin.flow.component.textfield.TextField;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.WorkletClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.worklet.admin.AdministrationTask;
 
@@ -36,8 +35,8 @@ public class WorkletAdminView extends AbstractGridView<AdministrationTask> {
     private final Button closeBtn = new Button("Close");
 
 
-    public WorkletAdminView(WorkletClient client) {
-        super(null, null, client);
+    public WorkletAdminView() {
+        super();
         build();
         _details = createDetailsLayout();
     }

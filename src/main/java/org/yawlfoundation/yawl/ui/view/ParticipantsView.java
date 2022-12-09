@@ -10,7 +10,6 @@ import org.yawlfoundation.yawl.ui.dialog.ParticipantDetailsDialog;
 import org.yawlfoundation.yawl.ui.dialog.YesNoDialog;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
 
@@ -28,9 +27,9 @@ public class ParticipantsView extends AbstractGridView<Participant> {
     private final boolean _isOrgDataModifiable;
     private Grid.Column<Participant> _isAdminColumn;
 
-    public ParticipantsView(ResourceClient client) {
-        super(client, null);
-        _isOrgDataModifiable = client.isOrgDataModifiable();
+    public ParticipantsView() {
+        super();
+        _isOrgDataModifiable = getResourceClient().isOrgDataModifiable();
         build();
     }
 
@@ -65,7 +64,7 @@ public class ParticipantsView extends AbstractGridView<Participant> {
         if (_isOrgDataModifiable) {
             ActionIcon editIcon = ribbon.add(VaadinIcon.PENCIL, "Edit", event -> {
                 ParticipantDetailsDialog dialog = new ParticipantDetailsDialog(
-                        getResourceClient(), getLoadedItems(), item);
+                        getLoadedItems(), item);
                 dialog.getOKButton().addClickListener(e -> dialogOkEvent(dialog));
                 dialog.open();
                 ribbon.reset();
@@ -82,7 +81,7 @@ public class ParticipantsView extends AbstractGridView<Participant> {
         }
         else {
             ribbon.add(VaadinIcon.GLASSES, "View", event -> {
-                new ParticipantDetailsDialog(getResourceClient(), item).open();
+                new ParticipantDetailsDialog(item).open();
                 ribbon.reset();
             });
 
@@ -95,7 +94,7 @@ public class ParticipantsView extends AbstractGridView<Participant> {
         if (_isOrgDataModifiable) {
             ribbon.add(createAddAction(event -> {
                 ParticipantDetailsDialog dialog = new ParticipantDetailsDialog(
-                        getResourceClient(), getLoadedItems());
+                        getLoadedItems());
                 dialog.getOKButton().addClickListener(e -> dialogOkEvent(dialog));
                 dialog.open();
                 ribbon.reset();

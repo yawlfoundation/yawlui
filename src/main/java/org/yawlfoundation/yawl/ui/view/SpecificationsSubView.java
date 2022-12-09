@@ -13,8 +13,6 @@ import org.yawlfoundation.yawl.ui.dialog.upload.UploadSpecificationDialog;
 import org.yawlfoundation.yawl.ui.dynform.DynForm;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
@@ -27,8 +25,8 @@ import java.util.List;
  */
 public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
 
-    public SpecificationsSubView(ResourceClient resClient, EngineClient engClient) {
-        super(resClient, engClient);
+    public SpecificationsSubView() {
+        super();
         build();
     }
 
@@ -87,8 +85,7 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
     @Override
     void addFooterActions(ActionRibbon ribbon) {
         ribbon.add(createAddAction(event -> {
-            new UploadSpecificationDialog(getEngineClient(), getLoadedItems(),
-                    e -> refresh()).open();
+            new UploadSpecificationDialog(getLoadedItems(), e -> refresh()).open();
             ribbon.reset();
         }));
 
@@ -140,7 +137,7 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
                             long delay)
             throws ResourceGatewayException, IOException {
         String schema = getResourceClient().getCaseParamsDataSchema(spec.getID());
-        DynForm dynForm = new DynForm(getEngineClient(), inputParams, schema);
+        DynForm dynForm = new DynForm(inputParams, schema);
         dynForm.addOkListener(e -> {
             if (dynForm.validate()) {
                 String caseData = dynForm.generateOutputData();
@@ -226,7 +223,7 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
             return getEngineClient().unloadSpecification(specID);
         }
         catch (IOException ioe) {
-            announceError(ioe.getMessage());
+            Announcement.warn(ioe.getMessage());
             return false;
         }
     }

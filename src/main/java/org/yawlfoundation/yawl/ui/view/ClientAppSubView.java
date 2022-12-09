@@ -3,8 +3,6 @@ package org.yawlfoundation.yawl.ui.view;
 import com.vaadin.flow.component.grid.Grid;
 import org.yawlfoundation.yawl.authentication.YExternalClient;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
@@ -17,8 +15,8 @@ import java.util.List;
  */
 public class ClientAppSubView extends AbstractClientView<YExternalClient> {
 
-    public ClientAppSubView(ResourceClient resClient, EngineClient engClient) {
-        super(resClient, engClient);
+    public ClientAppSubView() {
+        super();
     }
 
 

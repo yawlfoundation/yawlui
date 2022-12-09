@@ -9,9 +9,6 @@ import com.vaadin.flow.component.html.H5;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import org.yawlfoundation.yawl.ui.service.AbstractClient;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
-import org.yawlfoundation.yawl.ui.service.WorkletClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
@@ -29,9 +26,8 @@ public class AboutView extends AbstractView {
     private static final String VERSION = "5.0";
     private static final String DEFAULT_BUILD_DATE = "2022/11/29 08.09";
 
-    public AboutView(ResourceClient resClient, EngineClient engClient,
-                     WorkletClient wsClient) {
-        super(resClient, engClient, wsClient);
+    public AboutView() {
+        super();
 
         add(createHeader("About This Version"));
         add(createLayout());

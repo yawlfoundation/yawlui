@@ -7,8 +7,6 @@ import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.orgdata.AbstractOrgDataDialog;
 import org.yawlfoundation.yawl.ui.dialog.orgdata.OrgGroupDialog;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
@@ -21,8 +19,8 @@ import java.util.List;
  */
 public class OrgGroupSubView extends AbstractOrgDataView<OrgGroup> {
 
-    public OrgGroupSubView(ResourceClient resClient, EngineClient engClient) {
-        super(resClient, engClient);
+    public OrgGroupSubView() {
+        super();
     }
 
 

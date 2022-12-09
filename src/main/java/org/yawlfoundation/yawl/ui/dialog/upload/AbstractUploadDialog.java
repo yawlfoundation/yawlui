@@ -44,6 +44,9 @@ public abstract class AbstractUploadDialog extends AbstractDialog {
         closeBtn.addClickListener(listener);
     }
 
+    protected void setMaxFiles(int maxFiles) {
+        upload.setMaxFiles(maxFiles);
+    }
 
     protected String readFile(InputStream is) throws IOException {
         return IOUtils.toString(is, StandardCharsets.UTF_8);

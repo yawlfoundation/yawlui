@@ -4,7 +4,6 @@ import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.resource.Position;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.IOException;
@@ -17,13 +16,12 @@ import java.util.Set;
  */
 public class OrgGroupWorklistView extends AbstractTeamView {
 
-    public OrgGroupWorklistView(ResourceClient client, Participant participant) {
-        this(client, participant, true);
+    public OrgGroupWorklistView(Participant participant) {
+        this(participant, true);
     }
 
-    public OrgGroupWorklistView(ResourceClient client, Participant participant,
-                                boolean showHeader) {
-        super(client, participant, showHeader);
+    public OrgGroupWorklistView(Participant participant, boolean showHeader) {
+        super(participant, showHeader);
     }
 
     @Override

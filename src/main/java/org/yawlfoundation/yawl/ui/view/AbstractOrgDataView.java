@@ -10,13 +10,11 @@ import org.yawlfoundation.yawl.resourcing.resource.AbstractResourceAttribute;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
-import org.yawlfoundation.yawl.ui.dialog.upload.UploadOrgDataDialog;
 import org.yawlfoundation.yawl.ui.dialog.orgdata.AbstractOrgDataDialog;
+import org.yawlfoundation.yawl.ui.dialog.upload.UploadOrgDataDialog;
 import org.yawlfoundation.yawl.ui.layout.JustifiedButtonLayout;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
@@ -35,8 +33,8 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
     protected Grid.Column<T> _colMembers;
 
 
-    protected AbstractOrgDataView(ResourceClient resClient, EngineClient engClient) {
-        super(resClient, engClient, false);
+    protected AbstractOrgDataView() {
+        super(false);
         build();
     }
 
@@ -181,7 +179,7 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
     protected ActionRibbon createFileActions() {
         ActionRibbon ribbon = new ActionRibbon();
         ribbon.add(VaadinIcon.UPLOAD_ALT, "Upload from backup file", e -> {
-            UploadOrgDataDialog dialog = new UploadOrgDataDialog(getResourceClient());
+            UploadOrgDataDialog dialog = new UploadOrgDataDialog();
             dialog.addCloseButtonListener(b -> {
                 refresh();
                 ribbon.reset();

@@ -9,7 +9,7 @@ import org.jdom2.Namespace;
 import org.yawlfoundation.yawl.engine.YSpecificationID;
 import org.yawlfoundation.yawl.engine.interfce.SpecificationData;
 import org.yawlfoundation.yawl.schema.YSchemaVersion;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
+import org.yawlfoundation.yawl.ui.service.Clients;
 import org.yawlfoundation.yawl.ui.service.UploadResult;
 import org.yawlfoundation.yawl.util.JDOMUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
@@ -24,14 +24,12 @@ import java.util.List;
  */
 public class UploadSpecificationDialog extends AbstractUploadDialog {
 
-    private final EngineClient _client;
     private final List<SpecificationData> _loadedSpecs;
 
 
-    public UploadSpecificationDialog(EngineClient client, List<SpecificationData> loadedSpecs,
+    public UploadSpecificationDialog(List<SpecificationData> loadedSpecs,
                                      ComponentEventListener<ClickEvent<Button>> listener) {
         super("Upload Specifications", ".yawl", ".xml");
-        _client = client;
         _loadedSpecs = loadedSpecs;
         addCloseButtonListener(listener);
         addSucceedListener(event -> {
@@ -44,7 +42,7 @@ public class UploadSpecificationDialog extends AbstractUploadDialog {
     private void uploadSpecification(String fileName, InputStream stream) {
          try {
              String fileContent = validateUpload(readFile(stream));
-             UploadResult result = _client.uploadSpecification(fileContent);
+             UploadResult result = Clients.getEngineClient().uploadSpecification(fileContent);
              processResult(result, fileName);
          }
          catch (IOException ioe) {

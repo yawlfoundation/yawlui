@@ -30,8 +30,7 @@ import org.yawlfoundation.yawl.documentStore.YDocument;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.upload.UploadDocumentDialog;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.util.AddedIcons;
+import org.yawlfoundation.yawl.ui.service.Clients;
 import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.ByteArrayInputStream;
@@ -51,18 +50,15 @@ public class DocComponent extends HorizontalLayout {
     private ActionIcon _btnUp;
     private ActionIcon _btnDown;
 
-    private final EngineClient _engClient;
-    
 
-    public DocComponent(EngineClient client, String caseID, String docIDStr,
-                        TextField field, boolean inputOnly) {
-        _engClient = client;
+    public DocComponent(String caseID, String docIDStr, TextField field, boolean inputOnly) {
         _docID = StringUtil.strToLong(docIDStr, -1);
         _textField = field;
         _caseID = caseID;
         _docName = _textField.getValue();
 
         buildComponent(inputOnly);
+        setWidthFull();
     }
 
     
@@ -79,15 +75,20 @@ public class DocComponent extends HorizontalLayout {
 
     private void buildComponent(boolean inputOnly) {
         _textField.setReadOnly(true);                         // can't be edited directly
-
+        _textField.setWidthFull();
+        
         String upTip = inputOnly ? "File is read only" : "Upload file";
         _btnUp = new ActionIcon(VaadinIcon.UPLOAD_ALT, null, upTip,
                 e -> upload());
         _btnUp.setEnabled(! inputOnly);       // no upload if var readonly
 
-        _btnDown = new ActionIcon(AddedIcons.DOWNLOAD, null, "Download File",
+        _btnDown = new ActionIcon(VaadinIcon.DOWNLOAD_ALT, null, "Download File",
                 e -> download());
+        _btnDown.setEnabled(_docID > -1);
 
+        setIconStyle(_btnUp);
+        setIconStyle(_btnDown);
+        
         add(_textField, _btnUp, _btnDown);
         setSpacing(false);
     }
@@ -101,6 +102,13 @@ public class DocComponent extends HorizontalLayout {
     }
 
 
+    private void setIconStyle(ActionIcon icon) {
+        icon.getStyle().set("margin-left", "5px");
+        icon.getStyle().set("margin-top", "auto");
+        icon.getStyle().set("margin-bottom", "10px");
+    }
+
+
     private void upload() {
         UploadDocumentDialog dialog = new UploadDocumentDialog();
         dialog.addSucceedListener(e -> {
@@ -108,7 +116,7 @@ public class DocComponent extends HorizontalLayout {
                 byte[] fileBytes = dialog.getFileContents(e.getFileName());
                 if (fileBytes.length > 0) {
                     YDocument document = new YDocument(_caseID, _docID, fileBytes);
-                    _docID = _engClient.putStoredDocument(document);
+                    _docID = Clients.getDocStoreClient().putStoredDocument(document);
                     _docName = e.getFileName();
                     _textField.setValue(_docName);
                     _btnDown.setEnabled(true);
@@ -128,7 +136,7 @@ public class DocComponent extends HorizontalLayout {
 
     private void download() {
         try {
-            YDocument doc = _engClient.getStoredDocument(_docID);
+            YDocument doc = Clients.getDocStoreClient().getStoredDocument(_docID);
             if (doc.getDocument() != null) {
                 downloadFile(_docName, doc.getDocument());
             }

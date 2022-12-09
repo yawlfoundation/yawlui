@@ -35,7 +35,7 @@ import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.jsf.dynform.FormParameter;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.ui.dynform.dynattributes.DynAttributeFactory;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
+import org.yawlfoundation.yawl.ui.service.Clients;
 import org.yawlfoundation.yawl.util.JDOMUtil;
 
 import java.awt.*;
@@ -64,13 +64,9 @@ public class DynFormFactory {
     // the top-level container
     private DynFormLayout _container;
 
-    // a YAWL Engine API client
-    private final EngineClient _engineClient;
 
 
-    public DynFormFactory(EngineClient client) {
-        _engineClient = client;
-    }
+    public DynFormFactory() { }
 
 
     /**
@@ -136,7 +132,6 @@ public class DynFormFactory {
         return (component != null) ? _componentFieldTable.get(component) : null;
     }
 
-    protected EngineClient getEngineClient() { return _engineClient; }
 
     /* @return the decomposition-level extended attributes */
     protected DynFormUserAttributes getUserAttributes() { return _userAttributes; }
@@ -242,7 +237,7 @@ public class DynFormFactory {
     /* @return a map of workitem parameters [param name, param] */
     private Map<String, FormParameter> getParamInfo(WorkItemRecord wir) {
         try {
-            TaskInformation taskInfo = _engineClient.getTaskInformation(wir);
+            TaskInformation taskInfo = Clients.getEngineClient().getTaskInformation(wir);
             return new ParameterMap().build(wir, taskInfo);
         }
         catch (IOException e) {

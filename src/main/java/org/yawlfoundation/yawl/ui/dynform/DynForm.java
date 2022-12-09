@@ -12,7 +12,7 @@ import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.AbstractDialog;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
+import org.yawlfoundation.yawl.ui.service.Clients;
 
 import java.io.IOException;
 import java.util.List;
@@ -27,24 +27,19 @@ public class DynForm extends AbstractDialog {
     private Button _saveButton;
     private final Button _cancelButton = new Button("Cancel", event -> cancelform());
 
-    private final EngineClient _engClient;
-    private final DynFormFactory _factory;
+    private final DynFormFactory _factory = new DynFormFactory();
 
 
     // work item edit
-    public DynForm(EngineClient client, Participant p, WorkItemRecord wir, String schema) {
+    public DynForm(Participant p, WorkItemRecord wir, String schema) {
         super();
-        _engClient = client;
-        _factory = new DynFormFactory(_engClient);
         createContent(p, wir, schema);
     }
 
 
     // case start
-    public DynForm(EngineClient client, List<YParameter> parameters, String schema) {
+    public DynForm(List<YParameter> parameters, String schema) {
         super();
-        _engClient = client;
-        _factory = new DynFormFactory(_engClient);
         createContent(parameters, schema);
     }
 
@@ -161,7 +156,7 @@ public class DynForm extends AbstractDialog {
                 for (Long docID : docIDs) {
 
                     // an id of -1 means no doc was uploaded by the doc component
-                    if (docID > -1) _engClient.removeStoredDocument(docID);
+                    if (docID > -1) Clients.getDocStoreClient().removeStoredDocument(docID);
                 }
             }
             catch (IOException ioe) {

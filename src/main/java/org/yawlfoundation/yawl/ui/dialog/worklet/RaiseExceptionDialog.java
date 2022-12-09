@@ -2,6 +2,7 @@ package org.yawlfoundation.yawl.ui.dialog.worklet;
 
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
+import com.vaadin.flow.component.radiobutton.RadioGroupVariant;
 
 import java.util.List;
 
@@ -17,7 +18,6 @@ public class RaiseExceptionDialog extends AbstractWorkletDialog {
 
     public RaiseExceptionDialog(String title, List<String>triggers) {
         super(title, triggers);
-        setText("Please describe why the exception should be raised");
     }
 
 
@@ -31,12 +31,14 @@ public class RaiseExceptionDialog extends AbstractWorkletDialog {
 
 
     protected VerticalLayout createContent(List<String>triggers) {
+        triggers.add(NEW_TRIGGER);
+        
         VerticalLayout subDialog = layoutTextFields();
         subDialog.setVisible(false);
 
         _radios = new RadioButtonGroup<>();
+        _radios.addThemeVariants(RadioGroupVariant.LUMO_VERTICAL);
         _radios.setLabel("Select the exception that has occurred");
-        triggers.add(NEW_TRIGGER);
         _radios.setItems(triggers);
         _radios.addValueChangeListener(event ->
             subDialog.setVisible(event.getValue().equals(NEW_TRIGGER)));

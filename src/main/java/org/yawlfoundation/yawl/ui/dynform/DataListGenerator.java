@@ -61,6 +61,7 @@ public class DataListGenerator {
      * @return An XML data document (as a string)
      */
     public String generate(DynFormLayout container, List<DynFormField> fieldList) {
+   //     XNode node = createNode(container);
         return generateDataList(container, fieldList).toString();
     }
 
@@ -90,15 +91,18 @@ public class DataListGenerator {
 
             // if subpanel, build inner content recursively
             if (child instanceof SubPanel) {
-                XNode subNode = generateDataList(((SubPanel) child).getForm(),
+                SubPanel subPanel = (SubPanel) child;
+                XNode subNode = generateDataList(subPanel.getForm(),
                         field.getSubFieldList());
-                addContent(node, subNode, field);
+                addContent(node, subNode, field, ! subPanel.hasHeader());
             }
             else {
 
                 // simple field
                 XNode fieldNode = createFieldNode(child, field);
-                if (fieldNode != null) node.addChild(fieldNode);
+                if (fieldNode != null) {
+                    node.addChild(fieldNode);
+                }
             }
         }
 
@@ -115,18 +119,25 @@ public class DataListGenerator {
             name = _factory.despace(((DynFormLayout) component).getName());
         }
         else {
-            name = _factory.getDefaultFormName();
+   //         name = _factory.getDefaultFormName();
+            return null;
         }
         return new XNode(name);
     }
 
 
     /* Insert the inner content xml */
-    private void addContent(XNode parent, XNode child, DynFormField field) {
+    private void addContent(XNode parent, XNode child, DynFormField field,
+                            boolean contentOnly) {
 
         // don't add empty elements for field with minOccurs=0
         if (! (field.hasZeroMinimum() && ! child.hasChildren())) {
-            parent.addChild(child);
+            if (contentOnly) {
+                parent.addChildren(child.getChildren());
+            }
+            else {
+                parent.addChild(child);
+            }
         }
     }
 

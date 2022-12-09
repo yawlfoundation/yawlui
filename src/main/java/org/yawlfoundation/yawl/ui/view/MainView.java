@@ -8,6 +8,7 @@ import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.login.AbstractLogin;
 import com.vaadin.flow.component.login.LoginForm;
 import com.vaadin.flow.component.login.LoginI18n;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -28,9 +29,8 @@ import org.yawlfoundation.yawl.resourcing.resource.UserPrivileges;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.DrawerMenu;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
+import org.yawlfoundation.yawl.ui.service.Clients;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
-import org.yawlfoundation.yawl.ui.service.WorkletClient;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -51,14 +51,10 @@ import java.util.Set;
 public class MainView extends AppLayout implements
         ComponentEventListener<Tabs.SelectedChangeEvent>, AppShellConfigurator {
 
-    private static final ResourceClient _resClient = new ResourceClient();
-    private static final EngineClient _engClient = new EngineClient();
-    private static final WorkletClient _wsClient = new WorkletClient();
-
     private Participant _user;
     private Div _footer;
 
-    public static Map<Participant, String> _customFormHandleMap = new HashMap<>();
+    private static final Map<Participant, String> _customFormHandleMap = new HashMap<>();
 
 
     public MainView() {
@@ -81,19 +77,19 @@ public class MainView extends AppLayout implements
         Tab tab = event.getSelectedTab();
         if (tab == null) return;               // tab is null when user first logs on only
         switch (tab.getLabel()) {
-            case "My Worklist" : setContent(new UserWorklistView(
-                    _resClient, _engClient, _wsClient, _user, getCustomformHandle(_user))); break;
-            case "My Profile" : setContent(new ProfileView(_resClient, _user)); break;
+            case "My Worklist" : setContent(new UserWorklistView(_user,
+                    getCustomformHandle(_user))); break;
+            case "My Profile" : setContent(new ProfileView(_user)); break;
             case "My Team's Worklist" : setContent(chooseGroupView()); break;
-            case "Case Mgt" : setContent(new CasesView(_resClient, _engClient, _wsClient)); break;
-            case "Admin Worklist" : setContent(new AdminWorklistView(_resClient, _user)); break;
-            case "Participants" : setContent(new ParticipantsView(_resClient)); break;
-            case "Org Data" : setContent(new OrgDataView(_resClient)); break;
-            case "Non-Human Resources" : setContent(new NonHumanResourcesView(_resClient)); break;
-            case "Services / Clients" : setContent(new ServicesView(_resClient, _engClient)); break;
-            case "Calendar" : setContent(new CalendarView(_resClient, _user)); break;
-            case "Worklet Admin" : setContent(new WorkletAdminView(_wsClient)); break;
-            case "About" : setContent(new AboutView(_resClient, _engClient, _wsClient)); break;
+            case "Case Mgt" : setContent(new CasesView()); break;
+            case "Admin Worklist" : setContent(new AdminWorklistView(_user)); break;
+            case "Participants" : setContent(new ParticipantsView()); break;
+            case "Org Data" : setContent(new OrgDataView()); break;
+            case "Non-Human Resources" : setContent(new NonHumanResourcesView()); break;
+            case "Services / Clients" : setContent(new ServicesView()); break;
+            case "Calendar" : setContent(new CalendarView(_user)); break;
+            case "Worklet Admin" : setContent(new WorkletAdminView()); break;
+            case "About" : setContent(new AboutView()); break;
             case "Logout" : event.getSource().setSelectedIndex(0); exit();
         }
     }
@@ -111,35 +107,38 @@ public class MainView extends AppLayout implements
         i18n.getForm().setTitle(null);
         LoginForm login = new LoginForm(i18n);
         login.setForgotPasswordButtonVisible(false);
-        login.addLoginListener(e -> {
-            try {
-                String username = e.getUsername();
-                String password = e.getPassword();
-                if (_resClient.authenticate(username, password)) {
-                    _user = _resClient.getParticipant(username);
-                    _user.setUserPrivileges(_resClient.getUserPrivileges(_user.getID()));
-                    _customFormHandleMap.put(_user,
-                            _resClient.getUserCustomFormHandle(username, password));
-                    createTitleBar();
-                    DrawerMenu menu = createMenuBar();
-                    addWorkletServiceChangeListener(menu);
-                }
-                else {
-                    setErrorMessage(login, null);        // sets default error msg
-                    login.setError(true);                            // show the error
-                }
-            }
-            catch (ResourceGatewayException | IOException |
-                   NoSuchAlgorithmException ex) {
-                setErrorMessage(login, ex.getMessage());
-                login.setError(true);
-            }
-        });
-
+        login.addLoginListener(e -> authenticate(e, login));
 
         layout.add(login);
         layout.setSizeFull();
         setContent(layout);
+    }
+
+    
+    private void authenticate(AbstractLogin.LoginEvent event, LoginForm login) {
+        try {
+            String username = event.getUsername();
+            String password = event.getPassword();
+            ResourceClient resClient = Clients.getResourceClient();
+            if (resClient.authenticate(username, password)) {
+                _user = resClient.getParticipant(username);
+                _user.setUserPrivileges(resClient.getUserPrivileges(_user.getID()));
+                _customFormHandleMap.put(_user,
+                        resClient.getUserCustomFormHandle(username, password));
+                createTitleBar();
+                DrawerMenu menu = createMenuBar();
+                addWorkletServiceChangeListener(menu);
+            }
+            else {
+                setErrorMessage(login, null);        // sets default error msg
+                login.setError(true);                            // show the error
+            }
+        }
+        catch (ResourceGatewayException | IOException |
+               NoSuchAlgorithmException ex) {
+            setErrorMessage(login, ex.getMessage());
+            login.setError(true);
+        }
     }
 
 
@@ -168,7 +167,7 @@ public class MainView extends AppLayout implements
 
 
     private DrawerMenu createMenuBar() {
-        DrawerMenu menu = new DrawerMenu(_user, _resClient);
+        DrawerMenu menu = new DrawerMenu(_user);
         menu.addSelectedChangeListener(this);
         addToDrawer(menu);
         menu.selectInitialItem();
@@ -201,7 +200,7 @@ public class MainView extends AppLayout implements
 
     // update menu if worklet service is added or removed
     private void addWorkletServiceChangeListener(DrawerMenu menu) {
-        _resClient.addEventListener(e -> {
+        Clients.getResourceClient().addEventListener(e -> {
             if (e.getObject() instanceof YAWLServiceReference &&
                     ((YAWLServiceReference) e.getObject()).getURI()
                             .contains("workletService")) {
@@ -230,13 +229,13 @@ public class MainView extends AppLayout implements
             UserPrivileges up = _user.getUserPrivileges();
             if (_user.isAdministrator() || (
                     up.canViewOrgGroupItems() && up.canViewOrgGroupItems())) {
-                return new GroupWorklistTabbedView(_resClient, _user);
+                return new GroupWorklistTabbedView(_user);
             }
             else if (up.canViewTeamItems()) {
-                return new TeamWorklistView(_resClient, _user);
+                return new TeamWorklistView(_user);
             }
             else if (up.canViewOrgGroupItems()) {
-                return new OrgGroupWorklistView(_resClient, _user);
+                return new OrgGroupWorklistView(_user);
             }
         }
         return new Div();
@@ -248,8 +247,8 @@ public class MainView extends AppLayout implements
             _customFormHandleMap.remove(_user);
             _user = null;
             if (_customFormHandleMap.isEmpty()) {             // if no-one's logged on
-                _resClient.disconnect();
-                _engClient.disconnect();
+                Clients.getResourceClient().disconnect();
+                Clients.getEngineClient().disconnect();
             }
         }
         catch (IOException ioe) {
@@ -267,13 +266,13 @@ public class MainView extends AppLayout implements
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                 throws ServletException, IOException {
-
             String[] parts = parseRequest(req, resp);
             if (parts == null) return;                             // error resp sent
             String handle = parts[3];
             String wirID = parts[4];
             String method = parts.length == 6 ? parts[5] : "item";
             String result = null;
+            ResourceClient resClient = Clients.getResourceClient();
             try {
                 WorkItemRecord wir = getStartedItem(wirID, handle, resp); // check valid item
                 if (wir == null) return;                          // error resp sent
@@ -282,9 +281,9 @@ public class MainView extends AppLayout implements
                         result = wir.toXML();
                         break;
                     case "parameters":
-                        result = _resClient.getWorkItemParameters(wirID, handle); break;
+                        result = resClient.getWorkItemParameters(wirID, handle); break;
                     case "outputOnlyParameters":
-                        result = _resClient.getWorkItemOutputOnlyParameters(wirID, handle); break;
+                        result = resClient.getWorkItemOutputOnlyParameters(wirID, handle); break;
                     default:
                         resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Unrecognized resource");
                         break;
@@ -306,16 +305,17 @@ public class MainView extends AppLayout implements
             String wirID = parts[4];
             String method = parts.length == 6 ? parts[5] : "save";
             String result = null;
+            ResourceClient resClient = Clients.getResourceClient();
             try {
                 WorkItemRecord wir = getStartedItem(wirID, handle, resp); // check valid item
                 if (wir == null) return;                          // error resp sent
                 switch (method) {
                     case "save":
                         String data = req.getParameter("data");
-                        result = _resClient.updateWorkItemData(wirID, data, handle);
+                        result = resClient.updateWorkItemData(wirID, data, handle);
                         break;
                     case "complete":
-                         _resClient.completeItem(wir, getParticipantID(handle));
+                         resClient.completeItem(wir, getParticipantID(handle));
                          break;
                     default:
                         resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Unrecognized resource");
@@ -341,7 +341,7 @@ public class MainView extends AppLayout implements
             }
 
             String handle = parts[3];
-            if (! _resClient.isValidUserSessionHandle(handle)) {
+            if (! Clients.getResourceClient().isValidUserSessionHandle(handle)) {
                 resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Invalid session handle");
                 return null;
             }
@@ -362,8 +362,8 @@ public class MainView extends AppLayout implements
                 throws ResourceGatewayException, IOException {
             String pid = getParticipantID(handle);
             if (pid != null) {
-                Set<WorkItemRecord> startedItems = _resClient.getQueuedItems(
-                        pid, WorkQueue.STARTED);
+                Set<WorkItemRecord> startedItems = Clients.getResourceClient()
+                        .getQueuedItems(pid, WorkQueue.STARTED);
                 for (WorkItemRecord item : startedItems) {
                     if (item.getID().equals(wirID)) {
                         return item;

@@ -5,8 +5,6 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 
 import java.util.List;
 
@@ -19,9 +17,8 @@ public abstract class AbstractTabbedView extends AbstractView {
     protected final VerticalLayout content = new VerticalLayout();
     protected final Participant _participant;
 
-    public AbstractTabbedView(ResourceClient resClient, EngineClient engClient,
-                              Participant participant) {
-        super(resClient, engClient);
+    public AbstractTabbedView(Participant participant) {
+        super();
         _participant = participant;
         add(createLayout());
         setSizeFull();

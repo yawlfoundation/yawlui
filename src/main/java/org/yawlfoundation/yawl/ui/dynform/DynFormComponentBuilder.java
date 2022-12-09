@@ -362,9 +362,7 @@ public class DynFormComponentBuilder {
         DynFormField id = input.getSubField("id");
         TextField textField = makeTextField(name);
         boolean inputOnly = input.isInputOnly();
-        DocComponent docField = new DocComponent(_factory.getEngineClient(),
-                _factory.getCaseID(), id.getValue(), textField, inputOnly);
-        return docField;
+        return new DocComponent(_factory.getCaseID(), id.getValue(), textField, inputOnly);
     }
 
 

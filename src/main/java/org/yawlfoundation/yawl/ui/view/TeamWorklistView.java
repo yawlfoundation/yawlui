@@ -3,7 +3,6 @@ package org.yawlfoundation.yawl.ui.view;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.IOException;
@@ -16,14 +15,13 @@ import java.util.Set;
  */
 public class TeamWorklistView extends AbstractTeamView {
 
-    public TeamWorklistView(ResourceClient client, Participant participant) {
-        this(client, participant, true);
+    public TeamWorklistView(Participant participant) {
+        this(participant, true);
     }
 
 
-    public TeamWorklistView(ResourceClient client, Participant participant,
-                            boolean showHeader) {
-        super(client, participant, showHeader);
+    public TeamWorklistView(Participant participant, boolean showHeader) {
+        super(participant, showHeader);
     }
 
 

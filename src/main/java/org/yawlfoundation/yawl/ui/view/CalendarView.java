@@ -18,7 +18,6 @@ import org.yawlfoundation.yawl.ui.dialog.CalendarDialog;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
@@ -57,8 +56,8 @@ public class CalendarView extends AbstractGridView<CalendarEntry> {
     private String _resourceID;
     private ResourceCalendar.ResourceGroup _resourceGroup;
 
-    public CalendarView(ResourceClient resClient, Participant currentUser) {
-        super(resClient, null, false);
+    public CalendarView(Participant currentUser) {
+        super(false);
         _user = currentUser;
         _participants = getParticipants();
         _assets = getAssets();
@@ -102,7 +101,7 @@ public class CalendarView extends AbstractGridView<CalendarEntry> {
     @Override
     void addItemActions(CalendarEntry item, ActionRibbon ribbon) {
         ActionIcon editAction = ribbon.add(VaadinIcon.PENCIL, "Edit", event -> {
-            CalendarDialog dialog = new CalendarDialog(getSelectedResourceLabel(), item);
+            CalendarDialog dialog = new CalendarDialog(renderResource(item), item);
             dialog.getOkButton().addClickListener(e -> {
                 if (dialog.validate()) {
                     CalendarEntry entry = dialog.getEntry();

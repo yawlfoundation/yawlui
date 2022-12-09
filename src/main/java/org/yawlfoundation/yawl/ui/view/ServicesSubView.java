@@ -5,8 +5,6 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import org.yawlfoundation.yawl.elements.YAWLServiceReference;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.util.HttpUtil;
 
@@ -26,8 +24,8 @@ public class ServicesSubView extends AbstractClientView<YAWLServiceReference> {
     private Grid.Column<YAWLServiceReference> _connectedColumn;
 
 
-    public ServicesSubView(ResourceClient resClient, EngineClient engClient) {
-        super(resClient, engClient);
+    public ServicesSubView() {
+        super();
     }
 
 

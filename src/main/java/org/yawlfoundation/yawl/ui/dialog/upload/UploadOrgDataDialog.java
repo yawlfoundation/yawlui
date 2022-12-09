@@ -1,7 +1,7 @@
 package org.yawlfoundation.yawl.ui.dialog.upload;
 
 import org.jdom2.Element;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.service.Clients;
 import org.yawlfoundation.yawl.util.JDOMUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
 
@@ -14,19 +14,19 @@ import java.io.InputStream;
  */
 public class UploadOrgDataDialog extends AbstractUploadDialog {
 
-    public UploadOrgDataDialog(ResourceClient client) {
+    public UploadOrgDataDialog() {
         super("Upload Org Data", ".ybkp");
         addSucceedListener(event -> {
             String fileName = event.getFileName();
-            uploadOrgData(client, buffer.getInputStream(fileName));
+            uploadOrgData(buffer.getInputStream(fileName));
         });
     }
 
 
-    private void uploadOrgData(ResourceClient client, InputStream is) {
+    private void uploadOrgData(InputStream is) {
         try {
             String content = readFile(is);
-            String outcome = client.importOrgData(content);
+            String outcome = Clients.getResourceClient().importOrgData(content);
             if (StringUtil.isNullOrEmpty(outcome)) {
                 appendMessage("Data import failed: see log file for details");
             }

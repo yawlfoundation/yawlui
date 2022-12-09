@@ -13,7 +13,6 @@ import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.NonHumanCategoryDialog;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
@@ -28,8 +27,8 @@ import java.util.List;
  */
 public class NonHumanCategorySubView extends AbstractGridView<NonHumanCategory> {
 
-    public NonHumanCategorySubView(ResourceClient resClient) {
-        super(resClient, null);
+    public NonHumanCategorySubView() {
+        super();
         build();
     }
 
@@ -81,8 +80,8 @@ public class NonHumanCategorySubView extends AbstractGridView<NonHumanCategory> 
     @Override
     void addItemActions(NonHumanCategory item, ActionRibbon ribbon) {
         ActionIcon editIcon = ribbon.add(VaadinIcon.PENCIL, "Edit", event -> {
-            NonHumanCategoryDialog dialog = new NonHumanCategoryDialog(
-                    getResourceClient(), getLoadedItems(), getMembers(item.getID()), item);
+            NonHumanCategoryDialog dialog = new NonHumanCategoryDialog(getLoadedItems(),
+                    getMembers(item.getID()), item);
             dialog.getOkButton().addClickListener(e -> {
                 if (dialog.validate()) {
                     dialog.updateService();
@@ -109,7 +108,7 @@ public class NonHumanCategorySubView extends AbstractGridView<NonHumanCategory> 
     void addFooterActions(ActionRibbon ribbon) {
         ribbon.add(createAddAction(event -> {
             NonHumanCategoryDialog dialog = new NonHumanCategoryDialog(
-                    getResourceClient(), getLoadedItems(), null, null);
+                    getLoadedItems(), null, null);
             dialog.getOkButton().addClickListener(e -> {
                 if (dialog.validate()) {
                     dialog.updateService();

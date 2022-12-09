@@ -1,8 +1,6 @@
 package org.yawlfoundation.yawl.ui.service;
 
 import org.yawlfoundation.yawl.authentication.YExternalClient;
-import org.yawlfoundation.yawl.documentStore.DocumentStoreClient;
-import org.yawlfoundation.yawl.documentStore.YDocument;
 import org.yawlfoundation.yawl.engine.YSpecificationID;
 import org.yawlfoundation.yawl.engine.interfce.Marshaller;
 import org.yawlfoundation.yawl.engine.interfce.TaskInformation;
@@ -15,7 +13,10 @@ import org.yawlfoundation.yawl.util.XNode;
 import org.yawlfoundation.yawl.util.XNodeParser;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Michael Adams
@@ -25,20 +26,14 @@ public class EngineClient extends AbstractClient {
 
     private final InterfaceA_EnvironmentBasedClient _iaClient;
     private final InterfaceB_EnvironmentBasedClient _ibClient;
-    private final DocumentStoreClient _docStoreClient;
 
 
     public EngineClient() {
         super();
-
         String host = ApplicationProperties.getEngineHost();
         String port = ApplicationProperties.getEnginePort();
         _iaClient = new InterfaceA_EnvironmentBasedClient(buildURI(host, port, "yawl/ia"));
         _ibClient = new InterfaceB_EnvironmentBasedClient(buildURI(host, port, "yawl/ib"));
-
-        host = ApplicationProperties.getDocStoreHost();
-        port = ApplicationProperties.getDocStorePort();
-        _docStoreClient = new DocumentStoreClient(buildURI(host, port, "documentStore/"));
     }
 
 
@@ -159,27 +154,6 @@ public class EngineClient extends AbstractClient {
         }
         throw new IOException("Failed to load engine build properties: " +
                 StringUtil.unwrap(props));
-    }
-
-
-    // DOC SERVICE METHODS //
-
-    public YDocument getStoredDocument(long docID) throws IOException {
-        return _docStoreClient.getDocument(docID, getHandle());
-    }
-
-
-    public long putStoredDocument(YDocument doc) throws IOException {
-        String id = _docStoreClient.putDocument(doc, getHandle());
-        if (successful(id)) {
-            return Long.parseLong(StringUtil.unwrap(id));
-        }
-        throw new IOException(StringUtil.unwrap(id));
-    }
-
-
-    public void removeStoredDocument(long docID) throws IOException {
-        _docStoreClient.removeDocument(docID, getHandle());
     }
 
 

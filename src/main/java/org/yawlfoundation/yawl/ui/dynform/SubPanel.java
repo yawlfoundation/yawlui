@@ -72,6 +72,9 @@ public class SubPanel extends VerticalLayout implements Cloneable {
                 child instanceof H5).findFirst().orElse(null);
     }
 
+    public boolean hasHeader() { return getHeader() != null; }
+
+
     public String getName() { return _name; }
 
     public void setLabel(String label) { this.label = label; }

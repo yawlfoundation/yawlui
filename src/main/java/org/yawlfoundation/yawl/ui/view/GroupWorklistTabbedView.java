@@ -2,7 +2,6 @@ package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.tabs.Tab;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 
 import java.util.List;
 
@@ -16,8 +15,8 @@ public class GroupWorklistTabbedView extends AbstractTabbedView {
     private Tab _tabGroup;
 
 
-    public GroupWorklistTabbedView(ResourceClient client, Participant participant) {
-        super(client, null, participant);
+    public GroupWorklistTabbedView(Participant participant) {
+        super(participant);
     }
 
 
@@ -32,12 +31,10 @@ public class GroupWorklistTabbedView extends AbstractTabbedView {
     @Override
     void setContent(Tab tab) {
         if (tab.equals(_tabTeam)) {
-            getContent().add(new TeamWorklistView(
-                    getResourceClient(), getParticipant(), false));
+            getContent().add(new TeamWorklistView(getParticipant(), false));
         }
         else {
-            getContent().add(new OrgGroupWorklistView(
-                    getResourceClient(), getParticipant(), false));
+            getContent().add(new OrgGroupWorklistView(getParticipant(), false));
         }
     }
     

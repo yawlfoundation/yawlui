@@ -16,9 +16,6 @@ import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.component.MultiSelectParticipantList;
 import org.yawlfoundation.yawl.ui.component.SingleSelectParticipantList;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.EngineClient;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
-import org.yawlfoundation.yawl.ui.service.WorkletClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
 
@@ -28,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Michael Adams
@@ -52,26 +50,13 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
     private QueueSet _queueSet;
 
 
-    public AbstractWorklistView(ResourceClient resClient, EngineClient engClient,
-                                Participant participant) {
-        this(resClient, engClient, null, participant, true);
+    public AbstractWorklistView(Participant participant) {
+        this(participant, true);
     }
 
-    public AbstractWorklistView(ResourceClient resClient, EngineClient engClient,
-                                WorkletClient wsClient, Participant participant) {
-        this(resClient, engClient, wsClient, participant, true);
-    }
 
-    public AbstractWorklistView(ResourceClient resClient, EngineClient engClient,
-                                Participant participant, boolean showHeader) {
-        this(resClient, engClient, null, participant, showHeader);
-     }
-
-
-    public AbstractWorklistView(ResourceClient resClient, EngineClient engClient,
-                                WorkletClient wsClient, Participant participant,
-                                boolean showHeader) {
-        super(resClient, engClient, wsClient, showHeader);
+    public AbstractWorklistView(Participant participant, boolean showHeader) {
+         super(showHeader);
         _user = participant;
         build();
         initCompleted();
@@ -205,9 +190,13 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
         }
         if (queue > -1) {
             try {
-                List<Participant> pList = new ArrayList<>(
-                        getResourceClient().getAssignedParticipants(wir.getID(), queue));
+                Set<Participant> pSet = getResourceClient().getAssignedParticipants(
+                        wir.getID(), queue);
+                if (pSet == null) {
+                    return new Label("Unknown");
+                }
 
+                List<Participant> pList = new ArrayList<>(pSet);
                 if (pList.size() > 1) {
                     return buildParticipantCombo(pList);
                 }

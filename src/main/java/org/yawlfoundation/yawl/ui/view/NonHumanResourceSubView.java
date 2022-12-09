@@ -8,7 +8,6 @@ import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.NonHumanResourceDialog;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
@@ -21,8 +20,8 @@ import java.util.List;
  */
 public class NonHumanResourceSubView extends AbstractGridView<NonHumanResource> {
 
-    public NonHumanResourceSubView(ResourceClient resClient) {
-        super(resClient, null);
+    public NonHumanResourceSubView() {
+        super();
         build();
     }
 
@@ -72,8 +71,7 @@ public class NonHumanResourceSubView extends AbstractGridView<NonHumanResource> 
     @Override
     void addItemActions(NonHumanResource item, ActionRibbon ribbon) {
         ActionIcon editIcon = ribbon.add(VaadinIcon.PENCIL, "Edit", event -> {
-            NonHumanResourceDialog dialog = new NonHumanResourceDialog(
-                    getResourceClient(), getLoadedItems(), item);
+            NonHumanResourceDialog dialog = new NonHumanResourceDialog(getLoadedItems(), item);
             dialog.getOkButton().addClickListener(e -> {
                 if (dialog.validate()) {
                     dialog.updateService();
@@ -100,7 +98,7 @@ public class NonHumanResourceSubView extends AbstractGridView<NonHumanResource> 
     void addFooterActions(ActionRibbon ribbon) {
         ribbon.add(createAddAction(event -> {
             NonHumanResourceDialog dialog = new NonHumanResourceDialog(
-                    getResourceClient(), getLoadedItems(), null);
+                    getLoadedItems(), null);
             dialog.getOkButton().addClickListener(e -> {
                 if (dialog.validate()) {
                     dialog.updateService();

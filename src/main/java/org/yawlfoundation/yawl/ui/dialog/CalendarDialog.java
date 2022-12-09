@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -51,8 +52,14 @@ public class CalendarDialog extends AbstractDialog {
 
 
     public void initPickers(LocalDateTime dateTime) {
-        _startPicker.setValue(dateTime);
-        _endPicker.setValue(dateTime.plusHours(1));
+        LocalDateTime start = dateTime.isAfter(LocalDateTime.now()) ?
+                dateTime : LocalDateTime.now();
+
+        // round start time up to next hour
+        start = start.plusMinutes(59).truncatedTo(ChronoUnit.HOURS);
+
+        _startPicker.setValue(start);
+        _endPicker.setValue(start.plusHours(1));
     }
 
 
@@ -108,11 +115,12 @@ public class CalendarDialog extends AbstractDialog {
 
 
     private void configFields() {
-        _startPicker.addValueChangeListener(e -> _endPicker.setMin(
-                _startPicker.getValue().plusMinutes(1)));      // end always after start
         _startPicker.setValue(LocalDateTime.now());
+        _startPicker.addValueChangeListener(e -> validateStartTime());
         _endPicker.setValue(LocalDateTime.now().plusHours(1));
+        _endPicker.addValueChangeListener(e -> validateEndTime());
         _untilPicker.setEnabled(false);
+        _workloadField.setValue(100);
         configRepeatCombo();
         configWorkloadField();
     }
@@ -151,7 +159,35 @@ public class CalendarDialog extends AbstractDialog {
         _startPicker.setValue(longToDateTime(entry.getStartTime()));
         _endPicker.setValue(longToDateTime(entry.getEndTime()));
         _workloadField.setValue(entry.getWorkload());
-        _commentField.setValue(entry.getComment());
+        if (entry.getComment() != null) {
+            _commentField.setValue(entry.getComment());
+        }
+    }
+
+
+    private void validateStartTime() {
+        LocalDateTime start = _startPicker.getValue();
+        LocalDateTime end = _endPicker.getValue();
+        _endPicker.setInvalid(false);
+        _startPicker.setInvalid(false);
+        if (end.isBefore(start)) {
+            _startPicker.setErrorMessage("Start must be before end");
+            _startPicker.setInvalid(true);
+        }
+        _okButton.setEnabled(! (_startPicker.isInvalid() || _endPicker.isInvalid()));
+    }
+
+
+    private void validateEndTime() {
+        LocalDateTime start = _startPicker.getValue();
+        LocalDateTime end = _endPicker.getValue();
+        _startPicker.setInvalid(false);
+        _endPicker.setInvalid(false);
+        if (end.isBefore(start)) {
+            _endPicker.setErrorMessage("End must be after start");
+            _endPicker.setInvalid(true);
+        }
+        _okButton.setEnabled(! (_startPicker.isInvalid() || _endPicker.isInvalid()));
     }
 
 

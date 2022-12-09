@@ -7,7 +7,6 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
-import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.InstalledServices;
 
 /**
@@ -19,9 +18,9 @@ public class DrawerMenu extends Tabs {
     private Tab initialItem;
 
 
-    public DrawerMenu(Participant p, ResourceClient client) {
+    public DrawerMenu(Participant p) {
         setOrientation(Orientation.VERTICAL);
-        addItems(p, client);
+        addItems(p);
     }
 
 
@@ -39,7 +38,7 @@ public class DrawerMenu extends Tabs {
     }
 
 
-    private void addItems(Participant p, ResourceClient client) {
+    private void addItems(Participant p) {
 
         // normal user
         if (p != null) {
@@ -64,7 +63,7 @@ public class DrawerMenu extends Tabs {
             add(createTab(VaadinIcon.CLUSTER, "Non-Human Resources"));
             add(createTab(VaadinIcon.LINK, "Services / Clients"));
             add(createTab(VaadinIcon.CALENDAR_CLOCK, "Calendar"));
-            if (new InstalledServices(client).hasWorkletService()) {
+            if (new InstalledServices().hasWorkletService()) {
                 add(createTab(VaadinIcon.WRENCH, "Worklet Admin"));
             }
         }
