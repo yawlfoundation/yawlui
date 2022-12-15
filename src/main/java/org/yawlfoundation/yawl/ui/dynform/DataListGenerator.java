@@ -119,8 +119,7 @@ public class DataListGenerator {
             name = _factory.despace(((DynFormLayout) component).getName());
         }
         else {
-   //         name = _factory.getDefaultFormName();
-            return null;
+            name = _factory.getDefaultFormName();
         }
         return new XNode(name);
     }

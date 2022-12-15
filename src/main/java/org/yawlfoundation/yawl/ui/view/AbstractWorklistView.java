@@ -41,8 +41,8 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
     }
 
     private static final DateFormat DATE_FORMAT =
-                new SimpleDateFormat("MMM dd yyyy H:mm:ss");
-
+            new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    
     private HorizontalLayout _content;
 
     private final Participant _user;
@@ -246,6 +246,14 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
 
 
     protected void startItem(WorkItemRecord wir, String pid) {
+
+        // can't start a work item that is suspended in the engine
+        if (wir.hasStatus("Suspended")) {
+            Announcement.warn("Unable to start work item: it is currently " +
+                    "suspended by the YAWL Engine. Please try again later.");
+            return;
+        }
+
         try {
             getResourceClient().startItem(wir.getID(), pid);
             refresh();

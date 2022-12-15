@@ -134,9 +134,17 @@ public class AdminWorklistView extends AbstractWorklistView {
     protected Grid<WorkItemRecord> createGrid() {
         return createAdminGrid();
     }
+    
 
+    private void reassignSingle(WorkItemRecord wir, Action action) {
 
-     private void reassignSingle(WorkItemRecord wir, Action action) {
+        // can't start a work item that is suspended in the engine
+        if (action.name().contains("tart") && wir.hasStatus("Suspended")) {
+            Announcement.warn("Unable to start work item: it is currently " +
+                    "suspended by the YAWL Engine. Please try again later.");
+            return;
+        }
+
         if (Settings.isDirectlyToMe()) {
             reassignSingle(wir, getParticipantID(), action);
         }
@@ -176,7 +184,7 @@ public class AdminWorklistView extends AbstractWorklistView {
     }
 
 
-    private void reassignSingle(WorkItemRecord wir, String pid, Action action) {
+    private synchronized void reassignSingle(WorkItemRecord wir, String pid, Action action) {
         try {
             switch (action) {
                 case Allocate: getResourceClient().allocateItem(wir.getID(), pid); break;
@@ -189,12 +197,13 @@ public class AdminWorklistView extends AbstractWorklistView {
                     (action.name().endsWith("e") ? "d" : "ed"), wir.getID());
         }
         catch (IOException | ResourceGatewayException ex) {
-            Announcement.error(ex.getMessage());
+            Announcement.warn(ex.getMessage());
         }
     }
 
 
-    private void reassignMultiple(WorkItemRecord wir, Set<String> pids, Action action) {
+    private synchronized void reassignMultiple(WorkItemRecord wir, Set<String> pids,
+                                               Action action) {
         try {
             switch (action) {
                 case Offer: getResourceClient().offerItem(wir.getID(), pids); break;
@@ -205,7 +214,7 @@ public class AdminWorklistView extends AbstractWorklistView {
                     action.name(), wir.getID(), pids.size(), (pids.size() > 1 ? "s" : ""));
         }
         catch (IOException | ResourceGatewayException ex) {
-            Announcement.error(ex.getMessage());
+            Announcement.warn(ex.getMessage());
         }
     }
 
@@ -218,7 +227,7 @@ public class AdminWorklistView extends AbstractWorklistView {
             return problems.isEmpty();
         }
         catch (IOException | ResourceGatewayException e) {
-            Announcement.error(e.getMessage());
+            Announcement.warn(e.getMessage());
             return false;
         }
     }

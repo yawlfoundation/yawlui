@@ -91,7 +91,7 @@ public abstract class AbstractClientView<T extends YClient> extends AbstractGrid
             return true;
         }
         catch (IOException ioe) {
-            Announcement.error(ioe.getMessage());
+            announceError(ioe.getMessage());
             return false;
         }
     }
@@ -109,7 +109,7 @@ public abstract class AbstractClientView<T extends YClient> extends AbstractGrid
             return true;
         }
         catch (IOException ioe) {
-            Announcement.error(ioe.getMessage());
+            announceError(ioe.getMessage());
             return false;
         }
     }

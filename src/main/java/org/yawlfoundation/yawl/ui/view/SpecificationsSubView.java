@@ -11,11 +11,13 @@ import org.yawlfoundation.yawl.ui.dialog.DelayedStartDialog;
 import org.yawlfoundation.yawl.ui.dialog.SpecInfoDialog;
 import org.yawlfoundation.yawl.ui.dialog.upload.UploadSpecificationDialog;
 import org.yawlfoundation.yawl.ui.dynform.DynForm;
+import org.yawlfoundation.yawl.ui.listener.DelayedCaseLaunchedListener;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,6 +26,8 @@ import java.util.List;
  * @date 9/11/20
  */
 public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
+
+    private final List<DelayedCaseLaunchedListener> _listeners = new ArrayList<>();
 
     public SpecificationsSubView() {
         super();
@@ -102,6 +106,11 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
     @Override
     String getTitle() {
         return "Specifications";
+    }
+
+
+    public void addDelayedCaseLaunchListener(DelayedCaseLaunchedListener listener) {
+        _listeners.add(listener);
     }
 
 
@@ -191,6 +200,7 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
                         else {
                             launchCase(spec.getID(), null, delay);
                         }
+                        announceDelayedCaseLaunch(delay);
                     }
                     catch (ResourceGatewayException | IOException ioe) {
                         announceError(ioe.getMessage());
@@ -252,6 +262,11 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
         catch (IOException ioe) {
             announceError(ioe.getMessage());
         }
+    }
+
+
+    private void announceDelayedCaseLaunch(long delay) {
+        _listeners.forEach(l -> l.delayedCaseLaunched(delay + 1000));
     }
 
 }

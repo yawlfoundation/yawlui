@@ -180,7 +180,7 @@ public class ParticipantsView extends AbstractGridView<Participant> {
             }
         }
        catch (IOException e) {
-           Announcement.error(e.getMessage());
+           Announcement.error("Failed to delete participant: " + e.getMessage());
        }
     }
 

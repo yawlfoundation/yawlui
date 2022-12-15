@@ -322,7 +322,7 @@ public class UserWorklistView extends AbstractWorklistView {
             }
         }
         catch (IOException e) {
-            Announcement.error(e.getMessage());
+            Announcement.error("Failed to create new instance: " + e.getMessage());
         }
     }
 
@@ -347,14 +347,14 @@ public class UserWorklistView extends AbstractWorklistView {
                     }
                 }
                 catch (IOException | ResourceGatewayException ex) {
-                    Announcement.error(ex.getMessage());
+                    Announcement.error("Failed to reallocate item: " + ex.getMessage());
                 }
             });
         }
     }
 
 
-    private void performAction(Action action, WorkItemRecord wir) {
+    private synchronized void performAction(Action action, WorkItemRecord wir) {
         try {
             String successMsg = String.format("%s%s item '%s'", action.name(),
                     (action.name().endsWith("e") ? "d" : "ed"), wir.getID());
@@ -377,7 +377,8 @@ public class UserWorklistView extends AbstractWorklistView {
             Announcement.success(successMsg);
         }
         catch (IOException | ResourceGatewayException e) {
-            Announcement.error(e.getMessage());
+            Announcement.error("Failed to %s item: %s:",
+                    action.name().toLowerCase(), e.getMessage());
         }
     }
 
@@ -400,7 +401,7 @@ public class UserWorklistView extends AbstractWorklistView {
                     }
                 }
                 catch (IOException | ResourceGatewayException ex) {
-                    Announcement.error(ex.getMessage());
+                    Announcement.error("Failed to delegate item: " + ex.getMessage());
                 }
             });
         }
@@ -459,6 +460,7 @@ public class UserWorklistView extends AbstractWorklistView {
     private void completeItem(WorkItemRecord wir, String data) {
         try {
             getResourceClient().completeItem(wir, data, getParticipantID());
+            Announcement.success("Work item %s completed", wir.getID());
         }
         catch (IOException | ResourceGatewayException e) {
             Announcement.error("Failed to complete work item: " + e.getMessage());
@@ -469,6 +471,7 @@ public class UserWorklistView extends AbstractWorklistView {
     private void saveWorkItemData(WorkItemRecord wir, String data) {
         try {
             getResourceClient().updateWorkItemData(wir.getID(), data);
+            Announcement.success("Work item %s saved", wir.getID());
         }
         catch (IOException  | ResourceGatewayException e) {
             Announcement.error("Failed to save data to work item: " + e.getMessage());

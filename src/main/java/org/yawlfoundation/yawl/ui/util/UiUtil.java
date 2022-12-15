@@ -16,14 +16,13 @@
 
 package org.yawlfoundation.yawl.ui.util;
 
-import com.vaadin.flow.component.ClickEvent;
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.ComponentEventListener;
-import com.vaadin.flow.component.Html;
+import com.vaadin.flow.component.*;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import org.yawlfoundation.yawl.util.StringUtil;
+
+import java.util.stream.Collectors;
 
 /**
  * @author Michael Adams
@@ -98,6 +97,29 @@ public class UiUtil {
         button.setEnabled(enabled);
         setTooltip(button, tip);
         return button;
+    }
+
+
+    // set focus to the first focusable field in a container
+    public static boolean setFocus(Component container) {
+        for (Component c : container.getChildren().collect(Collectors.toList())) {
+
+            // if c is a container, recurse and, if focus found within, return
+            if (c instanceof HasComponents) {
+                if (setFocus(c)) {
+                    return true;
+                }
+            }
+
+            // if c can have focus and is enabled and is not read only
+            else if ((c instanceof Focusable<?>) && (((HasEnabled)c).isEnabled()) &&
+                    (c instanceof HasValueAndElement<?, ?>) &&
+                    ! (((HasValueAndElement<?, ?>) c).isReadOnly())) {
+                ((Focusable<?>) c).focus();
+                return true;
+            }
+        }
+        return false;
     }
 
 }

@@ -108,9 +108,11 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
 
     
     protected T findItem(String id) {
-        for (T item : _existingItems) {
-            if (id.equals(item.getID())) {
-                return item;
+        if (id != null) {
+            for (T item : _existingItems) {
+                if (item.getID() != null && id.equals(item.getID())) {
+                    return item;
+                }
             }
         }
         return null;
@@ -162,6 +164,7 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
 
 
     private void showSelectNewMembersList() {
+        getSaveButton().setEnabled(false);
         VerticalLayout container = new UnpaddedVerticalLayout();
         container.setSpacing(false);
 
@@ -178,15 +181,21 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
         listPanel.setHeight(getSelectMembersHeight());
         listPanel.smaller();
         listPanel.setSelected(_updatedMembers);
-        listPanel.addCancelListener(e -> _layout.remove(container));
+        listPanel.addCancelListener(e -> hideSelectNewMembersList(container));
         listPanel.addOKListener(e -> {
-            _layout.remove(container);
+            hideSelectNewMembersList(container);
             _updatedMembers = new ArrayList<>(listPanel.getSelection());
             _memberList.refresh(_updatedMembers);
         });
 
         container.add(new Prompt("Select Members"), listPanel);
         _layout.add(container);
+    }
+
+
+    private void hideSelectNewMembersList(VerticalLayout container) {
+        _layout.remove(container);
+        getSaveButton().setEnabled(true);
     }
 
 
@@ -207,6 +216,10 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
         }
         else if (! isUniqueName(_nameField.getValue())) {
             _nameField.setErrorMessage("That " + _title + " name is already registered");
+            _nameField.setInvalid(true);
+        }
+        else if (_nameField.getValue().equals("nil")) {
+            _nameField.setErrorMessage("Invalid name: 'nil' is reserved");
             _nameField.setInvalid(true);
         }
         return !_nameField.isInvalid();
@@ -247,7 +260,7 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
             combo.setErrorMessage(String.format("A %s cannot %s to itself", object, verb));
             combo.setInvalid(true);
         }
-        else {
+        else if (! combo.getValue().getName().equals("nil")) {
             String cyclicErrorMessage = checkCyclicReferences(getExistingItems(), getItem());
             if (cyclicErrorMessage != null) {
                 combo.setErrorMessage(cyclicErrorMessage);

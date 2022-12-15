@@ -18,10 +18,12 @@ public class DynFormLayout extends FormLayout {
 
     public static final double FIELD_HEIGHT = 64.5;
     public static final double CHECKBOX_HEIGHT = 22.8;
+
     private static final double PADDING_HEIGHT = 31.0;
     private static final double WINDOW_HEIGHT_FRACTION = 0.65;
     private static final int COLUMN_COUNT = 2;
     private static final int SIMPLE_FIELD_LAYOUT_THRESHOLD = 3;
+    private static final int BASE_WIDTH = 350;
 
     private final String _name;
 
@@ -56,19 +58,33 @@ public class DynFormLayout extends FormLayout {
     public String getName() { return _name; }
 
 
-    // if there are less than 4 fields, and none are sub-panels, set half width
+    // if there are less than 4 fields, and any that are sub-panels have only one
+    // simple field, and any not are also simple fields, set half width
     public String getAppropriateWidth() {
-        long count = getChildren().count();
-        if (count <= SIMPLE_FIELD_LAYOUT_THRESHOLD) {
-            long subpanels = getChildren().filter(
-                    component -> (component instanceof SubPanel)).count();
-            if (subpanels == 0) {
-                return "350px";               // only a single non-subPanel component
-            }
-        }
-        return "700px";
+        return getAppropriateWidthAsInt() + "px";
     }
 
+
+    private int getAppropriateWidthAsInt() {
+        if (getChildren().count() <= SIMPLE_FIELD_LAYOUT_THRESHOLD) {
+            for (SubPanel subPanel : getChildSubPanels(this)) {
+                if (! isSimpleContentSubPanel(subPanel)) {
+                    return BASE_WIDTH * 2;    // go wide for non-simple sub-panels
+                }
+            }
+            return BASE_WIDTH + getMaxSubPanelDepth(this) * 30;
+        }
+        return BASE_WIDTH * 2;    // more fields than threshold
+    }
+
+
+    private int getMaxSubPanelDepth(Component parent) {
+        int depth = 0;
+        for (SubPanel subPanel : getChildSubPanels(parent)) {
+             depth = Math.max(depth, 1 + getMaxSubPanelDepth(subPanel));
+        }
+        return depth;
+    }
 
     public void setAppropriateHeight(int windowHeight) {
         double actualHeight = calculateHeight();
@@ -76,7 +92,35 @@ public class DynFormLayout extends FormLayout {
         setHeight(height + "px");
     }
 
-    
+
+    private boolean isSimpleContentSubPanel(SubPanel subPanel) {
+        DynFormLayout content = getSubPanelContent(subPanel);
+
+        for (Component c : content.getChildren().collect(Collectors.toList())) {
+             if (c instanceof SubPanel) {
+                 if (! isSimpleContentSubPanel((SubPanel) c)) {
+                     return false;
+                 }
+             }
+        }
+        return content.getChildren().filter(child -> !(child instanceof SubPanel)).count() < 2;
+    }
+
+
+    private List<SubPanel> getChildSubPanels(Component parent) {
+        List<SubPanel> subPanels = new ArrayList<>();
+        parent.getChildren().filter(component -> (component instanceof SubPanel))
+                .forEach(p -> subPanels.add((SubPanel) p));
+        return subPanels;
+    }
+
+
+    private DynFormLayout getSubPanelContent(SubPanel subPanel) {
+        return (DynFormLayout) subPanel.getChildren().filter(
+                child -> (child instanceof DynFormLayout)).findAny().orElse(null);
+    }
+
+
     private void setColspan(Component component) {
         int colspan = (component instanceof SubPanel || component instanceof ChoiceComponent) ?
                 COLUMN_COUNT : 1;
@@ -87,9 +131,25 @@ public class DynFormLayout extends FormLayout {
     public double calculateHeight() {
         double height = 0;
         
-        // simple case
-        if (isSingleColumn()) {
-            return calculateSingleColumnHeight();
+        // all simple fields < threshold
+        if (isSimpleFieldsUnderThreshold()) {
+            return calculateSimpleFieldsUnderThresholdHeight() + PADDING_HEIGHT;
+        }
+
+        // some simple sub-panels in mix, but still < threshold
+        if (getAppropriateWidthAsInt() < BASE_WIDTH * 2) {
+            for (Component c : getChildren().collect(Collectors.toList())) {
+                if (c instanceof SubPanel) {
+                    height += ((SubPanel) c).calculateHeight();
+                }
+                else if (c instanceof ChoiceComponent) {
+                    height += ((ChoiceComponent) c).calculateHeight();
+                }
+                else {
+                    height += getSimpleFieldHeight(c);     // checkboxes are shorter
+                }
+            }
+            return height + PADDING_HEIGHT;
         }
         
         for (ImmutablePair<Component, Component> row : collectFormIntoRows()) {
@@ -108,19 +168,24 @@ public class DynFormLayout extends FormLayout {
 
 
     // a max of 4 'simple' fields (textfield, combo, checkbox, etc) in one column
-    private boolean isSingleColumn() {
+    private boolean isSimpleFieldsUnderThreshold() {
         return getChildren().count() <= SIMPLE_FIELD_LAYOUT_THRESHOLD &&
                 getMaxColSpan() < COLUMN_COUNT;
     }
 
 
     // all types of field have the same screen height, except for checkboxes
-    private double calculateSingleColumnHeight() {
+    private double calculateSimpleFieldsUnderThresholdHeight() {
         double height = 0;
         for (Component c : getChildren().collect(Collectors.toList())) {
-            height += (c instanceof Checkbox) ? CHECKBOX_HEIGHT : FIELD_HEIGHT;
+            height += getSimpleFieldHeight(c);
         }
-        return height + PADDING_HEIGHT;
+        return height;
+    }
+
+
+    private double getSimpleFieldHeight(Component c) {
+        return (c instanceof Checkbox) ? CHECKBOX_HEIGHT : FIELD_HEIGHT;
     }
 
 

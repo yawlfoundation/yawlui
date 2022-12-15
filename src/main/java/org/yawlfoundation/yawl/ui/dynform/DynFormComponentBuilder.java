@@ -81,7 +81,7 @@ public class DynFormComponentBuilder {
         if (controller.canVaryOccurs()) {
             subPanel.addOccursButtons();
 
-            if (isDisabled(field)) {
+            if (isReadOnly(field)) {
                 subPanel.enableOccursButtons(false);
             }
             else {
@@ -206,7 +206,7 @@ public class DynFormComponentBuilder {
         Checkbox checkbox = new Checkbox(input.getLabel());
         checkbox.setValue((input.getValue() != null) &&
                           input.getValue().equalsIgnoreCase("true")) ;
-        checkbox.setEnabled(! isDisabled(input));
+        checkbox.setReadOnly(isReadOnly(input));
         setStyles(checkbox, input);
         checkbox.getStyle().set("margin-top", "10px");
         checkbox.setVisible(isVisible(input));
@@ -218,7 +218,7 @@ public class DynFormComponentBuilder {
     public DatePicker makeDatePicker(DynFormField input) {
         DatePicker datePicker = new DatePicker(input.getLabel());
         datePicker.setValue(createDate(input.getValue(), -1));       // default to today
-        datePicker.setEnabled(!isDisabled(input));
+        datePicker.setReadOnly(isReadOnly(input));
         datePicker.setMin(getMinDate(input));
         datePicker.setMax(getMaxDate(input));
         setStyles(datePicker, input);
@@ -231,7 +231,7 @@ public class DynFormComponentBuilder {
     public DateTimePicker makeDateTimePicker(DynFormField input) {
         DateTimePicker dateTimePicker = new DateTimePicker(input.getLabel());
         dateTimePicker.setValue(createDateTime(input.getValue(), -1));       // default to today
-        dateTimePicker.setEnabled(!isDisabled(input));
+        dateTimePicker.setReadOnly(isReadOnly(input));
         dateTimePicker.setMin(getMinDateTime(input));
         dateTimePicker.setMax(getMaxDateTime(input));
         setStyles(dateTimePicker, input);
@@ -322,7 +322,7 @@ public class DynFormComponentBuilder {
         if (! StringUtil.isNullOrEmpty(input.getValue())) {
             comboBox.setValue(input.getValue());
         }
-        comboBox.setEnabled(! isDisabled(input));
+        comboBox.setReadOnly(isReadOnly(input));
         comboBox.setVisible(isVisible(input));
         UiUtil.setTooltip(comboBox, input.getToolTip());
         return comboBox;
@@ -332,7 +332,7 @@ public class DynFormComponentBuilder {
     public TextArea makeTextArea(DynFormField input) {
         TextArea textarea = new TextArea();
         setStyles(textarea, input);
-        textarea.setEnabled(! isDisabled(input));
+        textarea.setReadOnly(isReadOnly(input));
         UiUtil.setTooltip(textarea, input.getToolTip());
         textarea.setVisible(isVisible(input));
         if (! (input.hasBlackoutAttribute() || input.getValue() == null)) {
@@ -346,7 +346,7 @@ public class DynFormComponentBuilder {
     public TextField makeTextField(DynFormField input) {
         TextField textField = new TextField(input.getLabel()) ;
         setStyles(textField, input);
-        textField.setEnabled(! isDisabled(input));
+        textField.setReadOnly(isReadOnly(input));
         UiUtil.setTooltip(textField, input.getToolTip());
         textField.setVisible(isVisible(input));
         if (! (input.hasBlackoutAttribute() || input.getValue() == null)) {
@@ -393,7 +393,7 @@ public class DynFormComponentBuilder {
     }
 
 
-    private boolean isDisabled(DynFormField input) {
+    private boolean isReadOnly(DynFormField input) {
         return input.isInputOnly() || _factory.isFormReadOnly();
     }
 

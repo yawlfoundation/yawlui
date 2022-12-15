@@ -9,7 +9,9 @@ import com.vaadin.flow.component.html.H5;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import org.yawlfoundation.yawl.ui.service.AbstractClient;
+import org.yawlfoundation.yawl.ui.util.BuildInformation;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
+import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -23,13 +25,13 @@ import java.util.Map;
  */
 public class AboutView extends AbstractView {
 
-    private static final String VERSION = "5.0";
-    private static final String DEFAULT_BUILD_DATE = "2022/11/29 08.09";
+    private static final String DEFAULT_VERSION = "5.0";
 
     public AboutView() {
         super();
 
         add(createHeader("About This Version"));
+
         add(createLayout());
         setSizeFull();
     }
@@ -37,14 +39,15 @@ public class AboutView extends AbstractView {
     
     @Override
     Component createLayout() {
+        BuildInformation buildInformation = new BuildInformation();
         return new VerticalLayout(getCopyright(), new H5("Major Components"),
-                buildGrid(), getVaadinCredit());
+                buildGrid(buildInformation), getVaadinCredit(buildInformation));
     }
 
 
-    private Grid<BuildDetails> buildGrid() {
+    private Grid<BuildDetails> buildGrid(BuildInformation buildInformation) {
         Grid<BuildDetails> grid = new Grid<>();
-        grid.setItems(getItems());
+        grid.setItems(getItems(buildInformation));
         grid.addColumn(BuildDetails::getService).setHeader(UiUtil.bold("Component"));
         grid.addColumn(BuildDetails::getVersion).setHeader(UiUtil.bold("Version"));
         grid.addColumn(BuildDetails::getNumber).setHeader(UiUtil.bold("Build Number"));
@@ -55,7 +58,7 @@ public class AboutView extends AbstractView {
     }
 
 
-    private List<BuildDetails> getItems() {
+    private List<BuildDetails> getItems(BuildInformation buildInformation) {
         List<BuildDetails> items = new ArrayList<>();
         items.add(getBuildDetails(getEngineClient(), "YAWL Engine"));
         items.add(getBuildDetails(getResourceClient(), "Resource Service"));
@@ -64,18 +67,20 @@ public class AboutView extends AbstractView {
         if (workletDetails != null) {
             items.add(getBuildDetails(getWorkletClient(), "Worklet Service"));
         }
-        addStaticItems(items);
+        addStaticItems(items, buildInformation);
         return items;
     }
 
 
-    private void addStaticItems(List<BuildDetails> items) {
-        items.add(new BuildDetails("Mail Service", DEFAULT_BUILD_DATE,
-                VERSION, "181"));
-        items.add(new BuildDetails("Web Service Invoker", DEFAULT_BUILD_DATE,
-                VERSION, "301"));
-        items.add(new BuildDetails("Document Store", DEFAULT_BUILD_DATE,
-                VERSION, "124"));
+    private void addStaticItems(List<BuildDetails> items, BuildInformation buildInformation) {
+        items.add(new BuildDetails("YAWL UI (this component)",
+                buildInformation.getUIProperties().asMap()));
+        items.add(new BuildDetails("Mail Service",
+                buildInformation.getMailServiceProperties().asMap()));
+        items.add(new BuildDetails("Web Service Invoker",
+                buildInformation.getInvokerServiceProperties().asMap()));
+        items.add(new BuildDetails("Document Store",
+                buildInformation.getDocStoreProperties().asMap()));
     }
 
 
@@ -84,7 +89,7 @@ public class AboutView extends AbstractView {
         layout.setPadding(false);
         
         Span span = new Span(String.format("YAWL Version %s. Copyright (c) 2004-%d ",
-                VERSION, LocalDate.now().getYear()));
+                DEFAULT_VERSION, LocalDate.now().getYear()));
         span.add(link("https://yawlfoundation.github.io/", "The YAWL Foundation"));
         span.add(". All rights reserved.");
         layout.add(span);
@@ -100,10 +105,10 @@ public class AboutView extends AbstractView {
     }
 
 
-    private Span getVaadinCredit() {
+    private Span getVaadinCredit(BuildInformation buildInformation) {
         Span span = new Span("The YAWL UI is built on the ");
         span.add(link("https://vaadin.com/", "Vaadin Framework"));
-        span.add(" (version 23.2.9).");
+        span.add(String.format(" (version %s).", buildInformation.get("vaadin.version")));
         return span;
     }
 
@@ -140,11 +145,20 @@ public class AboutView extends AbstractView {
 
         String getService() { return service; }
 
-        String getDate() { return get("BuildDate"); }
+        String getDate() {
+            String date = get("BuildDate");
+            return StringUtil.isNullOrEmpty(date) ? "N/A" : date;
+        }
 
-        String getNumber() { return get("BuildNumber"); }
+        String getNumber() {
+            String number = get("BuildNumber");
+            return StringUtil.isNullOrEmpty(number) ? "N/A" : number;
+        }
 
-        String getVersion() { return get("Version"); }
+        String getVersion() {
+            String version = get("Version");
+            return StringUtil.isNullOrEmpty(version) ? DEFAULT_VERSION : version;
+        }
 
         String get(String key) {
             String value = detailsMap.get(key);

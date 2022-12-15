@@ -6,7 +6,7 @@
     <groupId>org.yawlfoundation.yawl</groupId>
     <artifactId>yawlui</artifactId>
     <name>YAWL UI</name>
-    <version>0.1</version>
+    <version>5.0.378</version>
     <packaging>war</packaging>
 
     <properties>
@@ -16,6 +16,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <jetty.version>9.4.31.v20200723</jetty.version>
+        <timestamp>${maven.build.timestamp}</timestamp>
+        <maven.build.timestamp.format>yyyy/MM/dd HH:mm</maven.build.timestamp.format>
     </properties>
 
     <repositories>
@@ -284,7 +286,31 @@
                     <!--                    <downloadRoot>http://myproxy.example.org/nodejs/</downloadRoot>-->
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>parse-version</id>
+                        <goals>
+                            <goal>parse-version</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.13.0</version>
+            </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
     </build>
 
     <profiles>
@@ -373,5 +399,33 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>bump-patch</id>
+            <activation>
+              <property>
+                <name>bumpPatch</name>
+              </property>
+            </activation>
+            <build>
+              <plugins>
+                <plugin>
+                  <groupId>org.codehaus.mojo</groupId>
+                  <artifactId>versions-maven-plugin</artifactId>
+
+                  <executions>
+                    <execution>
+                      <goals>
+                        <goal>set</goal>
+                      </goals>
+                      <phase>validate</phase>
+                      <configuration>
+                        <newVersion>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.nextIncrementalVersion}</newVersion>
+                      </configuration>
+                    </execution>
+                  </executions>
+                </plugin>
+              </plugins>
+            </build>
+          </profile>
     </profiles>
 </project>

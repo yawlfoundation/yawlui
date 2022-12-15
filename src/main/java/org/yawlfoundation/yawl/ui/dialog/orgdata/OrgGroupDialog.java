@@ -89,12 +89,15 @@ public class OrgGroupDialog extends AbstractOrgDataDialog<OrgGroup> {
 
     @Override
     String checkCyclicReferences(List<OrgGroup> items, OrgGroup item) {
+        if (item == null) {
+            item = compose();
+        }
         List<String> hierarchy = new ArrayList<>();
-        hierarchy.add(getItem().getName());
+        hierarchy.add(item.getName());
         OrgGroup belongsTo = _belongsCombo.getValue();
         while (belongsTo != null) {
             hierarchy.add(belongsTo.getName());
-            if (belongsTo.equals(getItem())) {
+            if (belongsTo.getName().equals(item.getName())) {
                 return assembleCyclicErrorMessage(hierarchy);
             }
             belongsTo = findItem(belongsTo.get_belongsToID());

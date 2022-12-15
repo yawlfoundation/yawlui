@@ -17,12 +17,12 @@
 package org.yawlfoundation.yawl.ui.dialog;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Html;
+import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.Span;
 import org.yawlfoundation.yawl.ui.layout.JustifiedButtonLayout;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
@@ -83,7 +83,7 @@ public abstract class AbstractDialog extends Dialog {
 
 
     public void setText(String text) {
-        content.add(new Div(new Html("<p>" + text + "</p>")));
+        content.add(new Span(text));
     }
 
 
@@ -96,13 +96,15 @@ public abstract class AbstractDialog extends Dialog {
         getButtonBar().getStyle().set("margin-top", "10px");
         getButtonBar().add(new Button("Cancel", event -> close()));
         ok.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        ok.addClickShortcut(Key.ENTER);
         getButtonBar().add(ok);
     }
-     
 
+    
     private void configure() {
         setWidth("500px");
         setCloseOnOutsideClick(false);
+        setCloseOnEsc(true);
         setModal(true);
     }
 
@@ -115,6 +117,7 @@ public abstract class AbstractDialog extends Dialog {
         if (buttonBar.getChildren().findAny().isPresent()) {
             add(buttonBar);
         }
+        UiUtil.setFocus(this);
     }
 
 }

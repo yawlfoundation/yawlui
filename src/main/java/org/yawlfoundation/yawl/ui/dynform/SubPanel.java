@@ -24,6 +24,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import org.yawlfoundation.yawl.ui.layout.JustifiedButtonLayout;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
+import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.util.List;
 import java.util.Optional;
@@ -154,6 +155,7 @@ public class SubPanel extends VerticalLayout implements Cloneable {
                 else {
                     parent.addComponentAtIndex(indexAfterThis, newPanel);  // add under this
                 }
+                UiUtil.setFocus(newPanel);
             }
         });
         icon.setSize("12px");

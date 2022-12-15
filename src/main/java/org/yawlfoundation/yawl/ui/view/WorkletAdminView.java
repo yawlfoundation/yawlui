@@ -33,6 +33,10 @@ public class WorkletAdminView extends AbstractGridView<AdministrationTask> {
     private final TextArea scenarioArea = new TextArea("Description");
     private final TextArea processArea = new TextArea("Suggested Process");
     private final Button closeBtn = new Button("Close");
+    private final ActionIcon refreshAction = createRefreshAction();
+    private ActionIcon viewAction;
+    private ActionIcon completeAction;
+    private ActionIcon multiCompleteAction;
 
 
     public WorkletAdminView() {
@@ -71,20 +75,26 @@ public class WorkletAdminView extends AbstractGridView<AdministrationTask> {
 
     @Override
     void addItemActions(AdministrationTask item, ActionRibbon ribbon) {
-        ribbon.add(VaadinIcon.GLASSES, "View Details", event -> viewDetails(item));
-        ribbon.add(VaadinIcon.CHECK, ActionIcon.GREEN, "Complete", event -> {
-            completeTask(item);
-            refresh();
-        });
+        viewAction = new ActionIcon(VaadinIcon.GLASSES, null, "View Details",
+                event ->  viewDetails(item));
+        completeAction = new ActionIcon(VaadinIcon.CHECK, ActionIcon.GREEN, "Complete",
+                event -> {
+                    completeTask(item);
+                    refresh();
+                });
+        ribbon.add(viewAction, completeAction);
     }
 
     @Override
     void addFooterActions(ActionRibbon ribbon) {
-        ribbon.add(VaadinIcon.CHECK, ActionIcon.GREEN, "Complete", event -> {
+        multiCompleteAction = new ActionIcon(VaadinIcon.CHECK, ActionIcon.GREEN,
+                "Complete", event -> {
             getGrid().getSelectedItems().forEach(this::completeTask);
             refresh();
         });
+        ribbon.add(multiCompleteAction, refreshAction);
     }
+
 
     @Override
     String getTitle() {
@@ -100,7 +110,10 @@ public class WorkletAdminView extends AbstractGridView<AdministrationTask> {
         scenarioArea.setWidthFull();
         processArea.setWidthFull();
         closeBtn.getStyle().set("margin-left", "auto");
-        closeBtn.addClickListener(e -> _content.remove(_details));
+        closeBtn.addClickListener(e -> {
+            _content.remove(_details);
+            enableGridActions(true);
+        });
         VerticalLayout layout = new VerticalLayout(detailsHeader, titleField,
                 scenarioArea, processArea, closeBtn);
         layout.setWidthFull();
@@ -117,8 +130,18 @@ public class WorkletAdminView extends AbstractGridView<AdministrationTask> {
         scenarioArea.setValue(task.getScenario());
         processArea.setValue(task.getProcess());
         _content.add(_details);
+        enableGridActions(false);
     }
 
+
+    private void enableGridActions(boolean enable) {
+        viewAction.setEnabled(enable);
+        completeAction.setEnabled(enable);
+        multiCompleteAction.setEnabled(enable);
+        refreshAction.setEnabled(enable);
+    }
+
+    
     private List<AdministrationTask> getTasks() {
         try {
             return getWorkletClient().getWorkletAdministrationTasks();

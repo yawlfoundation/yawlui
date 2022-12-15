@@ -12,7 +12,6 @@ import com.vaadin.flow.server.StreamResource;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.service.*;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
-import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -69,7 +68,7 @@ public abstract class AbstractView extends VerticalLayout {
 
 
     protected void announceError(String msg) {
-        Announcement.error(StringUtil.unwrap(msg));
+        Announcement.error(msg);
     }
 
     

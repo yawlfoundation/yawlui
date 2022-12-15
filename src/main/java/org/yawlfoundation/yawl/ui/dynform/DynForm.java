@@ -1,11 +1,9 @@
 package org.yawlfoundation.yawl.ui.dynform;
 
-import com.vaadin.flow.component.ClickEvent;
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.ComponentEventListener;
-import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.*;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.html.H5;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import org.yawlfoundation.yawl.elements.data.YParameter;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
@@ -13,6 +11,8 @@ import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.AbstractDialog;
 import org.yawlfoundation.yawl.ui.service.Clients;
+import org.yawlfoundation.yawl.ui.util.ApplicationProperties;
+import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
 import java.util.List;
@@ -66,12 +66,8 @@ public class DynForm extends AbstractDialog {
     private void createContent(Participant p, WorkItemRecord wir, String schema) {
         try {
             DynFormLayout form = _factory.createForm(schema, wir, p);
-            setFormHeight(form);
-            setWidth(form.getAppropriateWidth());
-            setHeader("Edit Work Item " + _factory.getFormName(), false);
-            addComponent(createScroller(form));
+            configureForm(form, "Edit Work Item");
             createButtonsForWorkItem();
-            applyUserDefinedStyles(form);
         }
         catch (DynFormException dfe) {
             Announcement.warn("Failed to create form: " + dfe.getMessage());
@@ -82,12 +78,8 @@ public class DynForm extends AbstractDialog {
     private void createContent(List<YParameter> parameters, String schema) {
         try {
             DynFormLayout form = _factory.createForm(schema, parameters, null);
-            setFormHeight(form);
-            setWidth(form.getAppropriateWidth());
-            setHeader("Case Start " + _factory.getFormName(), false);
-            addComponent(createScroller(form));
+            configureForm(form, "Case Start");
             createButtonsForCaseStart();
-            applyUserDefinedStyles(form);
         }
         catch (DynFormException dfe) {
             Announcement.warn("Failed to create form: " + dfe.getMessage());
@@ -95,18 +87,48 @@ public class DynForm extends AbstractDialog {
     }
 
 
+    private void configureForm(DynFormLayout form, String header) {
+        setFormHeight(form);
+        setWidth(form.getAppropriateWidth());
+        setHeader(header);
+        addFormName();
+        addComponent(createScroller(form));
+        applyUserDefinedStyles(form);
+        UiUtil.setFocus(form);
+    }
+
+
+    private void addFormName() {
+        H5 name = new H5(_factory.getFormName());
+        name.getStyle().set("margin-bottom", "20px");
+        addComponent(name);
+    }
+
+
     private void createButtonsForWorkItem() {
         _saveButton = new Button("Save");
         _okButton = new Button("Complete");
         addButtons(_cancelButton, _saveButton, _okButton);
+        assignShortcutKey();
     }
 
 
     private void createButtonsForCaseStart() {
         _okButton = new Button("Start");
         addButtons(_cancelButton, _okButton);
+        assignShortcutKey();
     }
 
+
+    private void assignShortcutKey() {
+        DynFormEnterKeyAction action = ApplicationProperties.getDynFormEnterKeyAction();
+        if (action == DynFormEnterKeyAction.SAVE && _saveButton != null) {
+            _saveButton.addClickShortcut(Key.ENTER);
+        }
+        else if (! (action == DynFormEnterKeyAction.NONE)) {
+            _okButton.addClickShortcut(Key.ENTER);
+        }
+    }
 
     private Scroller createScroller(Component form) {
         Scroller scroller = new Scroller(form);
@@ -115,6 +137,7 @@ public class DynForm extends AbstractDialog {
         return scroller;
     }
 
+    
 
     private void setFormHeight(DynFormLayout form) {
         UI.getCurrent().getPage().retrieveExtendedClientDetails(details ->

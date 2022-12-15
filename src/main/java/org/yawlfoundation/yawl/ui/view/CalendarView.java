@@ -442,7 +442,7 @@ public class CalendarView extends AbstractGridView<CalendarEntry> {
             }
         }
         catch (IOException e) {
-            Announcement.error("Failed to retrieve calendar entries: " + e.getMessage());
+            Announcement.warn("Failed to retrieve calendar entries: " + e.getMessage());
         }
         return Collections.emptyList();
     }

@@ -62,13 +62,15 @@ public class PositionSubView extends AbstractOrgDataView<Position> {
 
     @Override
     List<Participant> getMembers(Position item) {
-        try {
-            return getResourceClient().getPositionMembers(item.getName());
-        }
-        catch (IOException | ResourceGatewayException e) {
-            Announcement.warn(
-                     "Failed to retrieve list of Position members from engine : %s",
-                      e.getMessage());
+        if (item != null) {
+            try {
+                return getResourceClient().getPositionMembers(item.getName());
+            }
+            catch (IOException | ResourceGatewayException e) {
+                Announcement.warn(
+                        "Failed to retrieve list of Position members from engine : %s",
+                        e.getMessage());
+            }
         }
         return Collections.emptyList();
     }

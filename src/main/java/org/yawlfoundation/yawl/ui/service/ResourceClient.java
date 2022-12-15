@@ -186,12 +186,16 @@ public class ResourceClient extends AbstractClient {
         List<SpecificationData> specs = getLoadedSpecificationData();
         Set<ChainedCase> chainedCases = new HashSet<>();
         for (String caseID : cases) {
-             String[] parts = caseID.split("::");  //  caseid::specid
-             for (SpecificationData spec : specs) {
-                 if (spec.getSpecIdentifier().equals(parts[1])) {
-                     chainedCases.add(new ChainedCase(spec.getID(), parts[0]));
-                 }
-             }
+            String[] parts = caseID.split("::");  //  caseid::specid
+            if (parts[0] == null) parts[0] = "N/A";
+            if (parts.length < 2) {
+                parts = new String[] { parts[0], "N/A" };
+            }
+            for (SpecificationData spec : specs) {
+                if (spec.getSpecIdentifier().equals(parts[1])) {
+                    chainedCases.add(new ChainedCase(spec.getID(), parts[0]));
+                }
+            }
         }
         return chainedCases;
     }

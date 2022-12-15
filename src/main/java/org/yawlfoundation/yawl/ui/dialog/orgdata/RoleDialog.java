@@ -69,12 +69,15 @@ public class RoleDialog extends AbstractOrgDataDialog<Role> {
 
     @Override
     String checkCyclicReferences(List<Role> items, Role item) {
+        if (item == null) {
+            item = compose();
+        }
         List<String> hierarchy = new ArrayList<>();
-        hierarchy.add(getItem().getName());
+        hierarchy.add(item.getName());
         Role belongsTo = _belongsCombo.getValue();
         while (belongsTo != null) {
             hierarchy.add(belongsTo.getName());
-            if (belongsTo.equals(getItem())) {
+            if (belongsTo.getName().equals(item.getName())) {
                 return assembleCyclicErrorMessage(hierarchy);
             }
             belongsTo = findItem(belongsTo.get_belongsToID());

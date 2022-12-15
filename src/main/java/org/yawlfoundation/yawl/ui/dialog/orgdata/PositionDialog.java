@@ -105,12 +105,15 @@ public class PositionDialog extends AbstractOrgDataDialog<Position> {
 
     @Override
     String checkCyclicReferences(List<Position> items, Position item) {
+        if (item == null) {
+            item = compose();
+        }
         List<String> hierarchy = new ArrayList<>();
-        hierarchy.add(getItem().getName());
+        hierarchy.add(item.getName());
         Position reportsTo = _reportsCombo.getValue();
         while (reportsTo != null) {
             hierarchy.add(reportsTo.getName());
-            if (reportsTo.equals(getItem())) {
+            if (reportsTo.getName().equals(item.getName())) {
                 return assembleCyclicErrorMessage(hierarchy);
             }
             reportsTo = findItem(reportsTo.get_reportsToID());

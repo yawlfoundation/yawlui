@@ -258,6 +258,7 @@ public class MainView extends AppLayout implements
         showLoginForm();
     }
 
+    /**********************************************************************/
 
     // This inner class serves custom form endpoints
     @WebServlet("/customform/*")

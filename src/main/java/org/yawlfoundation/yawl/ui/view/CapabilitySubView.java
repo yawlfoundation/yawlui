@@ -91,13 +91,15 @@ public class CapabilitySubView extends AbstractOrgDataView<Capability> {
 
     @Override
     List<Participant> getMembers(Capability item) {
-        try {
-            return getResourceClient().getCapabilityMembers(item.getName());
-        }
-        catch (IOException | ResourceGatewayException e) {
-            Announcement.warn(
-                     "Failed to retrieve list of Capability members from engine : %s",
-                      e.getMessage());
+        if (item != null) {
+            try {
+                return getResourceClient().getCapabilityMembers(item.getName());
+            }
+            catch (IOException | ResourceGatewayException e) {
+                Announcement.warn(
+                        "Failed to retrieve list of Capability members from engine : %s",
+                        e.getMessage());
+            }
         }
         return Collections.emptyList();
     }

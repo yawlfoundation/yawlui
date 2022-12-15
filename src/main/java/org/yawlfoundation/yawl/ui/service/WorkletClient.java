@@ -157,7 +157,9 @@ public class WorkletClient extends AbstractClient {
 
 
     
-    private boolean successful(String xml) { return _wsClient.successful(xml); }
+    private boolean successful(String xml) {
+        return ! (StringUtil.isNullOrEmpty(xml) || xml.contains("Fail"));
+    }
 
 
     @Override

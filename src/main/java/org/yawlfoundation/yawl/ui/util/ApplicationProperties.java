@@ -1,5 +1,7 @@
 package org.yawlfoundation.yawl.ui.util;
 
+import org.yawlfoundation.yawl.ui.dynform.DynFormEnterKeyAction;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -10,18 +12,27 @@ import java.util.Properties;
  */
 public class ApplicationProperties {
 
-    private static final Properties props = new Properties();
+    private static final Properties APP_PROPS = new Properties();
     
     private ApplicationProperties() { }
 
 
     public static String get(String key) {
-        if (props.isEmpty()) {
+        if (APP_PROPS.isEmpty()) {
             load();
         }
-        return props.getProperty(key);
+        return APP_PROPS.getProperty(key);
     }
 
+
+    public static DynFormEnterKeyAction getDynFormEnterKeyAction() {
+        return DynFormEnterKeyAction.fromString(get("dyn.form.enter.action"));
+    }
+
+
+    public static boolean suppressSuccessNotifications() {
+        return Boolean.parseBoolean(get("suppress.success.notifications"));
+    }
 
     public static String getEngineHost() {
         return getHost(get("engine.host"));
@@ -90,7 +101,7 @@ public class ApplicationProperties {
                 "/application.properties");
         if (is != null) {
             try {
-                props.load(is);
+                APP_PROPS.load(is);
             }
             catch (IOException e) {
                 // no props to load

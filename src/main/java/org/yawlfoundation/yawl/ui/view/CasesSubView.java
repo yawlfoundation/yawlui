@@ -1,13 +1,16 @@
 package org.yawlfoundation.yawl.ui.view;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.contextmenu.ContextMenu;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.worklet.RejectWorkletDialog;
+import org.yawlfoundation.yawl.ui.listener.DelayedCaseLaunchedListener;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
-import org.yawlfoundation.yawl.ui.service.*;
+import org.yawlfoundation.yawl.ui.service.ClientEvent;
+import org.yawlfoundation.yawl.ui.service.RunningCase;
 import org.yawlfoundation.yawl.ui.util.InstalledServices;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.worklet.admin.AdministrationTask;
@@ -21,7 +24,8 @@ import java.util.List;
  * @author Michael Adams
  * @date 9/11/20
  */
-public class CasesSubView extends AbstractGridView<RunningCase> {
+public class CasesSubView extends AbstractGridView<RunningCase>
+        implements DelayedCaseLaunchedListener {
 
     public CasesSubView() {
         super();
@@ -80,6 +84,11 @@ public class CasesSubView extends AbstractGridView<RunningCase> {
                 "Cancel", event -> {
             cancelCase(item);
             refresh();
+
+            // refresh again after delay to catch any associated worklet removals
+            if (hasWorklets) {
+                timedRefresh(UI.getCurrent(), 2000);
+            }
         });
         if (! hasWorklets) {
             cancelIcon.insertBlank();      // add space to left
@@ -102,6 +111,12 @@ public class CasesSubView extends AbstractGridView<RunningCase> {
     @Override
     String getTitle() {
         return "Cases";
+    }
+
+
+    @Override
+    public void delayedCaseLaunched(long delay) {
+        timedRefresh(UI.getCurrent(), delay);
     }
 
 

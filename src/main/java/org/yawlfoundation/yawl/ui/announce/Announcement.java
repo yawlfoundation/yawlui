@@ -18,6 +18,7 @@ package org.yawlfoundation.yawl.ui.announce;
 
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import org.yawlfoundation.yawl.ui.util.ApplicationProperties;
 
 /**
  * @author Michael Adams
@@ -27,6 +28,8 @@ public class Announcement {
 
     private static final Notification.Position DEFAULT_POSITION = Notification.Position.TOP_END;
     private static final int DEFAULT_TIME = 5000;
+    private static final boolean SUPPRESS_SUCCESS_NOTIFICATIONS =
+            ApplicationProperties.suppressSuccessNotifications();
 
 
     public static Notification show(String msg) {
@@ -42,7 +45,10 @@ public class Announcement {
 
 
     public static Notification success(String msg) {
-        return show(msg, NotificationVariant.LUMO_SUCCESS);
+        if (! SUPPRESS_SUCCESS_NOTIFICATIONS) {
+            return show(msg, NotificationVariant.LUMO_SUCCESS);
+        }
+        return null;
     }
 
 
@@ -62,7 +68,7 @@ public class Announcement {
 
 
     public static Notification warn(String msg) {
-        return show(msg, NotificationVariant.LUMO_ERROR);
+        return highlight(msg);
     }
 
 
@@ -72,12 +78,17 @@ public class Announcement {
 
 
     public static void error(String msg) {
-        new ErrorMsg(msg, DEFAULT_POSITION).open();
+        new ErrorMsg(stripXMLTags(msg), DEFAULT_POSITION).open();
     }
 
 
     public static void error(String formatMsg, Object... values) {
-        new ErrorMsg(String.format(formatMsg, values), DEFAULT_POSITION).open();
+        new ErrorMsg(String.format(stripXMLTags(formatMsg), values), DEFAULT_POSITION).open();
     }
 
+
+    private static String stripXMLTags(String msg) {
+        return msg.replaceAll("</*\\w+>", "");
+    }
+    
 }

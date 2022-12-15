@@ -452,7 +452,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
             }
         }
         catch (IOException e) {
-            Announcement.error(e.getMessage());
+            Announcement.error("Failed to add participant: " + e.getMessage());
         }
     }
 
@@ -495,7 +495,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
                      _participant.getFullName());
         }
         catch (IOException e) {
-            Announcement.error(e.getMessage());
+            Announcement.error("Failed to update participant: " + e.getMessage());
         }
     }
 

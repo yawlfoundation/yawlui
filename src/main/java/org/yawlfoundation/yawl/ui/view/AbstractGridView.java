@@ -3,6 +3,7 @@ package org.yawlfoundation.yawl.ui.view;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEventListener;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.grid.FooterRow;
@@ -24,10 +25,7 @@ import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.worklet.admin.AdministrationTask;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Michael Adams
@@ -118,6 +116,19 @@ abstract class AbstractGridView<T> extends AbstractView {
     }
 
 
+    protected void timedRefresh(UI ui, long msecs) {
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                if (ui != null) {
+                    ui.access(() -> refresh());
+                }
+            }
+        };
+        new Timer().schedule(task, msecs);
+    }
+
+
     protected void refresh() {
         _items = getItems();
         _grid.setItems(_items);
@@ -203,6 +214,7 @@ abstract class AbstractGridView<T> extends AbstractView {
         grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
         grid.getColumns().forEach(col ->
                 col.setResizable(true).setAutoWidth(true).setSortable(true));
+        grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT);
         initialSort(grid, 0);
     }
 
@@ -235,7 +247,7 @@ abstract class AbstractGridView<T> extends AbstractView {
             getWorkletClient().addWorkletAdministrationTask(task);
         }
         catch (IOException e) {
-            Announcement.error("Failed to raise Exception: " + e.getMessage());
+            announceError("Failed to raise Exception: " + e.getMessage());
         }
     }
 
@@ -291,7 +303,7 @@ abstract class AbstractGridView<T> extends AbstractView {
             }
         }
         catch (IOException e) {
-            Announcement.error("Failed to raise Exception: " + e.getMessage());
+            announceError("Failed to raise Exception: " + e.getMessage());
         }
     }
 
