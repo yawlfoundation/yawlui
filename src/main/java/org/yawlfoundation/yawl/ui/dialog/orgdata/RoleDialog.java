@@ -23,7 +23,6 @@ public class RoleDialog extends AbstractOrgDataDialog<Role> {
         super(items, item, allParticipants, members, "Role");
         _belongsTo = belongsTo;
         build();
-        setWidth("700px");
     }
 
     @Override

@@ -30,7 +30,6 @@ public class PositionDialog extends AbstractOrgDataDialog<Position> {
         _allGroups = allGroups;
         _belongsTo = belongsTo;
         build();
-        setWidth("700px");
     }
 
     // for positions, the 'belongs to' combo is actually the position this one reports to

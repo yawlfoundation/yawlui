@@ -396,7 +396,8 @@ public class ResourceClient extends AbstractClient {
 
     public List<Participant> getOrgGroupMembers(String oid)
             throws IOException, ResourceGatewayException {
-        return new ArrayList<>(_wqAdapter.getOrgGroupMembers(oid, getHandle()));
+        Set<Participant> pSet = _wqAdapter.getOrgGroupMembers(oid, getHandle());
+        return pSet != null ? new ArrayList<>(pSet) : Collections.emptyList();
     }
 
     public UserPrivileges getUserPrivileges(String pid)
@@ -492,7 +493,8 @@ public class ResourceClient extends AbstractClient {
 
 
     public List<YAWLServiceReference> getRegisteredServices() throws IOException {
-        return new ArrayList<>(_wqAdapter.getRegisteredServices(getHandle()));
+        Set<YAWLServiceReference> services = _wqAdapter.getRegisteredServices(getHandle());
+        return services != null ? new ArrayList<>(services) : Collections.emptyList();
     }
 
 
@@ -631,7 +633,12 @@ public class ResourceClient extends AbstractClient {
 
 
     public List<SpecificationData> getLoadedSpecificationData() throws IOException {
-        return new ArrayList<>(_wqAdapter.getSpecList(_handle));
+        List<SpecificationData> specList = new ArrayList<>();
+        Set<SpecificationData> specData = _wqAdapter.getSpecList(_handle);
+        if (specData != null) {
+            specList.addAll(specData);
+        }
+        return specList;
     }
 
 

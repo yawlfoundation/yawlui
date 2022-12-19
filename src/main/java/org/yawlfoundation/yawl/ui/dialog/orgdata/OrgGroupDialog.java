@@ -24,7 +24,6 @@ public class OrgGroupDialog extends AbstractOrgDataDialog<OrgGroup> {
         super(items, item, allParticipants, members, "Org Group");
         _belongsTo = belongsTo;
         build();
-        setWidth("450px");
     }
 
 

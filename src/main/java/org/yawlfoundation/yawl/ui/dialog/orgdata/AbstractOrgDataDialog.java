@@ -52,8 +52,8 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
         _existingItems = items;
         _item = item;
         _allParticipants = pList;
-        _ogMembers = members;
-        _updatedMembers = members;
+        _ogMembers = members != null ? members : new ArrayList<>();
+        _updatedMembers = members != null ? members : new ArrayList<>();;
         _title = title;
    }
 
@@ -65,6 +65,7 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
             populateForm();
         }
         createButtons(_saveButton);
+        setWidth("700px");
     }
 
 

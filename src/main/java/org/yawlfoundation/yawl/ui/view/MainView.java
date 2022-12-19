@@ -17,6 +17,7 @@ import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.component.page.Inline;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
+import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.AppShellSettings;
 import com.vaadin.flow.theme.Theme;
@@ -31,6 +32,7 @@ import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.DrawerMenu;
 import org.yawlfoundation.yawl.ui.service.Clients;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
+import org.yawlfoundation.yawl.ui.util.BuildInformation;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -48,15 +50,16 @@ import java.util.Set;
 //@PWA(name = "Project Base for Vaadin", shortName = "Project Base", enableInstallPrompt = false)
 @JsModule("@vaadin/vaadin-lumo-styles/presets/compact.js")
 @Theme("common-theme")
-public class MainView extends AppLayout implements
+public class MainView extends AppLayout implements HasDynamicTitle,
         ComponentEventListener<Tabs.SelectedChangeEvent>, AppShellConfigurator {
+
+    private static final Map<Participant, String> _customFormHandleMap = new HashMap<>();
 
     private Participant _user;
     private Div _footer;
 
-    private static final Map<Participant, String> _customFormHandleMap = new HashMap<>();
 
-
+    
     public MainView() {
         super();
         showLoginForm();
@@ -68,6 +71,12 @@ public class MainView extends AppLayout implements
     public void configurePage(AppShellSettings settings) {
         settings.addFavIcon(Inline.Position.PREPEND,
                 "icon", "icons/favicon.png", "32x32");
+    }
+
+
+    @Override
+    public String getPageTitle() {
+        return "YAWL " + new BuildInformation().getUIProperties().version;
     }
 
 
@@ -122,9 +131,11 @@ public class MainView extends AppLayout implements
             ResourceClient resClient = Clients.getResourceClient();
             if (resClient.authenticate(username, password)) {
                 _user = resClient.getParticipant(username);
-                _user.setUserPrivileges(resClient.getUserPrivileges(_user.getID()));
-                _customFormHandleMap.put(_user,
-                        resClient.getUserCustomFormHandle(username, password));
+                if (_user != null) {              // authenticated but null == admin
+                    _user.setUserPrivileges(resClient.getUserPrivileges(_user.getID()));
+                    _customFormHandleMap.put(_user,
+                            resClient.getUserCustomFormHandle(username, password));
+                }
                 createTitleBar();
                 DrawerMenu menu = createMenuBar();
                 addWorkletServiceChangeListener(menu);

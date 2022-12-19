@@ -13,10 +13,7 @@ import org.yawlfoundation.yawl.util.XNode;
 import org.yawlfoundation.yawl.util.XNodeParser;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Michael Adams
@@ -38,7 +35,8 @@ public class EngineClient extends AbstractClient {
 
 
     public List<YExternalClient> getClientApplications() throws IOException {
-        return new ArrayList<>(_iaClient.getClientAccounts(getHandle()));
+        Set<YExternalClient> clients = _iaClient.getClientAccounts(getHandle());
+        return clients != null ? new ArrayList<>(clients) : Collections.emptyList();
     }
 
 

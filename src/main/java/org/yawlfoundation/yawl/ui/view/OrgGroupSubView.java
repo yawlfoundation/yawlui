@@ -121,13 +121,15 @@ public class OrgGroupSubView extends AbstractOrgDataView<OrgGroup> {
 
 
     protected OrgGroup getBelongsTo(OrgGroup og) {
-        String btid = og.get_belongsToID();
-        if (btid != null) {
-            try {
-                return getResourceClient().getOrgGroup(btid);
-            }
-            catch (IOException | ResourceGatewayException e) {
-                //fall through;
+        if (og != null) {
+            String btid = og.get_belongsToID();
+            if (btid != null) {
+                try {
+                    return getResourceClient().getOrgGroup(btid);
+                }
+                catch (IOException | ResourceGatewayException e) {
+                    //fall through;
+                }
             }
         }
         return null;

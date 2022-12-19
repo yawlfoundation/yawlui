@@ -7,6 +7,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
 import com.vaadin.flow.dom.Element;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
@@ -20,6 +21,7 @@ import java.nio.charset.StandardCharsets;
  * @author Michael Adams
  * @date 7/9/2022
  */
+
 public abstract class AbstractView extends VerticalLayout {
 
 
@@ -27,7 +29,7 @@ public abstract class AbstractView extends VerticalLayout {
 
     abstract Component createLayout();
 
-    
+
     protected ResourceClient getResourceClient() {
         return Clients.getResourceClient();
     }

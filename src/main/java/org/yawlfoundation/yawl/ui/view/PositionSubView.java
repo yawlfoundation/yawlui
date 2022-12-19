@@ -153,13 +153,15 @@ public class PositionSubView extends AbstractOrgDataView<Position> {
 
 
     protected OrgGroup getOrgGroup(Position p) {
-        String oid = p.get_orgGroupID();
-        if (oid != null) {
-            try {
-                return getResourceClient().getOrgGroup(oid);
-            }
-            catch (IOException | ResourceGatewayException e) {
-                //fall through;
+        if (p != null) {
+            String oid = p.get_orgGroupID();
+            if (oid != null) {
+                try {
+                    return getResourceClient().getOrgGroup(oid);
+                }
+                catch (IOException | ResourceGatewayException e) {
+                    //fall through;
+                }
             }
         }
         return null;
@@ -173,13 +175,15 @@ public class PositionSubView extends AbstractOrgDataView<Position> {
 
 
     protected Position getReportsTo(Position p) {
-        String rtid = p.get_reportsToID();
-        if (rtid != null) {
-            try {
-                return getResourceClient().getPosition(rtid);
-            }
-            catch (IOException | ResourceGatewayException e) {
-                //fall through;
+        if (p != null) {
+            String rtid = p.get_reportsToID();
+            if (rtid != null) {
+                try {
+                    return getResourceClient().getPosition(rtid);
+                }
+                catch (IOException | ResourceGatewayException e) {
+                    //fall through;
+                }
             }
         }
         return null;

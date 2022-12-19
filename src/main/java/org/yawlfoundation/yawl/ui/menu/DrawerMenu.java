@@ -89,9 +89,11 @@ public class DrawerMenu extends Tabs {
     }
 
 
+    // a participant with the relevant privileges (but not the 'admin' user)
     private boolean canViewTeamQueues(Participant p) {
-        return isAdmin(p) || p.getUserPrivileges().canViewOrgGroupItems() ||
-               p.getUserPrivileges().canViewTeamItems();
+        return p != null && (p.isAdministrator() ||
+                        p.getUserPrivileges().canViewOrgGroupItems() ||
+                        p.getUserPrivileges().canViewTeamItems());
     }
 
     
@@ -103,6 +105,6 @@ public class DrawerMenu extends Tabs {
     public void selectInitialItem() {
         setSelectedTab(null);
         setSelectedTab(initialItem);
-     }
+    }
 
 }

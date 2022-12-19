@@ -73,6 +73,9 @@ public class ClientDetailsDialog<T extends YClient> extends AbstractDialog {
         _pwConfirmField.setAutocomplete(Autocomplete.NEW_PASSWORD);
         _descriptionField.setAutocomplete(Autocomplete.OFF);
 
+        _passwordField.setRevealButtonVisible(false);
+        _pwConfirmField.setRevealButtonVisible(false);
+
         _nameField.focus();
 
         FormLayout form = new FormLayout();

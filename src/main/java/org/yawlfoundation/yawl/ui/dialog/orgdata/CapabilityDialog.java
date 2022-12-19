@@ -18,7 +18,6 @@ public class CapabilityDialog extends AbstractOrgDataDialog<Capability> {
                             List<Participant> members) {
         super(items, item, allParticipants, members, "Capability");
         build();
-        setWidth("700px");
     }
 
 

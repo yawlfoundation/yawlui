@@ -40,8 +40,11 @@ public class AboutView extends AbstractView {
     @Override
     Component createLayout() {
         BuildInformation buildInformation = new BuildInformation();
-        return new VerticalLayout(getCopyright(), new H5("Major Components"),
-                buildGrid(buildInformation), getVaadinCredit(buildInformation));
+        return new VerticalLayout(getCopyright(buildInformation),
+                new H5("Major Components"),
+                buildGrid(buildInformation),
+                getVaadinCredit(buildInformation)
+        );
     }
 
 
@@ -84,12 +87,12 @@ public class AboutView extends AbstractView {
     }
 
 
-    private VerticalLayout getCopyright() {
+    private VerticalLayout getCopyright(BuildInformation buildInformation) {
         VerticalLayout layout = new VerticalLayout();
         layout.setPadding(false);
         
         Span span = new Span(String.format("YAWL Version %s. Copyright (c) 2004-%d ",
-                DEFAULT_VERSION, LocalDate.now().getYear()));
+                buildInformation.getUIProperties().version, LocalDate.now().getYear()));
         span.add(link("https://yawlfoundation.github.io/", "The YAWL Foundation"));
         span.add(". All rights reserved.");
         layout.add(span);
