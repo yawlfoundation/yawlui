@@ -28,9 +28,11 @@ import java.util.List;
 public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
 
     private final List<DelayedCaseLaunchedListener> _listeners = new ArrayList<>();
+    private final AbstractView _parent;
 
-    public SpecificationsSubView() {
+    public SpecificationsSubView(AbstractView parent) {
         super();
+        _parent = parent;
         build();
     }
 
@@ -256,7 +258,10 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
             String fileName = String.format("%s_v%s.xes", specData.getSpecURI(),
                                         specData.getSpecVersion());
 
-            downloadFile(fileName, log);
+            // file download doesn't work from this (inner) view, so we need to call it
+            // from the parent (outer) view
+            _parent.downloadFile(fileName, log);
+
             Announcement.success("XES log downloaded");
         }
         catch (IOException ioe) {

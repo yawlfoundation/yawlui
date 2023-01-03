@@ -8,12 +8,13 @@ import com.vaadin.flow.component.Component;
  */
 public class CasesView extends AbstractView {
 
-    private final SpecificationsSubView _specsView = new SpecificationsSubView();
+    private final SpecificationsSubView _specsView;
     private final CasesSubView _casesView = new CasesSubView();
 
 
     public CasesView() {
         super();
+        _specsView = new SpecificationsSubView(this);
         add(createLayout());
         _specsView.addDelayedCaseLaunchListener(_casesView);
         setSizeFull();

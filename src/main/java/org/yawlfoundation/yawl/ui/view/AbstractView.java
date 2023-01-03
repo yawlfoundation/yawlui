@@ -7,7 +7,6 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
 import com.vaadin.flow.dom.Element;
-import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
@@ -99,5 +98,5 @@ public abstract class AbstractView extends VerticalLayout {
                 "setTimeout(() => resolve(true), 150)})", element)
                 .then(jsonValue -> remove(downloadAnchor));
     }
-    
+
 }

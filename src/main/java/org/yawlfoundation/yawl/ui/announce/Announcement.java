@@ -38,7 +38,8 @@ public class Announcement {
 
 
     public static Notification show(String msg, NotificationVariant variant) {
-        Notification notification = Notification.show(msg, DEFAULT_TIME, DEFAULT_POSITION);
+        Notification notification = Notification.show(stripXMLTags(msg), DEFAULT_TIME,
+                DEFAULT_POSITION);
         notification.addThemeVariants(variant);
         return notification;
     }

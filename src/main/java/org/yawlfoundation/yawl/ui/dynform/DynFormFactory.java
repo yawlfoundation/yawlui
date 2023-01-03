@@ -196,12 +196,12 @@ public class DynFormFactory {
 
 
     private void buildForm(Participant participant) {
-        setFormBackgroundColour();
         DynFormComponentBuilder builder = new DynFormComponentBuilder(this);
         List<DynFormField> fieldList = _fieldAssembler.getFieldList();
         DynAttributeFactory.adjustFields(fieldList, _wir, participant);   // 1st pass
         _container = new DynFormLayout(getDefaultFormName());
         _container.add(buildInnerForm(builder, fieldList));
+        setFormBackgroundColour();
         DynAttributeFactory.applyAttributes(_container, _wir, participant);  // 2nd pass
         _componentFieldTable = builder.getComponentFieldMap();
     }

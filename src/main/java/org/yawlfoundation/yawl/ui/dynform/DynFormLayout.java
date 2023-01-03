@@ -197,6 +197,11 @@ public class DynFormLayout extends FormLayout {
         Component left = null;
         for (Component c : getChildren().collect(Collectors.toList())) {
 
+            // don't include hidden fields
+            if (! c.isVisible()) {
+                continue;
+            }
+
             // sub-panels & choice panels span both cols, so they fill one row.
             // if there's already something in the left, that's a row on its own
             // (blank on the right hand side)

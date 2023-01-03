@@ -97,7 +97,9 @@ public class UserWorklistView extends AbstractWorklistView {
     @Override
     protected void refresh() {
         super.refresh();
-        refreshChainedList();
+        if (_chainedList != null) {
+            refreshChainedList();
+        }
         refreshPiledList();
     }
 

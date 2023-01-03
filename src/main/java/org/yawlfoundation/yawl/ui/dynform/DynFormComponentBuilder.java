@@ -42,6 +42,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -318,9 +319,13 @@ public class DynFormComponentBuilder {
     public ComboBox<String> makeEnumeratedList(DynFormField input) {
         ComboBox<String> comboBox = new ComboBox<>(input.getLabel());
         setStyles(comboBox, input);
-        comboBox.setItems(input.getEnumeratedValues());
+        List<String> items = input.getEnumeratedValues();
+        comboBox.setItems(items);
         if (! StringUtil.isNullOrEmpty(input.getValue())) {
             comboBox.setValue(input.getValue());
+        }
+        else if (! items.isEmpty()) {
+            comboBox.setValue(items.get(0));
         }
         comboBox.setReadOnly(isReadOnly(input));
         comboBox.setVisible(isVisible(input));
