@@ -1,2 +1,3 @@
-UI upgrade for proposed v5.0 (in progress)
+YAWL UI Component for YAWL version 5.0
 
+(see yawlfoundation/yawl)
