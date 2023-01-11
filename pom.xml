@@ -6,10 +6,10 @@
     <groupId>org.yawlfoundation.yawl</groupId>
     <artifactId>yawlui</artifactId>
     <name>YAWL UI</name>
-    <version>5.0.421</version>
+    <version>5.0.422</version>
     <packaging>war</packaging>
 
-    <properties>
+    <properties>  
         <java.version>11</java.version>
         <vaadin.version>23.2.9</vaadin.version>
         <log4j2.version>2.17.2</log4j2.version>

@@ -96,7 +96,7 @@ public class DataListGenerator {
                         field.getSubFieldList());
                 addContent(node, subNode, field, ! subPanel.hasHeader());
             }
-            else {
+            else if (field != null) {
 
                 // simple field
                 XNode fieldNode = createFieldNode(child, field);
@@ -227,14 +227,16 @@ public class DataListGenerator {
             
             // fallback to label text for identification (may be ambiguous if two
             // fields have the same label)
-            String label = ((HasLabel) component).getLabel();
-            for (DynFormField field1 : fieldList) {
-                if (field1.getLabel().equals(label)) {
-                     return field1;
-                 }
+            if (component instanceof HasLabel) {
+                String label = ((HasLabel) component).getLabel();
+                for (DynFormField field1 : fieldList) {
+                    if (field1.getLabel().equals(label)) {
+                        return field1;
+                    }
+                }
             }
         }
-        return null;            // should never be reached
+        return null;            // non-data component
     }
     
 }
