@@ -331,6 +331,8 @@ public class UserWorklistView extends AbstractWorklistView {
 
 
     private void reallocate(WorkItemRecord wir, boolean stateful) {
+        if (! checkItemStatus(wir)) return;
+
         SingleSelectParticipantList listPanel =
                 showSingleSelectParticipantList(wir, "Reallocate",
                         getSubordinatesOf());
@@ -358,6 +360,8 @@ public class UserWorklistView extends AbstractWorklistView {
 
 
     private synchronized void performAction(Action action, WorkItemRecord wir) {
+        if (! checkItemStatus(wir)) return;
+
         try {
             String successMsg = String.format("%s%s item '%s'", action.name(),
                     (action.name().endsWith("e") ? "d" : "ed"), wir.getID());
@@ -387,6 +391,8 @@ public class UserWorklistView extends AbstractWorklistView {
 
 
     private void delegate(WorkItemRecord wir) {
+        if (! checkItemStatus(wir)) return;
+
         SingleSelectParticipantList listPanel =
                 showSingleSelectParticipantList(wir, "Delegate", getSubordinatesOf());
         if (listPanel != null) {
@@ -412,6 +418,8 @@ public class UserWorklistView extends AbstractWorklistView {
 
 
     private void acceptAndStart(WorkItemRecord wir) {
+        if (! checkItemStatus(wir)) return;
+
         performAction(Action.Accept, wir);
 
         // only start it next if the item is not already set to system start
@@ -423,6 +431,8 @@ public class UserWorklistView extends AbstractWorklistView {
 
 
     private void edit(WorkItemRecord wir) {
+        if (! checkItemStatus(wir)) return;
+
         try {
             if (! StringUtil.isNullOrEmpty(wir.getCustomFormURL())) {
                 String caseData = getResourceClient().getCaseData(wir.getRootCaseID());
@@ -461,6 +471,8 @@ public class UserWorklistView extends AbstractWorklistView {
 
 
     private void completeItem(WorkItemRecord wir, String data) {
+        if (! checkItemStatus(wir)) return;
+
         try {
             getResourceClient().completeItem(wir, data, getParticipantID());
             Announcement.success("Work item %s completed", wir.getID());

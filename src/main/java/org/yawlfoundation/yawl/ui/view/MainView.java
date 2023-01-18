@@ -145,8 +145,11 @@ public class MainView extends AppLayout implements HasDynamicTitle,
                 login.setError(true);                            // show the error
             }
         }
-        catch (ResourceGatewayException | IOException |
-               NoSuchAlgorithmException ex) {
+        catch (ResourceGatewayException re) {
+            setErrorMessage(login, null);
+             login.setError(true);
+        }
+        catch (IOException | NoSuchAlgorithmException ex) {
             setErrorMessage(login, ex.getMessage());
             login.setError(true);
         }

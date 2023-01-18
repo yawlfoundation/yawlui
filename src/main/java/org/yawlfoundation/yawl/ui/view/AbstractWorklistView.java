@@ -246,6 +246,7 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
 
 
     protected void startItem(WorkItemRecord wir, String pid) {
+        if (! checkItemStatus(wir)) return;
 
         // can't start a work item that is suspended in the engine
         if (wir.hasStatus("Suspended")) {
@@ -262,6 +263,40 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
         catch (IOException | ResourceGatewayException ex) {
             Announcement.error(ex.getMessage());
         }
+    }
+
+
+    // check that the work item still exists in the engine and has matching statuses
+    // if not, show a message and refresh the grid
+    protected boolean checkItemStatus(WorkItemRecord wir) {
+        try {
+            WorkItemRecord engineWir = getResourceClient().getItem(wir.getID());
+            String viewStatus = wir.getStatus();
+            String engineStatus = engineWir.getStatus();
+            if (! viewStatus.equals(engineStatus)) {
+                handleStaleList(wir.getID(), "is no longer " + viewStatus);
+                return false;
+            }
+            String viewResourceStatus = wir.getResourceStatus();
+            String engineResourceStatus = engineWir.getResourceStatus();
+            if (! viewResourceStatus.equals(engineResourceStatus)) {
+                handleStaleList(wir.getID(), "is no longer " + viewResourceStatus);
+                return false;
+            }
+        }
+        catch (ResourceGatewayException | IOException e) {
+            handleStaleList(wir.getID(), "is no longer active");
+            return false;
+        }
+        return true;
+    }
+
+
+    private void handleStaleList(String id, String msg) {
+        String warning = String.format("Stale worklist: Work item [" + id + "] " + msg +
+                        ". The worklist has now been refreshed.");
+        Announcement.warn(warning);
+        refresh();
     }
 
 

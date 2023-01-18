@@ -240,11 +240,13 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
     }
 
     protected void initCombo(ComboBox<T> combo, List<T> items, T value, T nil) {
-        items.add(0, nil);
+        List<T> comboItems = new ArrayList<>(items);
+        comboItems.add(0, nil);
+
         if (isEditing()) {
-            items.remove(getItem());     // can't belong to or report to self
+            comboItems.remove(getItem());     // can't belong to or report to self
         }
-        combo.setItems(items);
+        combo.setItems(comboItems);
         combo.setItemLabelGenerator(T::getName);
         if (isEditing() && value != null) {
             combo.setValue(value);

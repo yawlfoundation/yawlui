@@ -185,6 +185,8 @@ public class AdminWorklistView extends AbstractWorklistView {
 
 
     private synchronized void reassignSingle(WorkItemRecord wir, String pid, Action action) {
+        if (! checkItemStatus(wir)) return;
+
         try {
             switch (action) {
                 case Allocate: getResourceClient().allocateItem(wir.getID(), pid); break;
@@ -204,6 +206,8 @@ public class AdminWorklistView extends AbstractWorklistView {
 
     private synchronized void reassignMultiple(WorkItemRecord wir, Set<String> pids,
                                                Action action) {
+        if (! checkItemStatus(wir)) return;
+
         try {
             switch (action) {
                 case Offer: getResourceClient().offerItem(wir.getID(), pids); break;
