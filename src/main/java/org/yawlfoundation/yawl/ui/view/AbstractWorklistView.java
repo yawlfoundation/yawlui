@@ -1,11 +1,16 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Focusable;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.grid.FooterRow;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.grid.editor.Editor;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
 import org.yawlfoundation.yawl.resourcing.WorkQueue;
@@ -74,11 +79,13 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
     @Override
     void addColumns(Grid<WorkItemRecord> grid) {
         grid.addColumn(WorkItemRecord::getID).setHeader(UiUtil.bold("Item"));
-        grid.addColumn(WorkItemRecord::getRootCaseID).setHeader(UiUtil.bold("Case"));
         grid.addColumn(this::getSpecID).setHeader(UiUtil.bold("Specification"));
+        grid.addColumn(WorkItemRecord::getDocumentation).setHeader(UiUtil.bold("Documentation"));
         grid.addColumn(this::getEnablementTime).setHeader(UiUtil.bold("Created"));
         grid.addColumn(this::getExpiryTime).setHeader(UiUtil.bold("Expires"));
         grid.addColumn(WorkItemRecord::getResourceStatus).setHeader(UiUtil.bold("Status"));
+
+        grid.addThemeVariants(GridVariant.LUMO_WRAP_CELL_CONTENT);
     }
 
 
@@ -120,7 +127,18 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
         Grid.Column<WorkItemRecord> pColumn = columns.remove(columns.size() -1);
         columns.add(columns.size() -1, pColumn);
         grid.setColumnOrder(columns);
+
+        enableDocumentationEditing(grid);
         return grid;
+    }
+
+
+    private void applyEditorUpdate(Editor<WorkItemRecord> editor, TextField field) {
+        if (editor.isOpen()) {
+            WorkItemRecord wir = editor.getItem();
+            editor.cancel();
+            getResourceClient().setWorkItemDocumentation(wir, field.getValue());
+        }
     }
 
 
@@ -337,4 +355,41 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
         }
         return count;
     }
+
+
+    private void enableDocumentationEditing(Grid<WorkItemRecord> grid) {
+        Binder<WorkItemRecord> binder = new Binder<>(WorkItemRecord.class);
+        Editor<WorkItemRecord> editor = grid.getEditor();
+        editor.setBinder(binder);
+
+        TextField docoField = new TextField();
+        docoField.setWidthFull();
+
+        binder.forField(docoField).bind(WorkItemRecord::getDocumentation,
+                WorkItemRecord::setDocumentation);
+        grid.getColumns().get(2).setEditorComponent(docoField);  // 3rd col is documentation
+        grid.getColumns().get(2).setKey("docoCol");
+
+        // if dbl-click on doco field, open the editor
+        grid.addItemDoubleClickListener(e -> {
+            if (e.getColumn().getKey() != null) {  // only the doco col key is not null
+                editor.editItem(e.getItem());
+                Component editorComponent = e.getColumn().getEditorComponent();
+                if (editorComponent instanceof Focusable) {
+                    ((Focusable) editorComponent).focus();
+                }
+            }
+            else if (editor.isOpen()) {
+                editor.cancel();
+            }
+        });
+
+        // update wir on service side when 'esc' pressed or click outside editor
+        docoField.getElement().addEventListener("keydown",
+                e -> applyEditorUpdate(editor, docoField))
+                .setFilter("event.code === 'Escape'");
+
+        grid.addItemClickListener(e -> applyEditorUpdate(editor, docoField));
+    }
+    
 }

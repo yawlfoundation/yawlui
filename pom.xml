@@ -6,7 +6,7 @@
     <groupId>org.yawlfoundation.yawl</groupId>
     <artifactId>yawlui</artifactId>
     <name>YAWL UI</name>
-    <version>5.0.427</version>
+    <version>5.1.434</version>
     <packaging>war</packaging>
 
     <properties>  
@@ -152,9 +152,9 @@
         <dependency>
             <groupId>org.yawlfoundation</groupId>
             <artifactId>yawl</artifactId>
-            <version>5.0</version>
+            <version>5.1</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/yawl-lib-5.0.jar</systemPath>
+            <systemPath>${project.basedir}/lib/yawl-lib-5.1.jar</systemPath>
         </dependency>
 
         <dependency>

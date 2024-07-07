@@ -72,6 +72,21 @@ public class ResourceClient extends AbstractClient {
         return _wqAdapter.getQueuedWorkItems(pid, queue, getHandle());
     }
 
+    
+    public void updateWorkQueuedItem(WorkItemRecord wir, Participant p, int queue)
+            throws IOException, ResourceGatewayException {
+        _wqAdapter.updateWorkQueuedItem(wir.toXML(), p.getID(), queue, getHandle());
+    }
+
+    public void setWorkItemDocumentation(WorkItemRecord wir, String doco) {
+        try {
+            _wqAdapter.setWorkItemDocumentation(wir.getID(), doco, getHandle());
+        }
+        catch (ResourceGatewayException | IOException e) {
+            //  nothing to do;
+        }
+    }
+
 
     public void offerItem(String itemID, Set<String> pidSet)
             throws IOException, ResourceGatewayException {
@@ -179,6 +194,16 @@ public class ResourceClient extends AbstractClient {
         _wqAdapter.completeItem(pid, wir.getID(), getHandle());
     }
 
+    public WorkItemRecord createNewInstance(String itemID, String paramValue)
+            throws IOException, ResourceGatewayException {
+        String xml = _wqAdapter.createWorkItemInstance(itemID, paramValue, getHandle());
+        if (successful(xml)) {
+        //    String wirXML = StringUtil.unwrap(xml);          // strip 'success' tags
+            return Marshaller.unmarshalWorkItem(xml);
+        }
+        else throw new IOException(StringUtil.unwrap(xml));
+    }
+
 
     public Set<ChainedCase> getChainedCases(String pid)
             throws IOException, ResourceGatewayException {
@@ -252,6 +277,15 @@ public class ResourceClient extends AbstractClient {
     public String updateWorkItemData(String itemID, String data, String handle)
             throws IOException, ResourceGatewayException {
         return _wqAdapter.updateWorkItemData(itemID, data, handle);
+    }
+
+    public void updateWorkItemCache(WorkItemRecord wir) throws IOException {
+        _wqAdapter.updateWIRCache(wir, getHandle());
+    }
+
+    // ensure resource service item cache matches engine items cache
+    public boolean synchroniseItems() throws IOException {
+        return _wqAdapter.synchroniseCaches(getHandle());
     }
 
     

@@ -7,6 +7,7 @@ import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.login.AbstractLogin;
 import com.vaadin.flow.component.login.LoginForm;
@@ -136,7 +137,7 @@ public class MainView extends AppLayout implements HasDynamicTitle,
                     _customFormHandleMap.put(_user,
                             resClient.getUserCustomFormHandle(username, password));
                 }
-                createTitleBar();
+                createTitleBar(username);
                 DrawerMenu menu = createMenuBar();
                 addWorkletServiceChangeListener(menu);
             }
@@ -173,10 +174,10 @@ public class MainView extends AppLayout implements HasDynamicTitle,
     public Participant getCurrentUserSessionHandle() { return _user; }
 
 
-    private void createTitleBar() {
+    private void createTitleBar(String userName) {
         addToNavbar(new DrawerToggle());
         addLogo();
-        addLogout();
+        addLogout(userName);
     }
 
 
@@ -201,11 +202,13 @@ public class MainView extends AppLayout implements HasDynamicTitle,
 
     
     // add a logout 'button' on the right side of the nav bar
-    private void addLogout() {
+    private void addLogout(String userName) {
         Div div = new Div();
+        Label userLabel = new Label(userName);
+        userLabel.getStyle().set("padding-right", "15px");
         ActionIcon logout = new ActionIcon(VaadinIcon.SIGN_OUT_ALT, null,
                 "Logout", e -> exit());
-        div.add(logout);
+        div.add(userLabel, logout);
         div.getStyle().set("margin-left", "auto");
         div.getStyle().set("padding", "15px");
         addToNavbar(div);

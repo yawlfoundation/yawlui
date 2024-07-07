@@ -114,7 +114,8 @@ public class EngineClient extends AbstractClient {
             throws IOException {
         String xml = _ibClient.createNewInstance(itemID, paramValue, getHandle());
         if (successful(xml)) {
-            return Marshaller.unmarshalWorkItem(xml);
+            String wirXML = StringUtil.unwrap(xml);          // strip 'success' tags
+            return Marshaller.unmarshalWorkItem(wirXML);
         }
         else throw new IOException(xml);
     }

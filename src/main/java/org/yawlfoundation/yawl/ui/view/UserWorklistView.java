@@ -24,6 +24,7 @@ import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.ChainedCase;
 import org.yawlfoundation.yawl.ui.service.PiledTask;
 import org.yawlfoundation.yawl.ui.util.InstalledServices;
+import org.yawlfoundation.yawl.util.JDOMUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.IOException;
@@ -312,14 +313,18 @@ public class UserWorklistView extends AbstractWorklistView {
                     String value = dialog.getValue();
                     String data = StringUtil.wrap(value, formalParam.getName());
                     try {
-                        WorkItemRecord newWir = getEngineClient().createNewInstance(
+                        WorkItemRecord newWir = getResourceClient().createNewInstance(
                                 wir.getID(), data);
+                        //getResourceClient().synchroniseItems();  // update res service cache
                         getResourceClient().allocateItem(newWir.getID(), getParticipantID());
                         refresh();
+                        Announcement.success("Created new work item instance '%s'",
+                                newWir.getID());
                     }
                     catch (IOException | ResourceGatewayException e) {
                         throw new RuntimeException(e);
                     }
+                    dialog.close();
                 });
                 dialog.open();
             }
@@ -424,6 +429,7 @@ public class UserWorklistView extends AbstractWorklistView {
 
         // only start it next if the item is not already set to system start
         if (getQueueSet().hasWorkItemInQueue(wir.getID(), WorkQueue.ALLOCATED)) {
+            wir.setResourceStatus(WorkItemRecord.statusResourceAllocated);
             startItem(wir, getParticipantID());
         }
     }
@@ -454,12 +460,12 @@ public class UserWorklistView extends AbstractWorklistView {
                 }
             });
             dynForm.addSaveListener(e -> {
-                if (dynForm.validate()) {                                // save
+           //     if (dynForm.validate()) {                                // save
                     String outputData = dynForm.generateOutputData();
                     saveWorkItemData(wir, outputData);
                     dynForm.close();
                     refresh();
-                }
+            //    }
             });
 
             dynForm.open();
@@ -484,12 +490,19 @@ public class UserWorklistView extends AbstractWorklistView {
 
     
     private void saveWorkItemData(WorkItemRecord wir, String data) {
-        try {
-            getResourceClient().updateWorkItemData(wir.getID(), data);
-            Announcement.success("Work item %s saved", wir.getID());
+        Element updatedData = JDOMUtil.stringToElement(data);
+        if (updatedData != null) {
+            wir.setUpdatedData(updatedData);
+            try {
+                getResourceClient().updateWorkQueuedItem(wir, getParticipant(), WorkQueue.STARTED);
+                Announcement.success("Work item %s saved", wir.getID());
+            }
+            catch (IOException | ResourceGatewayException e) {
+                Announcement.error("Failed to save data to work item: " + e.getMessage());
+            }
         }
-        catch (IOException  | ResourceGatewayException e) {
-            Announcement.error("Failed to save data to work item: " + e.getMessage());
+        else {
+            Announcement.error("Failed to save data to work item: Malformed data element");
         }
     }
 
