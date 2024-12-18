@@ -7,10 +7,7 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H5;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.Autocomplete;
-import com.vaadin.flow.component.textfield.PasswordField;
-import com.vaadin.flow.component.textfield.TextArea;
-import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.textfield.*;
 import org.yawlfoundation.yawl.resourcing.resource.AbstractResourceAttribute;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.resource.UserPrivileges;
@@ -43,6 +40,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
     private final Checkbox _adminCbx = new Checkbox("Administrator");
     private final TextField _firstNameField = new TextField("First Name");
     private final TextField _lastNameField = new TextField("Last Name");
+    private final EmailField _emailField = new EmailField("Email");
     private final PasswordField _passwordField = new PasswordField("Password");
     private final PasswordField _pwConfirmField = new PasswordField("Confirm Password");
     private final TextArea _notesField = new TextArea("Notes");
@@ -105,7 +103,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
     public boolean validate() {
 
         // no short circuits
-        return validateUserID() & validatePassword() & validateNames();
+        return validateUserID() & validatePassword() & validateNames() & validateEmail();
     }
 
 
@@ -129,6 +127,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
         boolean isAdmin = _adminCbx.getValue();
         String firstName = _firstNameField.getValue();
         String lastName = _lastNameField.getValue();
+        String email = _emailField.getValue();
         String password = _passwordField.getValue();
         String notes = _notesField.getValue();
         if (editing()) {
@@ -136,6 +135,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
             _participant.setAdministrator(isAdmin);
             _participant.setFirstName(firstName);
             _participant.setLastName(lastName);
+            _participant.setEmail(email);
             if (! password.isEmpty()) {
                 _participant.setPassword(password);
             }
@@ -145,6 +145,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
         else if (adding()) {
             Participant p = new Participant(lastName, firstName, userID);
             p.setPassword(password);
+            p.setEmail(email);
             p.setAdministrator(isAdmin);
             p.setNotes(notes);
             updateUserPrivileges(p.getUserPrivileges());
@@ -168,6 +169,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
         form.add(_lastNameField, 1);
         form.add(_passwordField, 1);
         form.add(_pwConfirmField, 1);
+        form.add(_emailField, 2);
         form.add(_notesField, 2);
         return form;
     }
@@ -177,6 +179,9 @@ public class ParticipantDetailsDialog extends AbstractDialog {
         _userField.setAutocomplete(Autocomplete.OFF);
         _firstNameField.setAutocomplete(Autocomplete.OFF);
         _lastNameField.setAutocomplete(Autocomplete.OFF);
+        _emailField.setAutocomplete(Autocomplete.OFF);
+        _emailField.setClearButtonVisible(true);
+        _emailField.setErrorMessage("Invalid email address");
         _passwordField.setAutocomplete(Autocomplete.NEW_PASSWORD);
         _pwConfirmField.setAutocomplete(Autocomplete.NEW_PASSWORD);
         _notesField.setAutocomplete(Autocomplete.OFF);
@@ -185,6 +190,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
             _userField.setReadOnly(true);
            _firstNameField.setReadOnly(true);
            _lastNameField.setReadOnly(true);
+           _emailField.setReadOnly(true);
            _passwordField.setReadOnly(true);
            _pwConfirmField.setReadOnly(true);
            _notesField.setReadOnly(true);
@@ -283,6 +289,9 @@ public class ParticipantDetailsDialog extends AbstractDialog {
             _adminCbx.setValue(_participant.isAdministrator());
             _firstNameField.setValue(_participant.getFirstName());
             _lastNameField.setValue(_participant.getLastName());
+            if (_participant.getEmail() != null) {
+                _emailField.setValue(_participant.getEmail());
+            }
             if (_participant.getNotes() != null) {
                 _notesField.setValue(_participant.getNotes());
             }
@@ -316,6 +325,11 @@ public class ParticipantDetailsDialog extends AbstractDialog {
             _lastNameField.setInvalid(true);
         }
         return ! (_firstNameField.isInvalid() || _lastNameField.isInvalid());
+    }
+
+
+    private boolean validateEmail() {
+        return _emailField.isEmpty() || ! _emailField.isInvalid();
     }
 
 
@@ -506,6 +520,7 @@ public class ParticipantDetailsDialog extends AbstractDialog {
                 _participant.isAdministrator() == _adminCbx.getValue() &&
                 _firstNameField.getValue().equals(_participant.getFirstName()) &&
                 _lastNameField.getValue().equals(_participant.getLastName()) &&
+                _emailField.getValue().equals(_participant.getEmail()) &&
                 _notesField.getValue().equals(_participant.getNotes()));
     }
 

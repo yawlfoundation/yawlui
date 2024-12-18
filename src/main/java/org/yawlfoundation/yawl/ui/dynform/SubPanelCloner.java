@@ -126,7 +126,7 @@ public class SubPanelCloner {
 
     public TextField cloneTextField(TextField oldField) {
         TextField clonedField = new TextField(oldField.getLabel()) ;
-        clonedField.setValue(oldField.getValue());
+//        clonedField.setValue(oldField.getValue());
         clonedField.setRequired(oldField.isRequired());
         clonedField.setEnabled(oldField.isEnabled());
         UiUtil.copyTooltip(oldField, clonedField);
@@ -138,7 +138,7 @@ public class SubPanelCloner {
 
     public DatePicker cloneDatePicker(DatePicker oldField) {
         DatePicker clonedField = new DatePicker(oldField.getLabel());
-        clonedField.setValue(oldField.getValue());
+ //       clonedField.setValue(oldField.getValue());
         clonedField.setRequired(oldField.isRequired());
         clonedField.setEnabled(oldField.isEnabled());
         clonedField.setMin(oldField.getMin());
@@ -151,7 +151,7 @@ public class SubPanelCloner {
 
     public DateTimePicker cloneDateTimePicker(DateTimePicker oldField) {
         DateTimePicker clonedField = new DateTimePicker(oldField.getLabel());
-        clonedField.setValue(oldField.getValue());
+ //       clonedField.setValue(oldField.getValue());
         clonedField.setEnabled(oldField.isEnabled());
         clonedField.setMin(oldField.getMin());
         clonedField.setMax(oldField.getMax());
@@ -163,7 +163,7 @@ public class SubPanelCloner {
 
     public Checkbox cloneCheckbox(Checkbox oldField) {
         Checkbox clonedField = new Checkbox(oldField.getLabel()) ;
-        clonedField.setValue(oldField.getValue()) ;
+ //       clonedField.setValue(oldField.getValue()) ;
         clonedField.setEnabled(oldField.isEnabled());
         UiUtil.copyTooltip(oldField, clonedField);
         cloneStyles(oldField, clonedField);
@@ -174,7 +174,7 @@ public class SubPanelCloner {
     public <T> ComboBox<T> cloneComboBox(ComboBox<T> oldField) {
         ComboBox<T> clonedField = new ComboBox<>(oldField.getLabel()) ;
         clonedField.setItems(oldField.getListDataView().getItems().collect(Collectors.toList()));
-        clonedField.setValue(oldField.getValue());
+ //       clonedField.setValue(oldField.getValue());
         UiUtil.copyTooltip(oldField, clonedField);
         cloneStyles(oldField, clonedField);
         return clonedField ;
@@ -195,7 +195,7 @@ public class SubPanelCloner {
 
     public Div cloneTextBlock(Div oldField) {
         Div clonedField = new Div();
-        clonedField.setText(oldField.getText());
+ //       clonedField.setText(oldField.getText());
         cloneStyles(oldField, clonedField);
         return clonedField;
     }

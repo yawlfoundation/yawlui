@@ -2,12 +2,14 @@ package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H5;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.Autocomplete;
+import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import org.yawlfoundation.yawl.resourcing.resource.AbstractResourceAttribute;
@@ -19,9 +21,7 @@ import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -36,12 +36,17 @@ public class ProfileView extends AbstractView {
     private final Checkbox _adminCbx = new Checkbox("Administrator");
     private final TextField _firstNameField = new TextField("First Name");
     private final TextField _lastNameField = new TextField("Last Name");
+    private final EmailField _emailField = new EmailField("Email");
+    private final CheckboxGroup<String> _emailCheckboxGroup = new CheckboxGroup<>("Email notifications");
     private final PasswordField _passwordField = new PasswordField("Password");
     private final PasswordField _pwConfirmField = new PasswordField("Confirm Password");
 
     private final SingleSelectResourceList _roleList;
     private final SingleSelectResourceList _capabilityList;
     private final SingleSelectResourceList _positionList;
+
+    private static final String OFFER_LABEL = "On Offer";
+    private static final String ALLOCATION_LABEL = "On Allocation";
 
     private final Participant _participant;
     
@@ -74,7 +79,12 @@ public class ProfileView extends AbstractView {
         form.add(_userField, 1);
         form.add(_adminCbx, 1);
         form.add(_firstNameField, 1);
+        form.add(_emailField, 1);
         form.add(_lastNameField, 1);
+    
+        _emailCheckboxGroup.setItems(OFFER_LABEL, ALLOCATION_LABEL);
+        form.add(_emailCheckboxGroup, 1);
+        
         form.add(createGroupPanels(), 2);
         form.add(createPasswordForm(), 2);
         form.setWidthFull();
@@ -90,9 +100,10 @@ public class ProfileView extends AbstractView {
         _firstNameField.setReadOnly(true);
         _lastNameField.setReadOnly(true);
         _adminCbx.setReadOnly(true);
+        _emailField.setReadOnly(true);
     }
-    
 
+    
     private HorizontalLayout createGroupPanels() {
         VerticalLayout roleLayout = createGroupPanel(_roleList, "Roles");
         VerticalLayout capabilityLayout = createGroupPanel(_capabilityList, "Capabilities");
@@ -114,13 +125,7 @@ public class ProfileView extends AbstractView {
         ribbon.add(VaadinIcon.CHECK, ActionIcon.GREEN, "OK", e -> {
             if (!_passwordField.isEmpty() && validatePassword()) {
                 _participant.setPassword(_passwordField.getValue());
-                try {
-                    getResourceClient().updateParticipant(_participant);
-                    Announcement.success("Password updated");
-                }
-                catch (IOException ioe) {
-                    Announcement.error("Failed to update password: " + ioe.getMessage());
-                }
+                updateParticipant("Password");
             }
         });
         ribbon.setJustifyContentMode(JustifyContentMode.END);
@@ -190,6 +195,18 @@ public class ProfileView extends AbstractView {
             _adminCbx.setValue(_participant.isAdministrator());
             _firstNameField.setValue(_participant.getFirstName());
             _lastNameField.setValue(_participant.getLastName());
+            _emailField.setValue(_participant.getEmail());
+
+            Set<String> selections = new HashSet<>();
+            if (_participant.isEmailOnOffer()) selections.add(OFFER_LABEL);
+            if (_participant.isEmailOnAllocation()) selections.add(ALLOCATION_LABEL);
+            _emailCheckboxGroup.select(selections);
+            _emailCheckboxGroup.addSelectionListener(listener -> {
+                Set<String> selected = listener.getAllSelectedItems();
+                _participant.setEmailOnOffer(selected.contains(OFFER_LABEL));
+                _participant.setEmailOnAllocation(selected.contains(ALLOCATION_LABEL));
+                updateParticipant("Notification choice");
+            });
         }
     }
 
@@ -201,6 +218,17 @@ public class ProfileView extends AbstractView {
             case Position : return new ArrayList<>(_participant.getPositions());
         }
         return Collections.emptyList();
+    }
+
+
+    private void updateParticipant(String item) {
+        try {
+            getResourceClient().updateParticipant(_participant);
+            Announcement.success(item + " updated");
+        }
+        catch (IOException ioe) {
+            Announcement.error(item + "failed to update: " + ioe.getMessage());
+        }
     }
 
 }
