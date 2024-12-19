@@ -6,7 +6,7 @@
     <groupId>org.yawlfoundation.yawl</groupId>
     <artifactId>yawlui</artifactId>
     <name>YAWL UI</name>
-    <version>5.1.436</version>
+    <version>5.1.437</version>
     <packaging>war</packaging>
 
     <properties>  
