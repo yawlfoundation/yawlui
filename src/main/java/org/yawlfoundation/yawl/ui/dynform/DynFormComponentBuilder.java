@@ -335,7 +335,7 @@ public class DynFormComponentBuilder {
 
     
     public TextArea makeTextArea(DynFormField input) {
-        TextArea textarea = new TextArea();
+        TextArea textarea = new TextArea(input.getLabel());
         setStyles(textarea, input);
         textarea.setReadOnly(isReadOnly(input));
         UiUtil.setTooltip(textarea, input.getToolTip());
