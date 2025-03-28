@@ -189,8 +189,13 @@ public class UserWorklistView extends AbstractWorklistView {
     private void createOfferedRibbon(WorkItemRecord wir, ActionRibbon ribbon, boolean hasWorklets) {
         ribbon.add(VaadinIcon.CHECK,"Accept",
                 e -> performAction(Action.Accept, wir));
-        ribbon.add(VaadinIcon.CARET_RIGHT, ActionIcon.GREEN,"Accept & Start",
-                e -> acceptAndStart(wir));
+        if (userMayStart(wir)) {
+            ribbon.add(VaadinIcon.CARET_RIGHT, ActionIcon.GREEN, "Accept & Start",
+                    e -> acceptAndStart(wir));
+        }
+        else {
+            ribbon.add(VaadinIcon.CARET_RIGHT);
+        }
 
         ContextMenu menu = addContextMenu(ribbon);
         if (userMayChain(wir)) {
