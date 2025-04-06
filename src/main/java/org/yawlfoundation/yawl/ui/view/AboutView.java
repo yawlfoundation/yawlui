@@ -25,7 +25,7 @@ import java.util.Map;
  */
 public class AboutView extends AbstractView {
 
-    private static final String DEFAULT_VERSION = "5.1";
+    private static final String DEFAULT_VERSION = "5.2";
 
     public AboutView() {
         super();
