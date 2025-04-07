@@ -109,9 +109,16 @@ public class MainView extends AppLayout implements HasDynamicTitle,
         VerticalLayout layout = new VerticalLayout();
         layout.setAlignItems(FlexComponent.Alignment.CENTER);
         layout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        Image logo = new Image("icons/logo5.png", "YAWL Logo");
+        Image logo = new Image("icons/logo5unversioned.png", "YAWL Logo");
         logo.setWidth("370px");
         layout.add(logo);
+
+        Label version = new Label("version " + new BuildInformation().getUIProperties().version);
+        version.getStyle().set("color", "gray");
+        version.getStyle().set("font-size", "12px");
+        version.getStyle().set("font-style", "italic");
+        version.getStyle().set("text-align", "right");
+        layout.add(version);
 
         LoginI18n i18n = LoginI18n.createDefault();
         i18n.getForm().setTitle(null);
