@@ -320,6 +320,17 @@ public class ResourceClient extends AbstractClient {
         }
     }
 
+    public boolean isUserAuthenticationExternal() {
+        try {
+            return _resAdapter.isUserAuthenticationExternal(getHandle());
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
     public String addParticipant(Participant p) throws IOException {
         return _resAdapter.addParticipant(p, true, getHandle());
     }
@@ -654,8 +665,14 @@ public class ResourceClient extends AbstractClient {
 
     public boolean authenticate(String userName, String password)
             throws IOException, ResourceGatewayException, NoSuchAlgorithmException {
-        String result = _resAdapter.validateUserCredentials(userName,
-                PasswordEncryptor.encrypt(password),false, getHandle());
+
+        // don't encrypt password if authentication is handled by an external org data source
+        if (userName.equals("admin") || ! isUserAuthenticationExternal()) {
+            password = PasswordEncryptor.encrypt(password);
+        }
+        
+        String result = _resAdapter.validateUserCredentials(userName, password,
+                false, getHandle());
         return _resAdapter.successful(result);
     }
 
