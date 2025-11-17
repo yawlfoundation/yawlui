@@ -45,6 +45,10 @@ public abstract class AbstractView extends VerticalLayout {
         return Clients.getDocStoreClient();
     }
 
+    protected LogClient getLogClient() {
+        return Clients.getLogClient();
+    }
+
 
     protected SplitLayout createSplitView(Component top, Component bottom) {
         SplitLayout splitLayout = new SplitLayout(top, bottom);

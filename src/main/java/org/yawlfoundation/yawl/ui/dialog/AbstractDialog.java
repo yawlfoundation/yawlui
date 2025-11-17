@@ -101,7 +101,7 @@ public abstract class AbstractDialog extends Dialog {
     }
 
     
-    private void configure() {
+    protected void configure() {
         setWidth("500px");
         setCloseOnOutsideClick(false);
         setCloseOnEsc(true);

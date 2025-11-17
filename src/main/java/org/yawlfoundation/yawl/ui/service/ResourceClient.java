@@ -13,6 +13,7 @@ import org.yawlfoundation.yawl.resourcing.QueueSet;
 import org.yawlfoundation.yawl.resourcing.TaskPrivileges;
 import org.yawlfoundation.yawl.resourcing.calendar.CalendarEntry;
 import org.yawlfoundation.yawl.resourcing.calendar.ResourceCalendar;
+import org.yawlfoundation.yawl.resourcing.datastore.eventlog.ResourceEvent;
 import org.yawlfoundation.yawl.resourcing.resource.*;
 import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanCategory;
 import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanResource;
@@ -824,6 +825,62 @@ public class ResourceClient extends AbstractClient {
     }
 
 
+    // log queries v
+
+    public String getLogEventsForCase(String caseID) throws IOException {
+        String xml = _logClient.getCaseEvents(caseID, getHandle());
+        successCheck(xml);
+        return xml;
+    }
+
+
+    public List<ResourceEvent> getParticipantHistory(String pid) throws IOException {
+        String xml = _logClient.getParticipantHistory(pid, getHandle());
+        return xmlToResourceEventList(xml);
+    }
+
+
+    public List<ResourceEvent> getCaseHistoryInvolvingParticipant(String pid) throws IOException {
+        String xml = _logClient.getCaseHistoryInvolvingParticipant(pid, getHandle());
+        return xmlToResourceEventList(xml);
+    }
+
+
+    public List<ResourceEvent> getTaskStatistics(YSpecificationID specID, String taskName) throws IOException {
+        String xml = _logClient.getTaskStatistics(specID, taskName, getHandle());
+        return xmlToResourceEventList(xml);
+    }
+
+
+    public List<ResourceEvent> getCaseEvents(String caseID) throws IOException {
+        String xml = _logClient.getCaseEvents(caseID, getHandle());
+        return xmlToResourceEventList(xml);
+    }
+
+
+    private List<ResourceEvent> xmlToResourceEventList(String xml) throws IOException {
+        successCheck(xml);
+        List<ResourceEvent> events = new ArrayList<>();
+        Element element = JDOMUtil.stringToElement(xml);
+        for (Element eEvent : element.getChildren()) {
+            events.add(new ResourceEvent(eEvent));
+        }
+        return events;
+    }
+
+
+    public String userLogin() throws IOException {
+        String handle = _wqAdapter.userlogin("ari", "apple", true);
+        successCheck(handle);
+        return handle;
+    }
+
+
+    public String userLogout(String handle) {
+        String result = _wqAdapter.userlogout(handle);
+        return result;
+    }
+
     // Custom form interactions v
 
     public boolean isValidUserSessionHandle(String handle) throws IOException {
@@ -854,6 +911,13 @@ public class ResourceClient extends AbstractClient {
         XNode root = new XNode("params");
         params.forEach(p -> root.addContent(p.toSummaryXML()));
         return root.toString();
+    }
+
+
+    private void successCheck(String xml) throws IOException {
+        if (! successful(xml)) {
+            throw new IOException(StringUtil.unwrap(xml));
+        }
     }
 
 }

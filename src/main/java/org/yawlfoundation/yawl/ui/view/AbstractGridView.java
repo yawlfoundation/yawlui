@@ -22,6 +22,7 @@ import org.yawlfoundation.yawl.ui.layout.JustifiedButtonLayout;
 import org.yawlfoundation.yawl.ui.layout.UnpaddedVerticalLayout;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
+import org.yawlfoundation.yawl.util.StringUtil;
 import org.yawlfoundation.yawl.worklet.admin.AdministrationTask;
 
 import java.io.IOException;
@@ -329,6 +330,19 @@ abstract class AbstractGridView<T> extends AbstractView {
         catch (IOException e) {
             return Collections.emptyList();
         }
+    }
+
+
+    protected String getHeadersAsCSV() {
+        StringBuilder builder = new StringBuilder();
+        for (Grid.Column<T> column : _grid.getColumns()) {
+            if (column.getHeaderComponent() == null) continue;
+            String headerText = column.getHeaderComponent().getElement().toString();
+            if (builder.length() > 0) builder.append(',');
+            builder.append(StringUtil.unwrap(headerText));
+        }
+        builder.append('\n');
+        return builder.toString();
     }
 
 }

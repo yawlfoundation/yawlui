@@ -97,6 +97,7 @@ public class MainView extends AppLayout implements HasDynamicTitle,
             case "Org Data" : setContent(new OrgDataView()); break;
             case "Non-Human Resources" : setContent(new NonHumanResourcesView()); break;
             case "Services / Clients" : setContent(new ServicesView()); break;
+            case "Log Viewer" : setContent(new LogView()); break;
             case "Calendar" : setContent(new CalendarView(_user)); break;
             case "Worklet Admin" : setContent(new WorkletAdminView()); break;
             case "About" : setContent(new AboutView()); break;
