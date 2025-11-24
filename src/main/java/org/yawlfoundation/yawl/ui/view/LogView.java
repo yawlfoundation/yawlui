@@ -125,6 +125,7 @@ public class LogView extends AbstractView {
 
 
     private void generateParticipantHistoryView() {
+        String title = "All Case Events for Participant: ";
         try {
             SelectParticipantDialog dialog = new SelectParticipantDialog(
                     getResourceClient().getParticipants());
@@ -133,53 +134,53 @@ public class LogView extends AbstractView {
                 try {
                     List<ResourceEvent> events = getResourceClient()
                             .getParticipantHistory(selected.getID());
-                    String title = "All Case Events for Participant: ";
                     _resourceView = new LogResourceEventView(this, selected, events,
                             false, title);
                     changeOutputView(_resourceView.createLayout());
                 }
                 catch (IOException ex) {
-                    Announcement.error(ex.getMessage());
+                    handleException(ex.getMessage(), title, false);
                 }
                 dialog.close();
             });
             dialog.open();
         }
         catch (Exception e) {
-            Announcement.error(e.getMessage());
+            handleException(e.getMessage(), title, false);
         }
     }
 
 
     private void generateCaseEventsView() {
+        String title = "All Events for Case: ";
         try {
             SingleValueDialog dialog = new SingleValueDialog("Enter Case Id", "");
             dialog.getOKButton().addClickListener(e -> {
                 String caseID = dialog.getValue();
                 try {
                     List<ResourceEvent> events = getResourceClient().getCaseEvents(caseID);
-                    String title = "All Events for Case: " + caseID;
                     _resourceView = new LogResourceEventView(this, null, events,
-                            false, title);
+                            false, title + caseID);
                     _resourceView.setExportFileName("Events for Case " + caseID);
                     changeOutputView(_resourceView.createLayout());
                 }
                 catch (IOException ex) {
-                    Announcement.error(ex.getMessage());
+                    handleException(ex.getMessage(), title, false);
                 }
                 dialog.close();
             });
             dialog.open();
         }
         catch (Exception e) {
-            Announcement.error(e.getMessage());
+            handleException(e.getMessage(), title, false);
         }
     }
 
 
     private void generateCasesWithParticipantView() {
+        String title = "All Case Events for cases involving Participant: ";;
         try {
-            SelectParticipantDialog dialog = new SelectParticipantDialog(
+             SelectParticipantDialog dialog = new SelectParticipantDialog(
                     getResourceClient().getParticipants(), true);
             dialog.addOkClickListener(e -> {
                 Participant selected = dialog.getSelected();
@@ -187,22 +188,35 @@ public class LogView extends AbstractView {
                     List<ResourceEvent> events = getResourceClient()
                             .getCaseHistoryInvolvingParticipant(selected.getID());
                     transposeResourceIDs(events, dialog.getSelectedResourceNameFormat());
-                    String title = "All Case Events for cases involving Participant: ";
                     _resourceView = new LogResourceEventView(this, selected, events,
                             true, title);
                     changeOutputView(_resourceView.createLayout());
                 }
                 catch (IOException ex) {
-                    Announcement.error(ex.getMessage());
+                    handleException(ex.getMessage(), title, false);
                 }
                 dialog.close();
             });
             dialog.open();
         }
         catch (Exception e) {
-            Announcement.error(e.getMessage());
+            handleException(e.getMessage(), title, true);
         }
     }
+
+
+    private void handleException(String msg, String title, boolean showParticipantColumn) {
+        if (msg != null && msg.contains("No rows")) {
+            Announcement.warn("No records found for selected criteria");
+        }
+        else {
+            Announcement.error(msg);
+        }
+        _resourceView = new LogResourceEventView(this, null, new ArrayList<>(),
+                showParticipantColumn, title);
+        changeOutputView(_resourceView.createLayout());
+    }
+
 
     private void changeOutputView(Component newView) {
         _splitView.remove(_currentSecondaryView);

@@ -80,13 +80,15 @@ public class LogResourceEventView extends AbstractGridView<ResourceEvent> {
 
     @Override
     void addFooterActions(ActionRibbon ribbon) {
-        ribbon.add(VaadinIcon.FILE_TABLE, "Download as CSV",
-                event -> {
-                    if (_exportFileName == null) {
-                        _exportFileName = "Event History for " + _participant.getFullName();
-                    }
-                    _parent.downloadFile(_exportFileName  + ".csv", getAsCSV());
-                });
+        if (_participant != null) {
+            ribbon.add(VaadinIcon.FILE_TABLE, "Download as CSV",
+                    event -> {
+                        if (_exportFileName == null) {
+                            _exportFileName = "Event History for " + _participant.getFullName();
+                        }
+                        _parent.downloadFile(_exportFileName + ".csv", getAsCSV());
+                    });
+        }
     }
 
 

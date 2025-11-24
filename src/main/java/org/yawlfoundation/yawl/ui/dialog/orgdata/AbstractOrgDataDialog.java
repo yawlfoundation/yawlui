@@ -37,11 +37,11 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
 
     private final List<T> _existingItems;
     private final T _item;
-    private final List<Participant> _ogMembers;
+    private final List<Participant> _ogMembers = new ArrayList<>();
     private final List<Participant> _allParticipants;
     private final String _title;
 
-    private List<Participant> _updatedMembers;
+    private List<Participant> _updatedMembers = new ArrayList<>();
     private HorizontalLayout _layout;
     private ResourceList<Participant> _memberList;
 
@@ -52,10 +52,12 @@ public abstract class AbstractOrgDataDialog<T extends AbstractResourceAttribute>
         _existingItems = items;
         _item = item;
         _allParticipants = pList;
-        _ogMembers = members != null ? members : new ArrayList<>();
-        _updatedMembers = members != null ? members : new ArrayList<>();;
         _title = title;
-   }
+        if (members != null) {
+            _ogMembers.addAll(members);
+            _updatedMembers.addAll(members);
+        }
+    }
 
 
     public void build() {
