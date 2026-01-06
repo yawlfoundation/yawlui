@@ -483,7 +483,11 @@ public class DynFormValidator {
         }
         schema.append("</xsd:schema>") ;
 
-        return schema.toString();
+        String schemaString = schema.toString();
+        schemaString = schemaString.replaceAll("xs:", NS_PREFIX + ":");
+        schemaString = schemaString.replaceAll("yawl:", NS_PREFIX + ":");
+        
+        return schemaString;
     }
 
 

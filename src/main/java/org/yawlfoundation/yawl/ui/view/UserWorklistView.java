@@ -40,6 +40,7 @@ import java.util.Set;
 public class UserWorklistView extends AbstractWorklistView {
 
     private final CustomFormLauncher _customFormLauncher;
+    private final MainView _mainView;
 
     private ActionIcon _chainedIcon;
     private ActionIcon _piledIcon;
@@ -47,9 +48,10 @@ public class UserWorklistView extends AbstractWorklistView {
     private ContextMenu _piledList;
 
 
-    public UserWorklistView(Participant p, String customFormHandle) {
+    public UserWorklistView(Participant p, String customFormHandle, MainView view) {
         super(p);
         _customFormLauncher = new CustomFormLauncher(customFormHandle);
+        _mainView = view;
     }
 
 
@@ -460,20 +462,34 @@ public class UserWorklistView extends AbstractWorklistView {
                 if (dynForm.validate()) {                                // completion
                     String outputData = dynForm.generateOutputData();
                     completeItem(wir, outputData);
-                    dynForm.close();
+                    if (dynForm.containsGeoType()) {
+                        _mainView.closeGeoFormView();
+                    }
+                    else {
+                        dynForm.close();
+                    }
                     refresh();
                 }
             });
-            dynForm.addSaveListener(e -> {
-           //     if (dynForm.validate()) {                                // save
-                    String outputData = dynForm.generateOutputData();
-                    saveWorkItemData(wir, outputData);
+            dynForm.addSaveListener(e -> {           // save
+                String outputData = dynForm.generateOutputData();
+                saveWorkItemData(wir, outputData);
+                if (dynForm.containsGeoType()) {
+                    _mainView.closeGeoFormView();
+                }
+                else {
                     dynForm.close();
-                    refresh();
-            //    }
+                }
+                refresh();
             });
-
-            dynForm.open();
+            if (dynForm.containsGeoType()) {
+                dynForm.removeShortcutKey();
+                dynForm.addCancelListener(e -> _mainView.closeGeoFormView());
+                _mainView.showGeoFormView(dynForm);
+            }
+            else {
+                dynForm.open();
+            }
         }
         catch (ResourceGatewayException | IOException e) {
             throw new RuntimeException(e);

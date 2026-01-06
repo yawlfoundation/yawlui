@@ -51,8 +51,14 @@ public abstract class AbstractView extends VerticalLayout {
 
 
     protected SplitLayout createSplitView(Component top, Component bottom) {
+        return createSplitView(top, bottom, SplitLayout.Orientation.VERTICAL);
+    }
+
+    
+    protected SplitLayout createSplitView(Component top, Component bottom,
+                                          SplitLayout.Orientation orientation) {
         SplitLayout splitLayout = new SplitLayout(top, bottom);
-        splitLayout.setOrientation(SplitLayout.Orientation.VERTICAL);
+        splitLayout.setOrientation(orientation);
         splitLayout.setSizeFull();
         splitLayout.addThemeVariants(SplitLayoutVariant.LUMO_SMALL);
         return splitLayout;

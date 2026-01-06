@@ -29,6 +29,7 @@ import org.yawlfoundation.yawl.resourcing.WorkQueue;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.resourcing.resource.UserPrivileges;
 import org.yawlfoundation.yawl.resourcing.rsInterface.ResourceGatewayException;
+import org.yawlfoundation.yawl.ui.dynform.DynForm;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.DrawerMenu;
 import org.yawlfoundation.yawl.ui.service.Clients;
@@ -57,9 +58,8 @@ public class MainView extends AppLayout implements HasDynamicTitle,
     private static final Map<Participant, String> _customFormHandleMap = new HashMap<>();
 
     private Participant _user;
-    private Div _footer;
-
-
+    private boolean _isDrawerOpen = false;
+    private final DrawerToggle _menuIcon = new DrawerToggle();
     
     public MainView() {
         super();
@@ -88,7 +88,7 @@ public class MainView extends AppLayout implements HasDynamicTitle,
         if (tab == null) return;               // tab is null when user first logs on only
         switch (tab.getLabel()) {
             case "My Worklist" : setContent(new UserWorklistView(_user,
-                    getCustomformHandle(_user))); break;
+                    getCustomformHandle(_user), this)); break;
             case "My Profile" : setContent(new ProfileView(_user)); break;
             case "My Team's Worklist" : setContent(chooseGroupView()); break;
             case "Case Mgt" : setContent(new CasesView()); break;
@@ -106,6 +106,21 @@ public class MainView extends AppLayout implements HasDynamicTitle,
     }
 
 
+    public void showGeoFormView(DynForm dynForm) {
+        _isDrawerOpen = isDrawerOpened();
+        setDrawerOpened(false);
+        _menuIcon.setEnabled(false);
+        setContent(new GeoFormView(dynForm));
+    }
+
+
+    public void closeGeoFormView() {
+        setContent(new UserWorklistView(_user, getCustomformHandle(_user), this));
+        setDrawerOpened(_isDrawerOpen);
+        _menuIcon.setEnabled(true);
+    }
+
+    
     private void showLoginForm() {
         VerticalLayout layout = new VerticalLayout();
         layout.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -147,6 +162,8 @@ public class MainView extends AppLayout implements HasDynamicTitle,
                 }
                 createTitleBar(username);
                 DrawerMenu menu = createMenuBar();
+                setDrawerOpened(true);
+                _menuIcon.setEnabled(true);
                 addWorkletServiceChangeListener(menu);
             }
             else {
@@ -183,7 +200,7 @@ public class MainView extends AppLayout implements HasDynamicTitle,
 
 
     private void createTitleBar(String userName) {
-        addToNavbar(new DrawerToggle());
+        addToNavbar(_menuIcon);
         addLogo();
         addLogout(userName);
     }
@@ -193,7 +210,7 @@ public class MainView extends AppLayout implements HasDynamicTitle,
         DrawerMenu menu = new DrawerMenu(_user);
         menu.addSelectedChangeListener(this);
         addToDrawer(menu);
-        menu.selectInitialItem();
+        menu.selectInitialItem();  
         return menu;
     }
 

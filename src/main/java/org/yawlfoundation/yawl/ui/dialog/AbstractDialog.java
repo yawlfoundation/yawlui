@@ -74,6 +74,8 @@ public abstract class AbstractDialog extends Dialog {
         setHeader(title, true);
     }
 
+    public H4 getHeaderTextFormatted() { return header; }
+
 
     public void setHeader(String title, boolean removeTopMargin) {
         header = new H4(title);

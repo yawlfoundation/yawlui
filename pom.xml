@@ -6,7 +6,7 @@
     <groupId>org.yawlfoundation.yawl</groupId>
     <artifactId>yawlui</artifactId>
     <name>YAWL UI</name>
-    <version>5.2.487</version>
+    <version>5.2.566</version>
     <packaging>war</packaging>
 
     <properties>  
@@ -65,6 +65,7 @@
     </dependencyManagement>
 
     <dependencies>
+
         <dependency>
             <groupId>com.vaadin</groupId>
             <!-- Replace artifactId with vaadin-core to use only free components -->
@@ -170,7 +171,23 @@
             <artifactId>maven-war-plugin</artifactId>
             <version>3.3.2</version>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.18</version>
+            <scope>provided</scope>
+        </dependency>
 
+        <dependency>
+            <groupId>org.vaadin.addons.componentfactory</groupId>
+            <artifactId>vcf-leaflet</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>de.grundid.opendatalab</groupId>
+            <artifactId>geojson-jackson</artifactId>
+            <version>1.13</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -180,10 +197,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>3.10.1</version>
                 <configuration>
-                    <source>10</source>
-                    <target>10</target>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
             <!-- Jetty plugin for easy testing without a server -->
@@ -240,7 +257,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-install-plugin</artifactId>
-                <version>2.5.1</version>
+                <version>3.1.2</version>
                 <executions>
                     <execution>
                         <phase>clean</phase>
@@ -248,10 +265,10 @@
                             <goal>install-file</goal>
                         </goals>
                         <configuration>
-                            <file>../yawl/output/yawl-lib-5.1.jar</file>
+                            <file>../yawl/output/yawl-lib-5.2.jar</file>
                             <groupId>org.yawlfoundation</groupId>
                             <artifactId>yawl</artifactId>
-                            <version>5.1</version>
+                            <version>5.2</version>
                             <packaging>jar</packaging>
                         </configuration>
                     </execution>

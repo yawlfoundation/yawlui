@@ -43,7 +43,7 @@ public class SubPanel extends VerticalLayout implements Cloneable {
     public static final double OCCURS_BAR_HEIGHT = 22.0;
     
     private final DynFormLayout _form;
-    private final String _name;
+    private final DynFormField _field;
     private String label;
 
     private SubPanelController controller;
@@ -55,11 +55,11 @@ public class SubPanel extends VerticalLayout implements Cloneable {
 
 
     // Constructor //
-    public SubPanel(DynFormFactory factory, String name) {
+    public SubPanel(DynFormFactory factory, DynFormField field) {
         super();
-        _form = new DynFormLayout(name);
+        _form = new DynFormLayout(field);
         _factory = factory;
-        _name = name;
+        _field = field;
         getStyle().set("margin-top", "10px");
         getStyle().set("border", "1px solid lightgray");
     }
@@ -76,7 +76,9 @@ public class SubPanel extends VerticalLayout implements Cloneable {
     public boolean hasHeader() { return getHeader() != null; }
 
 
-    public String getName() { return _name; }
+    public String getName() { return _field.getName(); }
+
+    public DynFormField getField() { return _field; }
 
     public void setLabel(String label) { this.label = label; }
 
@@ -119,7 +121,7 @@ public class SubPanel extends VerticalLayout implements Cloneable {
 
     public SubPanel clone() throws CloneNotSupportedException {
         super.clone();
-        SubPanel cloned = new SubPanel(_factory, _name);
+        SubPanel cloned = new SubPanel(_factory, _field);
         this.getStyle().getNames().forEach(name ->
                 cloned.getStyle().set(name, this.getStyle().get(name)));
         controller.addSubPanel(cloned);
@@ -155,6 +157,7 @@ public class SubPanel extends VerticalLayout implements Cloneable {
                 else {
                     parent.addComponentAtIndex(indexAfterThis, newPanel);  // add under this
                 }
+                parent.addGeoTypeListener(newPanel);
                 UiUtil.setFocus(newPanel);
             }
         });

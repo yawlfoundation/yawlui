@@ -70,7 +70,7 @@ public class SubPanelCloner {
             return newPanel;
         }
         catch (CloneNotSupportedException e) {
-            return new SubPanel(_factory, panel.getName());
+            return new SubPanel(_factory, panel.getField());
         }
     }
 

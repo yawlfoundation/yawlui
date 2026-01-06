@@ -10,6 +10,7 @@ import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.dialog.AbstractDialog;
+import org.yawlfoundation.yawl.ui.listener.DynFormContentChangeListener;
 import org.yawlfoundation.yawl.ui.service.Clients;
 import org.yawlfoundation.yawl.ui.util.ApplicationProperties;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
@@ -25,10 +26,14 @@ public class DynForm extends AbstractDialog {
 
     private Button _okButton;  // 'Complete' or 'Start'
     private Button _saveButton;
-    private final Button _cancelButton = new Button("Cancel", event -> cancelform());
+    private final Button _cancelButton = new Button("Cancel", event -> cancelForm());
 
     private final DynFormFactory _factory = new DynFormFactory();
 
+    private DynFormLayout _dynFormLayout; // the content container of this form's components
+    private Scroller _containingScroller; // the outer scroll component
+    private boolean _hasGeoType;
+    private ShortcutRegistration _registeredShortcutKey;
 
     // work item edit
     public DynForm(Participant p, WorkItemRecord wir, String schema) {
@@ -53,6 +58,12 @@ public class DynForm extends AbstractDialog {
         _saveButton.addClickListener(listener);
     }
 
+
+    public void addCancelListener(ComponentEventListener<ClickEvent<Button>> listener) {
+        _cancelButton.addClickListener(listener);
+    }
+
+
     public boolean validate() {
         return _factory.validate();
     }
@@ -63,10 +74,31 @@ public class DynForm extends AbstractDialog {
     }
 
 
+    public boolean containsGeoType() {
+        return _hasGeoType;
+    }
+
+
+    public void addGeoTypeChangeListener(DynFormContentChangeListener listener) {
+        _dynFormLayout.addGeoTypeChangeListenerToTree(listener);
+    }
+
+    
+    public Scroller getContainingScroller() {
+        return _containingScroller;
+    }
+
+    public String getFormName() { return _factory.getFormName(); }
+
+    public List<SubPanel> getSubPanels() {
+        return _dynFormLayout.getChildSubPanels();
+    }
+
+
     private void createContent(Participant p, WorkItemRecord wir, String schema) {
         try {
-            DynFormLayout form = _factory.createForm(schema, wir, p);
-            configureForm(form, "Edit Work Item");
+            _dynFormLayout = _factory.createForm(schema, wir, p);
+            configureForm(_dynFormLayout, "Edit Work Item");
             createButtonsForWorkItem();
         }
         catch (DynFormException dfe) {
@@ -77,8 +109,8 @@ public class DynForm extends AbstractDialog {
 
     private void createContent(List<YParameter> parameters, String schema) {
         try {
-            DynFormLayout form = _factory.createForm(schema, parameters, null);
-            configureForm(form, "Case Start");
+            _dynFormLayout = _factory.createForm(schema, parameters, null);
+            configureForm(_dynFormLayout, "Case Start");
             createButtonsForCaseStart();
         }
         catch (DynFormException dfe) {
@@ -88,6 +120,7 @@ public class DynForm extends AbstractDialog {
 
 
     private void configureForm(DynFormLayout form, String header) {
+        _hasGeoType = form.hasGeoTypeInTree();
         setFormHeight(form);
         setWidth(form.getAppropriateWidth());
         setHeader(header);
@@ -123,22 +156,30 @@ public class DynForm extends AbstractDialog {
     private void assignShortcutKey() {
         DynFormEnterKeyAction action = ApplicationProperties.getDynFormEnterKeyAction();
         if (action == DynFormEnterKeyAction.SAVE && _saveButton != null) {
-            _saveButton.addClickShortcut(Key.ENTER);
+            _registeredShortcutKey = _saveButton.addClickShortcut(Key.ENTER);
         }
         else if (! (action == DynFormEnterKeyAction.NONE)) {
-            _okButton.addClickShortcut(Key.ENTER);
+            _registeredShortcutKey = _okButton.addClickShortcut(Key.ENTER);
         }
     }
 
-    private Scroller createScroller(Component form) {
-        Scroller scroller = new Scroller(form);
-        scroller.setScrollDirection(Scroller.ScrollDirection.VERTICAL);
-        scroller.getStyle().set("border-bottom", "1px solid var(--lumo-contrast-20pct)");
-        return scroller;
+
+    public void removeShortcutKey() {
+        _registeredShortcutKey.remove();
     }
 
     
+    private Scroller createScroller(Component form) {
+        _containingScroller = new Scroller(form);
+        _containingScroller.setScrollDirection(Scroller.ScrollDirection.VERTICAL);
+        _containingScroller.getStyle().set("border-bottom", "1px solid var(--lumo-contrast-20pct)");
+        if (_hasGeoType) {
+            _containingScroller.getStyle().set("height", "100%");
+        }
+        return _containingScroller;
+    }
 
+    
     private void setFormHeight(DynFormLayout form) {
         UI.getCurrent().getPage().retrieveExtendedClientDetails(details ->
             form.setAppropriateHeight(details.getWindowInnerHeight()));
@@ -166,9 +207,11 @@ public class DynForm extends AbstractDialog {
     }
 
 
-    private void cancelform() {
+    public void cancelForm() {
         removeDocsOnCancel();
-        close();
+        if (! _hasGeoType) {
+            close();
+        }
     }
 
 

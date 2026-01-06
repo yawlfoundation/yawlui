@@ -64,10 +64,9 @@ public class DynFormComponentBuilder {
 
 
     public SubPanel makeSubPanel(DynFormField field, SubPanelController controller) {
-        String name = field.getName();
-        SubPanel subPanel = new SubPanel(_factory, name);
+        SubPanel subPanel = new SubPanel(_factory, field);
         if ((! field.isChoiceField()) && field.isFieldContainer()) {
-            subPanel.addHeader(makeHeaderText(field.getLabel(), name));
+            subPanel.addHeader(makeHeaderText(field.getLabel(), field.getName()));
         }
         if (controller != null) {
             controller.storeSubPanel(subPanel);

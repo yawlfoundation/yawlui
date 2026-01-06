@@ -3,7 +3,10 @@ package org.yawlfoundation.yawl.ui.dynform;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.textfield.TextField;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.yawlfoundation.yawl.ui.listener.DynFormContentChangeListener;
+import org.yawlfoundation.yawl.ui.listener.DynFormContentChangedEvent;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,19 +28,41 @@ public class DynFormLayout extends FormLayout {
     private static final int SIMPLE_FIELD_LAYOUT_THRESHOLD = 3;
     private static final int BASE_WIDTH = 350;
 
+    private final List<DynFormContentChangeListener> _listeners = new ArrayList<>();
     private final String _name;
+    private String _varName;
+    private String _dataType;
 
 
+    // called from DynFormFactory to create outer container
     public DynFormLayout(String name) {
         super();
         _name = name;
     }
 
 
+    // called from SubPanel to create container panel for complex type
+    public DynFormLayout(DynFormField field) {
+        this(field.getName());
+        _dataType = field.getParam().getDataTypeName();
+        if (field.hasParent()) {
+            _varName = field.getParent().getName();
+        }
+    }
+
+
+    public void addContentChangeListener(DynFormContentChangeListener listener) {
+        _listeners.add(listener);
+    }
+
+
     @Override
     public void add(Collection<Component> components) {
         super.add(components);
-        components.forEach(this::setColspan);
+        components.forEach(c -> {
+            setColspan(c, components.size());
+            addListenersForGeoTypes(c);
+        });
     }
 
 
@@ -45,6 +70,7 @@ public class DynFormLayout extends FormLayout {
     public void addComponentAtIndex(int index, Component component) {
         super.addComponentAtIndex(index, component);
         setColspan(component);
+        addListenersForGeoTypes(component);
     }
 
 
@@ -52,6 +78,15 @@ public class DynFormLayout extends FormLayout {
     public void addComponentAsFirst(Component component) {
         super.addComponentAsFirst(component);
         setColspan(component);
+        addListenersForGeoTypes(component);
+    }
+
+    @Override
+    public void remove(Component... components) {
+        super.remove(components);
+        for (Component component : components) {
+            announceRemovedComponent(component);
+        }
     }
 
 
@@ -65,7 +100,37 @@ public class DynFormLayout extends FormLayout {
     }
 
 
+    public boolean hasGeoTypeInTree() {
+        if (isGeoDataType()) return true;
+        for (SubPanel subPanel : getChildSubPanels(this)) {
+             if (subPanel.getForm().hasGeoTypeInTree()) return true;
+        }
+        return false;
+    }
+
+
+    public void addGeoTypeChangeListenerToTree(DynFormContentChangeListener listener) {
+        if (isGeoDataType()) {
+            if (! _listeners.contains(listener)) _listeners.add(listener);
+        }
+        for (SubPanel subPanel : getChildSubPanels(this)) {
+            subPanel.getForm().addGeoTypeChangeListenerToTree(listener);
+        }
+    }
+
+
+    public void addGeoTypeListener(SubPanel addedSubPanel) {
+        if (isGeoDataType()) {
+            _listeners.forEach(listener ->
+                    addedSubPanel.getForm().addGeoTypeChangeListenerToTree(listener));
+        };
+    }
+
+
     private int getAppropriateWidthAsInt() {
+        if (isGeoDataType()) {
+            return BASE_WIDTH + getMaxSubPanelDepth(this) * 30;
+        }
         if (getChildren().count() <= SIMPLE_FIELD_LAYOUT_THRESHOLD) {
             for (SubPanel subPanel : getChildSubPanels(this)) {
                 if (! isSimpleContentSubPanel(subPanel)) {
@@ -93,6 +158,14 @@ public class DynFormLayout extends FormLayout {
     }
 
 
+    public String getDataType() { return _dataType; }
+
+    
+    public boolean isGeoDataType() {
+        return _dataType != null && _dataType.startsWith("YGeo");
+    }
+
+
     private boolean isSimpleContentSubPanel(SubPanel subPanel) {
         DynFormLayout content = getSubPanelContent(subPanel);
 
@@ -107,6 +180,9 @@ public class DynFormLayout extends FormLayout {
     }
 
 
+    protected List<SubPanel> getChildSubPanels() { return getChildSubPanels(this); }
+
+    
     private List<SubPanel> getChildSubPanels(Component parent) {
         List<SubPanel> subPanels = new ArrayList<>();
         parent.getChildren().filter(component -> (component instanceof SubPanel))
@@ -169,6 +245,9 @@ public class DynFormLayout extends FormLayout {
 
     // a max of 4 'simple' fields (textfield, combo, checkbox, etc) in one column
     private boolean isSimpleFieldsUnderThreshold() {
+        if (getChildren().anyMatch(component -> component instanceof SubPanel)) {
+            return false;
+        }
         return getChildren().count() <= SIMPLE_FIELD_LAYOUT_THRESHOLD &&
                 getMaxColSpan() < COLUMN_COUNT;
     }
@@ -230,6 +309,9 @@ public class DynFormLayout extends FormLayout {
 
 
     private int getMaxColSpan() {
+        if (isGeoDataType()) {
+            return 1;
+        }
         for (Component c : getChildren().collect(Collectors.toList())) {
             if (getColspan(c) > 1) {
                 return COLUMN_COUNT;
@@ -248,6 +330,36 @@ public class DynFormLayout extends FormLayout {
 
     private double getFieldHeight(Component c) {
         return c instanceof Checkbox ? CHECKBOX_HEIGHT : FIELD_HEIGHT;
+    }
+
+
+    private void addListenersForGeoTypes(Component c) {
+        if (isGeoDataType()) {
+            if (c instanceof TextField) {
+                ((TextField) c).addValueChangeListener(e -> {
+                    String fieldName = e.getSource().getLabel();
+                    String oldValue = e.getOldValue();
+                    String newValue = e.getValue();
+                    DynFormContentChangedEvent event = new DynFormContentChangedEvent(
+                            _varName, _name, fieldName, _dataType, oldValue, newValue);
+                    _listeners.forEach(l ->
+                            l.formContentChanged(event));
+                });
+            }
+        }
+    }
+
+    
+    private void announceRemovedComponent(Component c) {
+        if (isGeoDataType()) {
+            if (c instanceof SubPanel) {
+                DynFormContentChangedEvent event = new DynFormContentChangedEvent(
+                        this.getName(), this.getName(), null, _dataType,
+                        null, null);
+                _listeners.forEach(l ->
+                        l.formContentChanged(event));
+            }
+        }
     }
     
 }

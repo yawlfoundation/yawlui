@@ -28,6 +28,8 @@ import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.util.*;
 
+import static org.yawlfoundation.yawl.ui.dynform.DynFormValidator.NS_PREFIX;
+
 /**
  * Author: Michael Adams
  * Creation Date: 5/07/2008
@@ -44,7 +46,7 @@ public class DynFormFieldAssembler {
     public DynFormFieldAssembler(String schemaStr, String dataStr,
                                  Map<String, FormParameter> params) throws DynFormException {
         _params = params;
-        buildMap(schemaStr, dataStr);
+        buildMap(normaliseNamespaces(schemaStr), dataStr);
     }
 
     private void buildMap(String schemaStr, String dataStr) throws DynFormException {
@@ -193,10 +195,13 @@ public class DynFormFieldAssembler {
                         }
                     }
                     else {
-                        field = addGroupField(name, eField, ns, null,
-                                minOccurs, maxOccurs, level, appInfo);
-                        field.setGroupID(groupID);
-                        result.add(field);
+                        int min = SubPanelController.convertOccurs(minOccurs);
+                        for (int i=0; i<min; i++) {
+                            field = addGroupField(name, eField, ns, null,
+                                    "1", maxOccurs, level, appInfo);
+                            field.setGroupID(groupID);
+                            result.add(field);
+                        }
                     }
                 }
             }
@@ -364,6 +369,9 @@ public class DynFormFieldAssembler {
 
 
     private int getInitialInstanceCount(String min, Element data, String dataName) {
+        if (data != null && dataName.equals(data.getName())) {
+            return 1;
+        }
         int dataCount = 1;
         int minOccurs = Math.max(SubPanelController.convertOccurs(min), 1) ;
         if ((data != null) && (data.getContentSize() > 1)) {
@@ -433,6 +441,12 @@ public class DynFormFieldAssembler {
             return infoMap;
         }
         return Collections.emptyMap();
+    }
+
+
+    private String normaliseNamespaces(String schemaString) {
+        schemaString = schemaString.replaceAll("xs:", NS_PREFIX + ":");
+        return schemaString.replaceAll("yawl:", NS_PREFIX + ":");
     }
 
     
