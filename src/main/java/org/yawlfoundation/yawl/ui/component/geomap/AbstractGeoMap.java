@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 abstract class AbstractGeoMap<T> {
 
     private static final double LAT_DEGREE_PER_METRE = 0.00001;
-    private static final String DEFAULT_COLOR = "#FF0000";    // red
+    protected static final String DEFAULT_COLOR = "#FF0000";    // red
     private static final GeoCoordinate DEFAULT_ORIGIN =
             new GeoCoordinate(48.8575, 2.3514);  // Paris
 
@@ -37,28 +37,28 @@ abstract class AbstractGeoMap<T> {
     public abstract Component getMap();
 
 
-    public abstract int drawMarker(GeoCoordinate coordinate);
+    public abstract int drawMarker(GeoCoordinate coordinate, boolean draggable);
 
     public abstract void updateMarker(int ref, GeoCoordinate coordinate);
 
     public abstract void removeMarker(int ref);
 
 
-    public abstract int drawCircle(GeoCoordinate coordinate, double radius);
+    public abstract int drawCircle(GeoCoordinate coordinate, double radius, boolean draggable);
 
     public abstract void updateCircle(int ref, GeoCoordinate coordinate, double radius);
 
     public abstract void removeCircle(int ref);
 
 
-    public abstract int drawRectangle(GeoCoordinate topLeft, GeoCoordinate bottomRight);
+    public abstract int drawRectangle(GeoCoordinate topLeft, GeoCoordinate bottomRight, boolean draggable);
 
     public abstract void updateRectangle(int ref, GeoCoordinate topLeft, GeoCoordinate bottomRight);
 
     public abstract void removeRectangle(int ref);
 
 
-    public abstract int drawPolygon(List<GeoCoordinate> coordinates);
+    public abstract int drawPolygon(List<GeoCoordinate> coordinates, boolean draggable);
 
     public abstract void updatePolygon(int ref, List<GeoCoordinate> coordinates);
 

@@ -145,10 +145,11 @@ public class GeoMapSubView extends AbstractView
     private void drawMarker(DynFormLayout layout) {
         List<TextField> fields = extractFields(layout);
         GeoCoordinate coordinate = extractCoordinate(fields);
-        int ref = getOverlayRef(layout);;
+        int ref = getOverlayRef(layout);
         if (validateCoordinate(coordinate)) {
             if (ref == -1) {
-                ref = _map.drawMarker(coordinate);
+                boolean draggable = ! fields.get(0).isReadOnly();
+                ref = _map.drawMarker(coordinate, draggable);
                 _layout2OverlayMap.put(layout, ref);
             }
             else {
@@ -168,7 +169,8 @@ public class GeoMapSubView extends AbstractView
             double radius = StringUtil.strToDouble(fields.get(0).getValue(), 0);
             if (radius > 0) {
                 if (ref == -1) {       // new circle
-                    ref = _map.drawCircle(coordinate, radius);
+                    boolean draggable = ! fields.get(0).isReadOnly();
+                    ref = _map.drawCircle(coordinate, radius, draggable);
                 }
                 else {
                     _map.updateCircle(ref, coordinate, radius);
@@ -190,7 +192,8 @@ public class GeoMapSubView extends AbstractView
         int ref = getOverlayRef(layout);
         if (validateCoordinate(coordinate1) && validateCoordinate(coordinate2)) {
             if (ref == -1) {
-                ref = _map.drawRectangle(coordinate1, coordinate2);
+                boolean draggable = ! isReadOnly(subPanels.get(0));
+                ref = _map.drawRectangle(coordinate1, coordinate2, draggable);
             }
             else {
                 _map.updateRectangle(ref, coordinate1, coordinate2);
@@ -203,12 +206,14 @@ public class GeoMapSubView extends AbstractView
     // a polygon is presented as three or more subpanels, each with two fields
     private void drawPolygon(DynFormLayout layout) {
         List<GeoCoordinate> coordinateList = new ArrayList<>();
+        boolean draggable = true;
         for (SubPanel subPanel : extractSubPanels(layout)) {
             GeoCoordinate coordinate = extractCoordinate(subPanel);
             if (! validateCoordinate(coordinate)) {
                 continue;
             }
             coordinateList.add(coordinate);
+            draggable = ! isReadOnly(subPanel);
         }
         if (coordinateList.isEmpty()) {
             _layout2OverlayMap.put(layout, -1);
@@ -216,7 +221,7 @@ public class GeoMapSubView extends AbstractView
         }
         int ref = getOverlayRef(layout);
         if (ref == -1) {
-            ref = _map.drawPolygon(coordinateList);
+            ref = _map.drawPolygon(coordinateList, draggable);
         }
         else {
             _map.updatePolygon(ref, coordinateList);
@@ -230,6 +235,7 @@ public class GeoMapSubView extends AbstractView
         for (SubPanel subPanel : _form.getSubPanels()) {
             DynFormLayout layout = subPanel.getForm();
             if (layout.isGeoDataType()) {
+                _layout2OverlayMap.put(layout, -1);
                 geoPanels.add(subPanel);
             }
         }
@@ -294,6 +300,12 @@ public class GeoMapSubView extends AbstractView
         layout.getChildren().filter(component -> (component instanceof SubPanel))
                .forEach(p -> subPanels.add((SubPanel) p));
         return subPanels;
+    }
+
+
+    private boolean isReadOnly(SubPanel subPanel) {
+        List<TextField> fieldList = extractFields(subPanel.getForm());
+        return fieldList.get(0).isReadOnly();
     }
 
 

@@ -3,6 +3,8 @@ package org.yawlfoundation.yawl.ui.component.geomap;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
+import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.VaadinSession;
 import org.vaadin.addons.componentfactory.leaflet.LeafletMap;
 import org.vaadin.addons.componentfactory.leaflet.layer.InteractiveLayer;
 import org.vaadin.addons.componentfactory.leaflet.layer.groups.LayerGroup;
@@ -21,7 +23,15 @@ import org.vaadin.addons.componentfactory.leaflet.types.Point;
 import org.yawlfoundation.yawl.ui.listener.GeoMapOverlayMoveListener;
 import org.yawlfoundation.yawl.ui.listener.GeoMapOverlayMovedEvent;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.URI;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -92,11 +102,11 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
 
     @Override
-    public int drawMarker(GeoCoordinate coordinate) {
+    public int drawMarker(GeoCoordinate coordinate, boolean draggable) {
         LatLng point = toLatLng(coordinate);
         Marker marker = new Marker(point);
-        marker.setDraggable(true);
-        marker.setIcon(new Icon("icons/marker-icon.png"));
+        marker.setDraggable(draggable);
+        marker.setIcon(getNextMarkerIcon());
 
         marker.onMouseMove(event -> announceMove(marker, event.getLatLng()));
         marker.onMouseUp(event -> announceMove(marker, event.getLatLng()));
@@ -121,63 +131,64 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
     
     @Override
-    public int drawCircle(GeoCoordinate coordinate, double radius) {
+    public int drawCircle(GeoCoordinate coordinate, double radius, boolean draggable) {
         LatLng center = toLatLng(coordinate);
         Circle circle = drawCircle(center, radius, getNextColour());
         final int ref = addOverlay(circle);
         circle.addTo(_map);
         _map.getUI().ifPresent(ui -> ui.access(_map::invalidateSize));
 
-        Marker dragMarker = createDraggableMarker(center, "drag");
-        LatLng resizePos = offsetByMeters(center, 0, radius);
-        Marker resizeMarker = createDraggableMarker(resizePos, "resize");
+        if (draggable) {
+            Marker dragMarker = createDraggableMarker(center, "drag");
+            LatLng resizePos = offsetByMeters(center, 0, radius);
+            Marker resizeMarker = createDraggableMarker(resizePos, "resize");
 
-        AtomicBoolean dragging = new AtomicBoolean(false);
-        AtomicBoolean resizing = new AtomicBoolean(false);
-        final long[] last = {0};
-        final int[] count = {0};
+            AtomicBoolean dragging = new AtomicBoolean(false);
+            AtomicBoolean resizing = new AtomicBoolean(false);
+            final long[] last = { 0 };
+            final int[] count = { 0 };
 
-        dragMarker.onMouseDown(event -> dragging.set(true));
-        resizeMarker.onMouseDown(event -> resizing.set(true));
-        
-        _map.onMouseMove(event -> {
-            long now = System.currentTimeMillis();
-            if (++count[0] % MOUSE_MOVE_STEP == 0 || now - last[0] > MOUSE_MOVE_MIN_MS) {
-                last[0] = now;
+            dragMarker.onMouseDown(event -> dragging.set(true));
+            resizeMarker.onMouseDown(event -> resizing.set(true));
 
+            _map.onMouseMove(event -> {
+                long now = System.currentTimeMillis();
+                if (++count[0] % MOUSE_MOVE_STEP == 0 || now - last[0] > MOUSE_MOVE_MIN_MS) {
+                    last[0] = now;
+
+                    if (dragging.get()) {
+                        Circle refCircle = (Circle) getOverlay(ref);
+                        drag(refCircle, event.getLatLng());
+                        announceMove((Circle) getOverlay(ref), event.getLatLng(), ref);
+                    }
+                    if (resizing.get()) {
+                        Circle refCircle = (Circle) getOverlay(ref);
+                        resize(refCircle, event.getLatLng());
+                        announceMove((Circle) getOverlay(ref), event.getLatLng(), ref);
+                    }
+                }
+            });
+
+            _map.onMouseUp(event -> {
                 if (dragging.get()) {
                     Circle refCircle = (Circle) getOverlay(ref);
-                    drag(refCircle, event.getLatLng());
-                    announceMove((Circle) getOverlay(ref), event.getLatLng(), ref);
+                    drag(refCircle, event.getLatLng());           // one last time
+                    finaliseCircleMove(ref, true);
+                    dragging.set(false);
                 }
                 if (resizing.get()) {
                     Circle refCircle = (Circle) getOverlay(ref);
                     resize(refCircle, event.getLatLng());
-                    announceMove((Circle) getOverlay(ref), event.getLatLng(), ref);
+                    finaliseCircleMove(ref, true);
+                    resizing.set(false);
                 }
-            }
-        });
+            });
 
-        _map.onMouseUp(event -> {
-            if (dragging.get()) {
-                Circle refCircle = (Circle) getOverlay(ref);
-                drag(refCircle, event.getLatLng());           // one last time
-                finaliseCircleMove(ref, true);
-                dragging.set(false);
-            }
-            if (resizing.get()) {
-                Circle refCircle = (Circle) getOverlay(ref);
-                resize(refCircle, event.getLatLng());
-                finaliseCircleMove(ref, true);
-                resizing.set(false);
-            }
-        });
-        
-        dragMarker.addTo(_markers);
-        _dragMarkerMap.put(circle, dragMarker);
-        resizeMarker.addTo(_markers);
-        _resizeMarkerMap.put(circle, resizeMarker);
-
+            dragMarker.addTo(_markers);
+            _dragMarkerMap.put(circle, dragMarker);
+            resizeMarker.addTo(_markers);
+            _resizeMarkerMap.put(circle, resizeMarker);
+        }
         centerAndZoom();
         return ref;
     }
@@ -234,8 +245,8 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
 
     @Override
-    public int drawRectangle(GeoCoordinate topLeft, GeoCoordinate bottomRight) {
-        return drawPolygon(toRectangleVertices(topLeft, bottomRight), true);
+    public int drawRectangle(GeoCoordinate topLeft, GeoCoordinate bottomRight, boolean draggable) {
+        return drawPolygon(toRectangleVertices(topLeft, bottomRight), true, draggable);
     }
 
     
@@ -250,59 +261,86 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
 
     @Override
-    public int drawPolygon(List<GeoCoordinate> coordinates) {
-        return drawPolygon(coordinates, false);
+    public int drawPolygon(List<GeoCoordinate> coordinates, boolean draggable) {
+        return drawPolygon(coordinates, false, draggable);
     }
 
 
-    private int drawPolygon(List<GeoCoordinate> coordinates, boolean isRectangle) {
+    private int drawPolygon(List<GeoCoordinate> coordinates, boolean isRectangle, boolean draggable) {
         List<LatLng> vertices = toLatLngList(coordinates);
         Polygon polygon = drawPolygon(vertices, getNextColour());
         int ref = addOverlay(polygon);
         polygon.addTo(_map);
         _map.getUI().ifPresent(ui -> ui.access(_map::invalidateSize));
 
-        AtomicReference<LatLng> centroid = new AtomicReference<>(getCentroid(vertices));
-        Marker dragMarker = createDraggableMarker(centroid.get(), "drag");
-        List<Marker> resizeMarkers = createResizeMarkers(vertices);
+        if (draggable) {
+            AtomicReference<LatLng> centroid = new AtomicReference<>(getCentroid(vertices));
+            Marker dragMarker = createDraggableMarker(centroid.get(), "drag");
+            List<Marker> resizeMarkers = createResizeMarkers(vertices);
 
-        AtomicBoolean dragging = new AtomicBoolean(false);
-        AtomicBoolean resizing = new AtomicBoolean(false);
-        AtomicInteger resizingMarkerIndex = new AtomicInteger(-1);
-        final long[] last = {0};
-        final int[] count = {0};
+            AtomicBoolean dragging = new AtomicBoolean(false);
+            AtomicBoolean resizing = new AtomicBoolean(false);
+            AtomicInteger resizingMarkerIndex = new AtomicInteger(-1);
+            final long[] last = { 0 };
+            final int[] count = { 0 };
 
-        dragMarker.onMouseDown(event -> {
-            resetPolygonVertices(ref, vertices);
-            centroid.set(getCentroid(vertices));
-            dragging.set(true);
-        });
-
-        for (int i=0; i < resizeMarkers.size(); i++) {
-            Marker m = resizeMarkers.get(i);
-            int index = i;
-            m.onMouseDown(event -> {
+            dragMarker.onMouseDown(event -> {
                 resetPolygonVertices(ref, vertices);
                 centroid.set(getCentroid(vertices));
-                resizing.set(true);
-                resizingMarkerIndex.set(index);
+                dragging.set(true);
             });
-        }
-        
-        _map.onMouseMove(event -> {
-            long now = System.currentTimeMillis();
-            if (++count[0] % MOUSE_MOVE_STEP == 0 || now - last[0] > MOUSE_MOVE_MIN_MS) {
-                last[0] = now;
 
+            for (int i = 0; i < resizeMarkers.size(); i++) {
+                Marker m = resizeMarkers.get(i);
+                int index = i;
+                m.onMouseDown(event -> {
+                    resetPolygonVertices(ref, vertices);
+                    centroid.set(getCentroid(vertices));
+                    resizing.set(true);
+                    resizingMarkerIndex.set(index);
+                });
+            }
+
+            _map.onMouseMove(event -> {
+                long now = System.currentTimeMillis();
+                if (++count[0] % MOUSE_MOVE_STEP == 0 || now - last[0] > MOUSE_MOVE_MIN_MS) {
+                    last[0] = now;
+
+                    if (dragging.get()) {
+                        Polygon refPolygon = (Polygon) getOverlay(ref);
+                        LatLng newCentroid = event.getLatLng();
+                        List<LatLng> moved = updateVerticesOnMove(vertices, centroid, newCentroid);
+                        drag(refPolygon, moved);
+                        announceMove((Polygon) getOverlay(ref), moved, ref);
+                        vertices.clear();
+                        vertices.addAll(moved);
+                        centroid.set(newCentroid);
+                    }
+                    if (resizing.get()) {
+                        Polygon refPolygon = (Polygon) getOverlay(ref);
+                        LatLng newVertex = event.getLatLng();
+                        List<LatLng> updated = updateVerticesOnResize(vertices,
+                                resizingMarkerIndex.get(), newVertex, isRectangle);
+                        resize(refPolygon, updated);
+                        announceMove(refPolygon, updated, ref);
+                        vertices.clear();
+                        vertices.addAll(updated);
+                        centroid.set(getCentroid(vertices));
+                    }
+                }
+            });
+
+            _map.onMouseUp(event -> {
                 if (dragging.get()) {
                     Polygon refPolygon = (Polygon) getOverlay(ref);
                     LatLng newCentroid = event.getLatLng();
                     List<LatLng> moved = updateVerticesOnMove(vertices, centroid, newCentroid);
                     drag(refPolygon, moved);
-                    announceMove((Polygon) getOverlay(ref), moved, ref);
                     vertices.clear();
                     vertices.addAll(moved);
                     centroid.set(newCentroid);
+                    finalisePolygonMove(ref, vertices, resizeMarkers, true);
+                    dragging.set(false);
                 }
                 if (resizing.get()) {
                     Polygon refPolygon = (Polygon) getOverlay(ref);
@@ -310,47 +348,21 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
                     List<LatLng> updated = updateVerticesOnResize(vertices,
                             resizingMarkerIndex.get(), newVertex, isRectangle);
                     resize(refPolygon, updated);
-                    announceMove(refPolygon, updated, ref);
                     vertices.clear();
                     vertices.addAll(updated);
                     centroid.set(getCentroid(vertices));
+                    finalisePolygonMove(ref, vertices, resizeMarkers, true);
+                    resizing.set(false);
                 }
-            }
-        });
+            });
 
-        _map.onMouseUp(event -> {
-            if (dragging.get()) {
-                Polygon refPolygon = (Polygon) getOverlay(ref);
-                LatLng newCentroid = event.getLatLng();
-                List<LatLng> moved = updateVerticesOnMove(vertices, centroid, newCentroid);
-                drag(refPolygon, moved);
-                vertices.clear();
-                vertices.addAll(moved);
-                centroid.set(newCentroid);
-                finalisePolygonMove(ref, vertices, resizeMarkers, true);
-                dragging.set(false);
-            }
-            if (resizing.get()) {
-                Polygon refPolygon = (Polygon) getOverlay(ref);
-                LatLng newVertex = event.getLatLng();
-                List<LatLng> updated = updateVerticesOnResize(vertices,
-                        resizingMarkerIndex.get(), newVertex, isRectangle);
-                resize(refPolygon, updated);
-                vertices.clear();
-                vertices.addAll(updated);
-                centroid.set(getCentroid(vertices));
-                finalisePolygonMove(ref, vertices, resizeMarkers, true);
-                resizing.set(false);
-            }
-        });
-
-        dragMarker.addTo(_markers);
-        _dragMarkerMap.put(polygon, dragMarker);
-        resizeMarkers.forEach(m -> {
-            if (m.getLatLng() != null) m.addTo(_markers);
-        });
-        _vertexMarkerMap.put(polygon, resizeMarkers);
-
+            dragMarker.addTo(_markers);
+            _dragMarkerMap.put(polygon, dragMarker);
+            resizeMarkers.forEach(m -> {
+                if (m.getLatLng() != null) m.addTo(_markers);
+            });
+            _vertexMarkerMap.put(polygon, resizeMarkers);
+        }
         centerAndZoom();
         return ref;
     }
@@ -728,6 +740,58 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     private boolean hasMoved(LatLng oldPoint, LatLng newPoint) {
         return ! oldPoint.getLat().equals(newPoint.getLat()) ||
                 ! oldPoint.getLng().equals(newPoint.getLng());
+    }
+
+
+    private Icon getNextMarkerIcon() {
+        Icon defaultIcon = new Icon("icons/marker-icon.png");
+        try {
+            String nextColour = getNextColour();
+            if (Objects.equals(nextColour, DEFAULT_COLOR)) {
+                return defaultIcon;
+            }
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            InputStream is = classLoader.getResourceAsStream("../../icons/marker-icon.png");
+            BufferedImage img = ImageIO.read(is);
+            BufferedImage coloredImg = new BufferedImage(img.getWidth(), img.getHeight(),
+                    BufferedImage.TYPE_INT_ARGB);
+            Color targetColor = Color.decode(getNextColour());
+            for (int y = 0; y < img.getHeight(); y++) {
+                for (int x = 0; x < img.getWidth(); x++) {
+                    int rgb = img.getRGB(x, y);
+                    Color color = new Color(rgb, true);
+                    if (color.getAlpha() > 0) {
+                        Color pixelColor = new Color(targetColor.getRed(),
+                                targetColor.getGreen(), targetColor.getBlue(), color.getAlpha());
+                        coloredImg.setRGB(x, y, pixelColor.getRGB());
+                    }
+                }
+            }
+
+            StreamResource iconResource = new StreamResource(
+                    "temp-marker-icon.png",
+                    () -> {
+                        try {
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            ImageIO.write(coloredImg, "png", baos);
+                            return new ByteArrayInputStream(baos.toByteArray());
+                        }
+                        catch (Exception e) {
+                            return null;
+                        }
+                    }
+            );
+
+            URI uri = VaadinSession.getCurrent()
+                    .getResourceRegistry()
+                    .registerResource(iconResource).getResourceUri();
+
+            return new Icon(uri.toString());
+            
+        }
+        catch (Exception e) {
+            return defaultIcon;
+        }
     }
     
 }
