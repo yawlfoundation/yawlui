@@ -8,23 +8,21 @@ import org.yawlfoundation.yawl.ui.component.geomap.VcfLeafletGeoMap;
 import org.yawlfoundation.yawl.ui.dynform.DynForm;
 import org.yawlfoundation.yawl.ui.dynform.DynFormLayout;
 import org.yawlfoundation.yawl.ui.dynform.SubPanel;
-import org.yawlfoundation.yawl.ui.listener.DynFormContentChangeListener;
-import org.yawlfoundation.yawl.ui.listener.DynFormContentChangedEvent;
-import org.yawlfoundation.yawl.ui.listener.GeoMapOverlayMoveListener;
-import org.yawlfoundation.yawl.ui.listener.GeoMapOverlayMovedEvent;
+import org.yawlfoundation.yawl.ui.listener.*;
 import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Michael Adams
  * @date 12/12/25
  */
 public class GeoMapSubView extends AbstractView
-        implements DynFormContentChangeListener, GeoMapOverlayMoveListener {
+        implements DynFormContentChangeListener, GeoMapOverlayMoveListener, GeoMapDoubleClickListener {
 
     private final VcfLeafletGeoMap _map = new VcfLeafletGeoMap();
     private final DynForm _form;
@@ -38,6 +36,7 @@ public class GeoMapSubView extends AbstractView
         _form = form;
         _form.addGeoTypeChangeListener(this);
         _map.addMoveListener(this);
+        _map.addDoubleClickListener(this);
         _geoPanels = gatherGeoPanels();
         setSizeFull();
     }
@@ -87,6 +86,36 @@ public class GeoMapSubView extends AbstractView
         _updatingOverlays = false;
     }
 
+    @Override
+    public void mapDoubleClick(GeoMapDoubleClickEvent event) {
+        _updatingOverlays = true;
+        DynFormLayout layout = findFirstEmptyLayout();
+        if (layout != null) {
+            GeoCoordinate coordinate = new GeoCoordinate(event.getLatitude(), event.getLongitude());
+            switch (layout.getDataType()) {
+                case "YGeoLatLongType": {
+                    updateMarkerValues(layout, coordinate);
+                    drawMarker(layout);
+                } break;
+                case "YGeoCircleType" : {
+                    updateCircleValues(layout, coordinate, 100);
+                    drawCircle(layout);
+                } break;
+                case "YGeoRectType" : {
+                    List<GeoCoordinate> coordinates = buildDefaultRectangle(coordinate);
+                    updatePolygonValues(layout, coordinates);
+                    drawRectangle(layout);
+                } break;
+                case "YGeoPolygonType" : {
+                    int vertexCount = extractSubPanels(layout).size();
+                    List<GeoCoordinate> coordinates = buildDefaultPolygon(coordinate, vertexCount);
+                    updatePolygonValues(layout, coordinates);
+                    drawPolygon(layout);
+                } break;
+            }
+        }
+        _updatingOverlays = false;
+    }
 
     public void invalidateSize() {
         _map.invalidateSize();
@@ -127,7 +156,7 @@ public class GeoMapSubView extends AbstractView
                 field.setValue(String.valueOf(location.lat()));
             }
             if (field.getLabel().equals("longitude")) {
-                field.setValue(String.valueOf(location.lon()));
+                field.setValue(String.valueOf(location.normalisedLon()));
             }
         }
     }
@@ -150,12 +179,12 @@ public class GeoMapSubView extends AbstractView
             if (ref == -1) {
                 boolean draggable = ! fields.get(0).isReadOnly();
                 ref = _map.drawMarker(coordinate, draggable);
-                _layout2OverlayMap.put(layout, ref);
-            }
+             }
             else {
                 _map.updateMarker(ref, coordinate);
             }
         }
+        _layout2OverlayMap.put(layout, ref);
     }
 
 
@@ -243,6 +272,17 @@ public class GeoMapSubView extends AbstractView
     }
 
 
+    private DynFormLayout findFirstEmptyLayout() {
+        List<DynFormLayout> layouts = getEmptyLayouts();
+        for (SubPanel subPanel : _geoPanels) {
+             DynFormLayout layout = subPanel.getForm();
+             if (layouts.contains(layout)) {
+                 return layout;
+            }
+        }
+         return null;
+    }
+
     private void initOverlays() {
         for (SubPanel subPanel : _geoPanels) {
             drawOverlay(subPanel.getForm());
@@ -303,9 +343,56 @@ public class GeoMapSubView extends AbstractView
     }
 
 
+    private List<GeoCoordinate> buildDefaultRectangle(GeoCoordinate center) {
+        List<GeoCoordinate> coordinates = new ArrayList<>();
+        coordinates.add(offsetByMeters(center, 100, -100));
+        coordinates.add(offsetByMeters(center, 100, 100));
+        coordinates.add(offsetByMeters(center, -100, 100));
+        coordinates.add(offsetByMeters(center, -100, -100));
+        return coordinates;
+    }
+
+
+    private List<GeoCoordinate> buildDefaultPolygon(GeoCoordinate center, int size) {
+        List<GeoCoordinate> coordinates = new ArrayList<>();
+        double min = -100;
+        double max = 100;
+        for (int i = 0; i < size; i++) {
+            double north = ThreadLocalRandom.current().nextDouble(min, max + 1);
+            double east = ThreadLocalRandom.current().nextDouble(min, max + 1);
+            coordinates.add(offsetByMeters(center, north, east));
+        }
+        return coordinates;
+    }
+
+
+    private GeoCoordinate offsetByMeters(GeoCoordinate origin, double northMeters,
+                                         double eastMeters) {
+        double R = 6378137.0;  // Earth radius (meters)
+
+        double dLat = northMeters / R;
+        double dLon = eastMeters / (R * Math.cos(Math.toRadians(origin.lat())));
+
+        double newLat = origin.lat() + Math.toDegrees(dLat);
+        double newLon = origin.lon() + Math.toDegrees(dLon);
+
+        return new GeoCoordinate(newLat, newLon);
+    }
+
+    
     private boolean isReadOnly(SubPanel subPanel) {
         List<TextField> fieldList = extractFields(subPanel.getForm());
         return fieldList.get(0).isReadOnly();
+    }
+
+    private List<DynFormLayout> getEmptyLayouts() {
+        List<DynFormLayout> layouts = new ArrayList<>();
+        for (DynFormLayout layout : _layout2OverlayMap.keySet()) {
+            if (_layout2OverlayMap.get(layout) == -1) {
+                layouts.add(layout);
+            }
+        }
+        return layouts;
     }
 
 

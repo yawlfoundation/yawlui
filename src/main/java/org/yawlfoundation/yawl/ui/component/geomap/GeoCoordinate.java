@@ -28,6 +28,11 @@ public class GeoCoordinate {
     public double lon() { return longitude; }
 
 
+    public double normalisedLon() {
+        return ((longitude + 180) % 360 + 360) % 360 - 180;
+    }
+
+
     public void validate() throws IllegalArgumentException {
         String latMsg = "Latitude must be between 90 and 180";
         String lonMsg = "Longitude must be between -180 and 180";

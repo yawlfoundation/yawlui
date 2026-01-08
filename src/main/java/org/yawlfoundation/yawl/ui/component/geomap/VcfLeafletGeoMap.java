@@ -20,6 +20,8 @@ import org.vaadin.addons.componentfactory.leaflet.types.Icon;
 import org.vaadin.addons.componentfactory.leaflet.types.LatLng;
 import org.vaadin.addons.componentfactory.leaflet.types.LatLngBounds;
 import org.vaadin.addons.componentfactory.leaflet.types.Point;
+import org.yawlfoundation.yawl.ui.listener.GeoMapDoubleClickEvent;
+import org.yawlfoundation.yawl.ui.listener.GeoMapDoubleClickListener;
 import org.yawlfoundation.yawl.ui.listener.GeoMapOverlayMoveListener;
 import org.yawlfoundation.yawl.ui.listener.GeoMapOverlayMovedEvent;
 
@@ -56,6 +58,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     private final Map<InteractiveLayer, Marker> _resizeMarkerMap = new HashMap<>();
     private final Map<InteractiveLayer, List<Marker>> _vertexMarkerMap = new HashMap<>();
     private final List<GeoMapOverlayMoveListener> _moveListeners = new ArrayList<>();
+    private final List<GeoMapDoubleClickListener> _dblClickListeners = new ArrayList<>();
 
 
     public VcfLeafletGeoMap() {
@@ -75,7 +78,12 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
         _map.onZoomEnd(e -> _map.invalidateSize(true));
         _map.onMoveEnd(e -> _map.invalidateSize(true));
- //       _map.onLayerAdd(e -> _map.invalidateSize(true));
+
+        _map.onDoubleClick(e -> {
+            _dblClickListeners.forEach(l ->
+                    l.mapDoubleClick(new GeoMapDoubleClickEvent(e.getLatLng().getLat(),
+                            e.getLatLng().getLng())));
+        });
     }
 
     
@@ -91,6 +99,11 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     
     public void addMoveListener(GeoMapOverlayMoveListener listener) {
         _moveListeners.add(listener);
+    }
+
+
+    public void addDoubleClickListener(GeoMapDoubleClickListener listener) {
+        _dblClickListeners.add(listener);
     }
 
 
