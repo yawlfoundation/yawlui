@@ -11,6 +11,7 @@ import org.yawlfoundation.yawl.ui.listener.DynFormContentChangedEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -68,7 +69,12 @@ public class DynFormLayout extends FormLayout {
 
     @Override
     public void addComponentAtIndex(int index, Component component) {
-        super.addComponentAtIndex(index, component);
+        if (index < getComponentCount()) {
+            super.addComponentAtIndex(index, component);
+        }
+        else {
+            super.add(component);
+        }
         setColspan(component);
         addListenersForGeoTypes(component);
     }
@@ -91,6 +97,17 @@ public class DynFormLayout extends FormLayout {
 
 
     public String getName() { return _name; }
+
+
+    public DynFormLayout getParentLayout() {
+        return getParentLayout(this);
+    }
+
+
+    public DynFormLayout getParentLayout(DynFormLayout child) {
+        Optional<Component> parentLayout = child.getParent().flatMap(Component::getParent);
+        return (DynFormLayout) parentLayout.orElse(null);
+    }
 
 
     // if there are less than 4 fields, and any that are sub-panels have only one
@@ -121,9 +138,18 @@ public class DynFormLayout extends FormLayout {
 
     public void addGeoTypeListener(SubPanel addedSubPanel) {
         if (isGeoDataType()) {
-            _listeners.forEach(listener ->
-                    addedSubPanel.getForm().addGeoTypeChangeListenerToTree(listener));
-        };
+            _listeners.forEach(listener -> {
+                    addedSubPanel.getForm().addGeoTypeChangeListenerToTree(listener);
+                    listener.formContentChanged(
+                            new DynFormContentChangedEvent(addedSubPanel,
+                                    DynFormContentChangedEvent.EventType.SUB_PANEL_ADDED));
+            });
+        }
+    }
+
+
+    private int getComponentCount() {
+        return Math.toIntExact(getChildren().count());
     }
 
 
@@ -166,6 +192,11 @@ public class DynFormLayout extends FormLayout {
     }
 
 
+    public boolean isGeoDataListType() {
+        return isGeoDataType() && _dataType.endsWith("ListType");
+    }
+
+
     private boolean isSimpleContentSubPanel(SubPanel subPanel) {
         DynFormLayout content = getSubPanelContent(subPanel);
 
@@ -180,7 +211,7 @@ public class DynFormLayout extends FormLayout {
     }
 
 
-    protected List<SubPanel> getChildSubPanels() { return getChildSubPanels(this); }
+    public List<SubPanel> getChildSubPanels() { return getChildSubPanels(this); }
 
     
     private List<SubPanel> getChildSubPanels(Component parent) {
@@ -354,12 +385,11 @@ public class DynFormLayout extends FormLayout {
         if (isGeoDataType()) {
             if (c instanceof SubPanel) {
                 DynFormContentChangedEvent event = new DynFormContentChangedEvent(
-                        this.getName(), this.getName(), null, _dataType,
-                        null, null);
+                        (SubPanel) c, DynFormContentChangedEvent.EventType.SUB_PANEL_REMOVED);
                 _listeners.forEach(l ->
                         l.formContentChanged(event));
             }
         }
     }
-    
+
 }

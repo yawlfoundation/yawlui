@@ -492,6 +492,7 @@ public class UserWorklistView extends AbstractWorklistView {
             }
         }
         catch (ResourceGatewayException | IOException e) {
+            _mainView.closeGeoFormView();
             throw new RuntimeException(e);
         }
     }

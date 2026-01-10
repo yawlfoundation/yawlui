@@ -2,7 +2,6 @@ package org.yawlfoundation.yawl.ui.component.geomap;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.VaadinSession;
 import org.vaadin.addons.componentfactory.leaflet.LeafletMap;
@@ -37,6 +36,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  *
@@ -48,10 +48,9 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     private static final String BASE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
     private static final String OSM_ATTRIBUTION =
             "© <a href=\"https://www.openstreetmap.org\">OpenStreetMap</a>";
-    private static final int MOUSE_MOVE_STEP = 8;
+    private static final int MOUSE_MOVE_STEP = 4;
     private static final long MOUSE_MOVE_MIN_MS = 40;
     
-    private final FlexLayout _layout = new FlexLayout();
     private final LeafletMap _map;
     private final LayerGroup _markers;
     private final Map<InteractiveLayer, Marker> _dragMarkerMap = new HashMap<>();
@@ -59,6 +58,8 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     private final Map<InteractiveLayer, List<Marker>> _vertexMarkerMap = new HashMap<>();
     private final List<GeoMapOverlayMoveListener> _moveListeners = new ArrayList<>();
     private final List<GeoMapDoubleClickListener> _dblClickListeners = new ArrayList<>();
+
+    private double edgeToleranceMeters = 5;
 
 
     public VcfLeafletGeoMap() {
@@ -69,6 +70,10 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
         _markers = new LayerGroup();
         _markers.addTo(_map);
 
+        _map.getElement().executeJs(
+            "this.map.doubleClickZoom.disable();"
+        );
+        
         _map.addAttachListener(e ->
                 _map.getElement().executeJs(
                         "setTimeout(() => this.invalidateSize(true), 500);\n" +
@@ -76,7 +81,11 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
                 )
         );
 
-        _map.onZoomEnd(e -> _map.invalidateSize(true));
+        _map.onZoomEnd(e -> {
+            _map.invalidateSize(true);
+            scaleEdgeTolerance();
+        });
+
         _map.onMoveEnd(e -> _map.invalidateSize(true));
 
         _map.onDoubleClick(e -> {
@@ -93,7 +102,35 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
         mapDiv.setSizeFull();
         mapDiv.getStyle().set("min-width", "0");
         mapDiv.add(_map);
+        scaleEdgeTolerance();
         return mapDiv;
+    }
+
+
+    public InteractiveLayer removeOverlay(int ref) {
+        InteractiveLayer layer = super.removeOverlay(ref);
+        if (layer != null) {
+            if (layer instanceof Marker) {
+                _markers.removeLayer(layer);
+            }
+            else {
+                layer.remove();
+                Marker dragMarker = _dragMarkerMap.remove(layer);
+                if (dragMarker != null) {
+                    _markers.removeLayer(dragMarker);
+                }
+                Marker resizeMarker = _resizeMarkerMap.remove(layer);
+                if (resizeMarker != null) {
+                    _markers.removeLayer(resizeMarker);
+                }
+                List<Marker> vertexMarkers = _vertexMarkerMap.remove(layer);
+                if (vertexMarkers != null) {
+                    vertexMarkers.forEach(_markers::removeLayer);
+                }
+            }
+            centerAndZoom();
+        }
+        return layer;
     }
 
     
@@ -111,6 +148,15 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
             _map.getElement().executeJs(
                 "requestAnimationFrame(() => this.invalidateSize())"
         );
+    }
+
+    public void zoomOut() {
+        _map.zoomOut(1);
+    }
+
+
+    public double getEdgeToleranceMeters() {
+        return edgeToleranceMeters;
     }
 
 
@@ -280,7 +326,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
 
     private int drawPolygon(List<GeoCoordinate> coordinates, boolean isRectangle, boolean draggable) {
-        List<LatLng> vertices = toLatLngList(coordinates);
+        List<LatLng> vertices = sortClockwise(toLatLngList(coordinates));
         Polygon polygon = drawPolygon(vertices, getNextColour());
         int ref = addOverlay(polygon);
         polygon.addTo(_map);
@@ -383,7 +429,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
     public synchronized void updatePolygon(int ref, List<GeoCoordinate> coordinates) {
        Polygon polygon = (Polygon) getOverlay(ref);
-       List<LatLng> vertices = toLatLngList(coordinates);
+       List<LatLng> vertices = sortClockwise(toLatLngList(coordinates));
        resize(polygon, vertices);
        finalisePolygonMove(ref, vertices, _vertexMarkerMap.get(getOverlay(ref)), false);
    }
@@ -419,9 +465,14 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
    private void resetPolygonVertices(int ref, List<LatLng> vertices) {
        Polygon refPolygon = (Polygon) getOverlay(ref);
-       MultiLatLngArray array = (MultiLatLngArray) refPolygon.getLatlngs();
        vertices.clear();
-       vertices.addAll(new ArrayList<>(array.get(0)));
+       vertices.addAll(getPolygonVertices(refPolygon));
+   }
+
+
+   private List<LatLng> getPolygonVertices(Polygon polygon) {
+       MultiLatLngArray array = (MultiLatLngArray) polygon.getLatlngs();
+       return new ArrayList<>(array.get(0));
    }
 
 
@@ -509,6 +560,17 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     private Polygon drawPolygon(List<LatLng> vertices, String color) {
         Polygon polygon = new Polygon(vertices);
         configureOverlay(polygon, color);
+
+        polygon.onDoubleClick(e -> {
+            LatLng latLng = e.getLatLng();
+            if (isNearEdge(e.getLatLng(), getPolygonVertices(polygon))) { 
+                _dblClickListeners.forEach(l ->
+                        l.mapDoubleClick(new GeoMapDoubleClickEvent(
+                                GeoMapDoubleClickEvent.EventType.OnPolygonEdge,
+                                latLng.getLat(),  latLng.getLng())));
+            }
+        });
+
         return polygon;
     }
 
@@ -694,8 +756,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
             }
             else if (overlay instanceof Polygon) {
                 Polygon polygon = (Polygon) overlay;
-                MultiLatLngArray array = (MultiLatLngArray) polygon.getLatlngs();
-                List<LatLng> polyPoints = new ArrayList<>(array.get(0));
+                List<LatLng> polyPoints = getPolygonVertices(polygon);
                 points.addAll(toGeoCoordinateList(polyPoints));
            }
         }
@@ -718,6 +779,13 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
         int n = points.size();
         return new LatLng(lat / n, lon / n);
+    }
+
+
+    // scale edge click tolerance to map size
+    private void scaleEdgeTolerance() {
+        getVisibleMapWidthMeters(meters ->
+                edgeToleranceMeters = Math.max(3, meters * 0.003));
     }
 
 
@@ -768,7 +836,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
             BufferedImage img = ImageIO.read(is);
             BufferedImage coloredImg = new BufferedImage(img.getWidth(), img.getHeight(),
                     BufferedImage.TYPE_INT_ARGB);
-            Color targetColor = Color.decode(getNextColour());
+            Color targetColor = Color.decode(nextColour);
             for (int y = 0; y < img.getHeight(); y++) {
                 for (int x = 0; x < img.getWidth(); x++) {
                     int rgb = img.getRGB(x, y);
@@ -805,6 +873,119 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
         catch (Exception e) {
             return defaultIcon;
         }
+    }
+
+
+    private boolean isNearEdge(LatLng click, List<LatLng> vertices) {
+        for (int i = 0; i < vertices.size(); i++) {
+            LatLng a = vertices.get(i);
+            LatLng b = vertices.get((i + 1) % vertices.size());
+
+            double d = distancePointToSegmentMeters(click, a, b);
+            if (d <= edgeToleranceMeters) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    
+    private static double distancePointToSegmentMeters(LatLng p, LatLng a, LatLng b) {
+
+        // Convert to meters using local projection
+        double latRad = Math.toRadians(p.getLat());
+        double metersPerDegLat = 111_320.0;
+        double metersPerDegLon = metersPerDegLat * Math.cos(latRad);
+
+        double px = p.getLng() * metersPerDegLon;
+        double py = p.getLat() * metersPerDegLat;
+
+        double ax = a.getLng() * metersPerDegLon;
+        double ay = a.getLat() * metersPerDegLat;
+
+        double bx = b.getLng() * metersPerDegLon;
+        double by = b.getLat() * metersPerDegLat;
+
+        double dx = bx - ax;
+        double dy = by - ay;
+
+        if (dx == 0 && dy == 0) {      // a == b
+            return Math.hypot(px - ax, py - ay);
+        }
+
+        double t = ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy);
+        t = Math.max(0, Math.min(1, t));
+
+        double cx = ax + t * dx;
+        double cy = ay + t * dy;
+
+        return Math.hypot(px - cx, py - cy);
+    }
+
+
+    public void getVisibleMapWidthMeters(Consumer<Double> callback) {
+        try {
+            _map.getBounds().whenComplete((b, e) -> {
+                if (b == null || e != null) {
+                    return;
+                }
+                callback.accept(getVisibleMapWidthMeters(b));
+            });
+        }
+        catch (Exception e) {
+            // safely ignore
+        }
+    }    
+    
+    private double getVisibleMapWidthMeters(LatLngBounds bounds) {
+        double centerLat = (bounds.getSouthWest().getLat() + bounds.getNorthEast().getLat()) / 2.0;
+
+        LatLng west = new LatLng(centerLat, bounds.getSouthWest().getLng());
+        LatLng east = new LatLng(centerLat, bounds.getNorthEast().getLng());
+
+        return distanceInMeters(west, east);
+    }
+
+
+    private List<LatLng> sortClockwise(List<LatLng> points) {
+        LatLng c = getCentroid(points);
+
+        points.sort((a, b) -> {
+            double angleA = Math.atan2(
+                    a.getLat() - c.getLat(),
+                    a.getLng() - c.getLng()
+            );
+            double angleB = Math.atan2(
+                    b.getLat() - c.getLat(),
+                    b.getLng() - c.getLng()
+            );
+
+            // Clockwise order
+            return Double.compare(angleB, angleA);
+        });
+
+        return points;
+    }
+
+
+    private List<LatLng> recenterPolygon(List<LatLng> points, LatLng targetCenter) {
+        LatLng currentCenter = getCentroid(points);
+        double dLat = targetCenter.getLat() - currentCenter.getLat();
+        double dLon = targetCenter.getLng() - currentCenter.getLng();
+        List<LatLng> result = new ArrayList<>(points.size());
+
+        for (LatLng p : points) {
+            result.add(new LatLng(p.getLat() + dLat, p.getLng() + dLon));
+        }
+
+        return result;
+    }
+
+
+    public List<GeoCoordinate> centerPolygon(List<GeoCoordinate> points,
+                                               GeoCoordinate targetCenter) {
+        List<LatLng> result = recenterPolygon(toLatLngList(points), toLatLng(targetCenter));
+        return toGeoCoordinateList(result);
     }
     
 }

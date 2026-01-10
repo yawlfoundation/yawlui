@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 
 /**
  * @author Michael Adams
@@ -25,19 +26,18 @@ public class GeoMapSubView extends AbstractView
         implements DynFormContentChangeListener, GeoMapOverlayMoveListener, GeoMapDoubleClickListener {
 
     private final VcfLeafletGeoMap _map = new VcfLeafletGeoMap();
-    private final DynForm _form;
     private final List<SubPanel> _geoPanels;
     private final Map<DynFormLayout, Integer> _layout2OverlayMap = new HashMap<>();
+    private final Map<DynFormLayout, List<SubPanel>> _layout2ChildPanelMap = new HashMap<>();
 
     private boolean _updatingOverlays = false;
 
     public GeoMapSubView(DynForm form) {
         super();
-        _form = form;
-        _form.addGeoTypeChangeListener(this);
+        form.addGeoTypeChangeListener(this);
         _map.addMoveListener(this);
         _map.addDoubleClickListener(this);
-        _geoPanels = gatherGeoPanels();
+        _geoPanels = gatherGeoPanels(form.getSubPanels());
         setSizeFull();
     }
 
@@ -53,18 +53,52 @@ public class GeoMapSubView extends AbstractView
 
     @Override
     public void formContentChanged(DynFormContentChangedEvent event) {
-        if (_updatingOverlays) {
-            return;
+        if (event.eventType() == DynFormContentChangedEvent.EventType.SUB_PANEL_ADDED) {
+            SubPanel subPanel = event.getSubPanel();
+            if (subPanel.getForm().isGeoDataType()) {
+                _layout2OverlayMap.put(event.getSubPanel().getForm(), -1);
+                _geoPanels.add(subPanel);
+            }
         }
-        if (! validateChangedValue(event.getFieldName(), event.getNewValue())) {
-            return;
+        else if (event.eventType() == DynFormContentChangedEvent.EventType.SUB_PANEL_REMOVED) {
+            SubPanel subPanel = event.getSubPanel();
+            DynFormLayout layout = subPanel.getForm();
+            if (isVertexPanel(subPanel)) {
+
+                // required because when we get the change event the subpanel is
+                // already detached
+                for (DynFormLayout key : _layout2ChildPanelMap.keySet()) {
+                    List<SubPanel> childPanels = _layout2ChildPanelMap.get(key);
+                    if (childPanels.contains(subPanel)) {
+                        childPanels.remove(subPanel);
+                        layout = key;
+                        break;
+                    }
+                }
+            }
+            int ref = _layout2OverlayMap.remove(layout);
+            if (ref != -1) {
+                _map.removeOverlay(ref);
+                _geoPanels.remove(subPanel);
+            }
+            if (isVertexPanel(subPanel)) {
+                drawPolygon(layout);
+            }
         }
-        String layoutName = event.getVarName() != null ?
-                event.getVarName() : event.getPanelName();
-        for (DynFormLayout layout : _layout2OverlayMap.keySet()) {
-            if (layout.getName().equals(layoutName)) {
-                drawOverlay(layout);
-                break;
+        else {                          // value change
+            if (_updatingOverlays) {    // if caused by dragging an overlay, ignore
+                return;
+            }
+            if (!validateChangedValue(event.getFieldName(), event.getNewValue())) {
+                return;
+            }
+            String layoutName = event.getVarName() != null ?
+                    event.getVarName() : event.getPanelName();
+            for (DynFormLayout layout : _layout2OverlayMap.keySet()) {
+                if (layout.getName().equals(layoutName)) {
+                    drawOverlay(layout);
+                    break;
+                }
             }
         }
     }
@@ -79,7 +113,7 @@ public class GeoMapSubView extends AbstractView
                 switch (event.getOverlayType()) {
                     case Marker: updateMarkerValues(layout, event.getPoint()); break;
                     case Circle: updateCircleValues(layout, event.getPoint(), event.getRadius()); break;
-                    case Polygon: updatePolygonValues(layout, event.getPoints());
+                    case Polygon: updatePolygonValues(layout, event.getPoints(), true); break;
                 }
             }
         }
@@ -93,26 +127,28 @@ public class GeoMapSubView extends AbstractView
         if (layout != null) {
             GeoCoordinate coordinate = new GeoCoordinate(event.getLatitude(), event.getLongitude());
             switch (layout.getDataType()) {
-                case "YGeoLatLongType": {
+                case "YGeoLatLongType":
+                case "YGeoLatLongListType": {
                     updateMarkerValues(layout, coordinate);
                     drawMarker(layout);
                 } break;
-                case "YGeoCircleType" : {
-                    updateCircleValues(layout, coordinate, 100);
-                    drawCircle(layout);
+                case "YGeoCircleType" :
+                case "YGeoCircleListType" : {
+                    getReasonableWidthForNewOverlay(meters -> {
+                        updateCircleValues(layout, coordinate, meters / 2);
+                        drawCircle(layout);
+                    });
                 } break;
-                case "YGeoRectType" : {
-                    List<GeoCoordinate> coordinates = buildDefaultRectangle(coordinate);
-                    updatePolygonValues(layout, coordinates);
-                    drawRectangle(layout);
+                case "YGeoRectType" :
+                case "YGeoRectListType" : {
+                    handleRectDblClick(layout, coordinate);
                 } break;
-                case "YGeoPolygonType" : {
-                    int vertexCount = extractSubPanels(layout).size();
-                    List<GeoCoordinate> coordinates = buildDefaultPolygon(coordinate, vertexCount);
-                    updatePolygonValues(layout, coordinates);
-                    drawPolygon(layout);
+                case "YGeoPolygonType" :
+                case "YGeoPolygonListType" : {
+                    handlePolygonDblClick(event, coordinate);
                 } break;
             }
+ //           _map.zoomOut();              // undo the dblClick zoom in
         }
         _updatingOverlays = false;
     }
@@ -135,16 +171,22 @@ public class GeoMapSubView extends AbstractView
     }
 
 
-    private void updatePolygonValues(DynFormLayout layout, List<GeoCoordinate> vertices) {
+    private void updatePolygonValues(DynFormLayout layout,
+                                     List<GeoCoordinate> vertices,
+                                     boolean isDragging) {
         List<SubPanel> subPanels = extractSubPanels(layout);
-        if (subPanels.size() == 2) {     // rectangle
+        if (layout.getDataType().contains("Rect")) {     // rectangle
             updateForm(subPanels.get(0).getForm(), vertices.get(0));      // top left
             updateForm(subPanels.get(1).getForm(), vertices.get(2));      // bot right
         }
         else {
             int i = 0;
-            for  (SubPanel subPanel : subPanels) {
-                updateForm(subPanel.getForm(), vertices.get(i++));
+            for (SubPanel subPanel : subPanels) {
+                DynFormLayout subLayout = subPanel.getForm();
+                if (isDragging && isBlankForm(subLayout)) {
+                    continue;
+                }
+                updateForm(subLayout, vertices.get(i++));
             }
         }
     }
@@ -157,6 +199,49 @@ public class GeoMapSubView extends AbstractView
             }
             if (field.getLabel().equals("longitude")) {
                 field.setValue(String.valueOf(location.normalisedLon()));
+            }
+        }
+    }
+
+
+    private void handleRectDblClick(DynFormLayout layout, GeoCoordinate coordinate) {
+        getReasonableWidthForNewOverlay(meters -> {
+            List<GeoCoordinate> coordinates = new ArrayList<>();
+            double negMeters = meters * -1;
+            coordinates.add(offsetByMeters(coordinate, meters, negMeters));
+            coordinates.add(offsetByMeters(coordinate, meters, meters));
+            coordinates.add(offsetByMeters(coordinate, negMeters, meters));
+            coordinates.add(offsetByMeters(coordinate, negMeters, negMeters));
+            updatePolygonValues(layout, coordinates, false);
+            drawRectangle(layout);
+        });
+    }
+
+    private void handlePolygonDblClick(GeoMapDoubleClickEvent event, GeoCoordinate coordinate) {
+        boolean isNewPolygon = event.getType() == GeoMapDoubleClickEvent.EventType.OnNewLocation;
+        final DynFormLayout layout = findFirstEmptyPolygonLayout(isNewPolygon);
+        if (layout != null) {
+            if (isNewPolygon) {
+                int vertexCount = extractSubPanels(layout).size();
+                List<GeoCoordinate> coordinates = new ArrayList<>();
+                getReasonableWidthForNewOverlay(meters -> {
+                    double min = meters * -1;
+                    double max = meters;
+                    for (int i = 0; i < vertexCount; i++) {
+                        double north = ThreadLocalRandom.current().nextDouble(min, max + 1);
+                        double east = ThreadLocalRandom.current().nextDouble(min, max + 1);
+                        coordinates.add(offsetByMeters(coordinate, north, east));
+                    }
+                    List<GeoCoordinate> centeredCoordinates = _map.centerPolygon(coordinates, coordinate);
+                    updatePolygonValues(layout, centeredCoordinates, false);
+                    drawPolygon(layout);
+                });
+            }
+            else {     // new vertex
+                double offset = _map.getEdgeToleranceMeters();
+                updateForm(layout, offsetByMeters(coordinate, offset, offset));
+                _layout2OverlayMap.remove(layout);
+                drawPolygon(layout.getParentLayout());
             }
         }
     }
@@ -235,8 +320,10 @@ public class GeoMapSubView extends AbstractView
     // a polygon is presented as three or more subpanels, each with two fields
     private void drawPolygon(DynFormLayout layout) {
         List<GeoCoordinate> coordinateList = new ArrayList<>();
+        List<SubPanel> subPanels = extractSubPanels(layout);
+        _layout2ChildPanelMap.put(layout, subPanels);
         boolean draggable = true;
-        for (SubPanel subPanel : extractSubPanels(layout)) {
+        for (SubPanel subPanel : subPanels) {
             GeoCoordinate coordinate = extractCoordinate(subPanel);
             if (! validateCoordinate(coordinate)) {
                 continue;
@@ -259,13 +346,22 @@ public class GeoMapSubView extends AbstractView
     }
 
 
-    private List<SubPanel> gatherGeoPanels() {
+    private List<SubPanel> gatherGeoPanels(List<SubPanel> subPanels) {
         List<SubPanel> geoPanels = new ArrayList<>();
-        for (SubPanel subPanel : _form.getSubPanels()) {
+        for (SubPanel subPanel : subPanels) {
             DynFormLayout layout = subPanel.getForm();
             if (layout.isGeoDataType()) {
-                _layout2OverlayMap.put(layout, -1);
-                geoPanels.add(subPanel);
+                if (layout.isGeoDataListType()) {
+                    List<SubPanel> childPanels = extractSubPanels(layout);  // a List type
+                    for (SubPanel child : childPanels) {
+                        _layout2OverlayMap.put(child.getForm(), -1);
+                        geoPanels.add(child);
+                    }
+                }
+                else {                                             // a non list type
+                    _layout2OverlayMap.put(layout, -1);
+                    geoPanels.add(subPanel);
+                }
             }
         }
         return geoPanels;
@@ -283,20 +379,46 @@ public class GeoMapSubView extends AbstractView
          return null;
     }
 
+    // there are 2 kinds of empty polygon layout: 1 is an added vertex to an
+    // existing polygon, the other is a whole polygon added to a List type
+    private DynFormLayout findFirstEmptyPolygonLayout(boolean fullLayout) {
+        List<DynFormLayout> layouts = getEmptyLayouts();
+        for (SubPanel subPanel : _geoPanels) {
+            DynFormLayout layout = subPanel.getForm();
+            if (! layout.getDataType().contains("Polygon")) {
+                continue;
+            }
+            if (layouts.contains(layout)) {
+                if (fullLayout && ! extractSubPanels(layout).isEmpty()) {
+                    return layout;
+                }
+                else if (!fullLayout && extractSubPanels(layout).isEmpty()) {
+                    return layout;
+                }
+            }
+        }
+        return null;
+    }
+
+    
     private void initOverlays() {
         for (SubPanel subPanel : _geoPanels) {
             drawOverlay(subPanel.getForm());
         }
     }
-    
+
 
     private void drawOverlay(DynFormLayout layout) {
         switch (layout.getDataType()) {
-           case "YGeoLatLongType": drawMarker(layout); break;
-           case "YGeoCircleType" : drawCircle(layout); break;
-           case "YGeoRectType" : drawRectangle(layout); break;
-           case "YGeoPolygonType" : drawPolygon(layout); break;
-       }
+            case "YGeoLatLongType":
+            case "YGeoLatLongListType" : drawMarker(layout); break;
+            case "YGeoCircleType" :
+            case "YGeoCircleListType" : drawCircle(layout); break;
+            case "YGeoRectType" :
+            case "YGeoRectListType" : drawRectangle(layout); break;
+            case "YGeoPolygonType" :
+            case "YGeoPolygonListType" : drawPolygon(layout); break;
+        }
     }
 
     
@@ -343,27 +465,15 @@ public class GeoMapSubView extends AbstractView
     }
 
 
-    private List<GeoCoordinate> buildDefaultRectangle(GeoCoordinate center) {
-        List<GeoCoordinate> coordinates = new ArrayList<>();
-        coordinates.add(offsetByMeters(center, 100, -100));
-        coordinates.add(offsetByMeters(center, 100, 100));
-        coordinates.add(offsetByMeters(center, -100, 100));
-        coordinates.add(offsetByMeters(center, -100, -100));
-        return coordinates;
-    }
-
-
-    private List<GeoCoordinate> buildDefaultPolygon(GeoCoordinate center, int size) {
-        List<GeoCoordinate> coordinates = new ArrayList<>();
-        double min = -100;
-        double max = 100;
-        for (int i = 0; i < size; i++) {
-            double north = ThreadLocalRandom.current().nextDouble(min, max + 1);
-            double east = ThreadLocalRandom.current().nextDouble(min, max + 1);
-            coordinates.add(offsetByMeters(center, north, east));
+    private boolean isBlankForm(DynFormLayout layout) {
+        for (TextField field : extractFields(layout)) {
+            if (! field.isEmpty()) {
+                return false;
+            }
         }
-        return coordinates;
+        return true;
     }
+
 
 
     private GeoCoordinate offsetByMeters(GeoCoordinate origin, double northMeters,
@@ -385,6 +495,19 @@ public class GeoMapSubView extends AbstractView
         return fieldList.get(0).isReadOnly();
     }
 
+
+    private boolean isVertexPanel(SubPanel subPanel) {
+        return "vertex".equals(subPanel.getLabel());
+    }
+
+
+    private void getReasonableWidthForNewOverlay(Consumer<Double> callback) {
+        _map.getVisibleMapWidthMeters(width ->
+                callback.accept(width / 4)
+        );
+    }
+
+    
     private List<DynFormLayout> getEmptyLayouts() {
         List<DynFormLayout> layouts = new ArrayList<>();
         for (DynFormLayout layout : _layout2OverlayMap.keySet()) {
@@ -404,7 +527,7 @@ public class GeoMapSubView extends AbstractView
             coordinate.validate();
         }
         catch (IllegalArgumentException e) {
-            Announcement.show(e.getMessage());
+//            Announcement.show(e.getMessage());
             return false;
         }
         return true;
