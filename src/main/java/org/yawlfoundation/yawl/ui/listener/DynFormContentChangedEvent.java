@@ -8,6 +8,8 @@ import org.yawlfoundation.yawl.ui.dynform.SubPanel;
  * @date 17/12/2025
  */
 public class DynFormContentChangedEvent {
+
+    private String layoutId;
     private String varName;
     private String panelName;
     private String fieldName;
@@ -26,8 +28,9 @@ public class DynFormContentChangedEvent {
     }
     
 
-    public DynFormContentChangedEvent(String varName, String panelName, String fieldName,
+    public DynFormContentChangedEvent(String id, String varName, String panelName, String fieldName,
                                       String dataType, String oldValue, String newValue) {
+        this.layoutId = id;
         this.varName = varName;
         this.panelName = panelName;
         this.fieldName = fieldName;
@@ -37,11 +40,13 @@ public class DynFormContentChangedEvent {
         eventType = EventType.VALUE_CHANGED;
     }
 
-    public DynFormContentChangedEvent(SubPanel subPanel, EventType eventType) {
+    public DynFormContentChangedEvent(String id, SubPanel subPanel, EventType eventType) {
+        this.layoutId = id;
         this.subPanel = subPanel;
         this.eventType = eventType;
     }
 
+    public String getLayoutId() { return layoutId; }
 
     public EventType eventType() {
         return eventType;

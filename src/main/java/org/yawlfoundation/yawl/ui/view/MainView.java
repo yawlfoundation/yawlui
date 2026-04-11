@@ -14,14 +14,10 @@ import com.vaadin.flow.component.login.LoginForm;
 import com.vaadin.flow.component.login.LoginI18n;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.page.AppShellConfigurator;
-import com.vaadin.flow.component.page.Inline;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.AppShellSettings;
-import com.vaadin.flow.theme.Theme;
 import org.yawlfoundation.yawl.elements.YAWLServiceReference;
 import org.yawlfoundation.yawl.engine.interfce.ServletUtils;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
@@ -49,11 +45,9 @@ import java.util.Map;
 import java.util.Set;
 
 @Route("")
-//@PWA(name = "Project Base for Vaadin", shortName = "Project Base", enableInstallPrompt = false)
 @JsModule("@vaadin/vaadin-lumo-styles/presets/compact.js")
-@Theme("common-theme")
 public class MainView extends AppLayout implements HasDynamicTitle,
-        ComponentEventListener<Tabs.SelectedChangeEvent>, AppShellConfigurator {
+        ComponentEventListener<Tabs.SelectedChangeEvent> {
 
     private static final Map<Participant, String> _customFormHandleMap = new HashMap<>();
 
@@ -64,14 +58,6 @@ public class MainView extends AppLayout implements HasDynamicTitle,
     public MainView() {
         super();
         showLoginForm();
-    }
-
-
-    // called on startup to set the app's favicon
-    @Override
-    public void configurePage(AppShellSettings settings) {
-        settings.addFavIcon(Inline.Position.PREPEND,
-                "icon", "icons/favicon.png", "32x32");
     }
 
 

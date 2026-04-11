@@ -9,12 +9,19 @@ import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
+import org.jdom2.Document;
+import org.jdom2.Namespace;
+import org.yawlfoundation.yawl.engine.YSpecificationID;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.service.*;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
+import org.yawlfoundation.yawl.util.JDOMUtil;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Michael Adams
@@ -107,6 +114,36 @@ public abstract class AbstractView extends VerticalLayout {
         element.executeJs("return new Promise(resolve =>{this.click(); " +
                 "setTimeout(() => resolve(true), 150)})", element)
                 .then(jsonValue -> remove(downloadAnchor));
+    }
+
+
+    protected Map<String, Map<String, String>> getGeoReferencingTypeMap(YSpecificationID specID)
+            throws IOException {
+        Map<String, Map<String, String>> result = new HashMap<>();
+        String specSchema = getEngineClient().getSpecificationDataSchema(specID);
+        Document doc = JDOMUtil.stringToDocument(specSchema);
+        org.jdom2.Element root = doc.getRootElement();
+        Namespace ns = Namespace.getNamespace("xs", "http://www.w3.org/2001/XMLSchema");
+        for (org.jdom2.Element complexType : root.getChildren("complexType", ns)) {
+            String complexTypeName = complexType.getAttributeValue("name");
+            if (complexTypeName == null) continue;
+
+            org.jdom2.Element sequence = complexType.getChild("sequence", ns);
+            if (sequence == null) continue;
+
+            Map<String, String> refs = new HashMap<>();
+            for (org.jdom2.Element el : sequence.getChildren("element", ns)) {
+                String elementName = el.getAttributeValue("name");
+                String type = el.getAttributeValue("type");
+                if (type != null && type.startsWith("yawl:")) {
+                    refs.put(elementName, type.substring("yawl:".length()));
+                }
+            }
+            if (!refs.isEmpty()) {
+                result.put(complexTypeName, refs);
+            }
+        }
+        return result;
     }
 
 }

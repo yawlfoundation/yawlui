@@ -1,0 +1,9 @@
+.transparent-div-icon {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}

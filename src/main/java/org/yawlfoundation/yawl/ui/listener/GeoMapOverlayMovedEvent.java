@@ -13,16 +13,25 @@ import java.util.List;
  */
 public class GeoMapOverlayMovedEvent {
 
+    public enum Mode { MOVING, COMPLETED }
+
     private final List<GeoCoordinate> _points = new ArrayList<>();
     private final OverlayType _overlayType;
     private final int _ref;
     private double _radius;
+    private Mode _mode =  Mode.MOVING;
 
     public GeoMapOverlayMovedEvent(GeoCoordinate location, int ref) {
         _points.add(location);
         _overlayType = OverlayType.Marker;
         _ref = ref;
     }
+
+    public GeoMapOverlayMovedEvent(GeoCoordinate location, int ref, Mode mode) {
+       this(location, ref);
+        _mode = mode;
+    }
+
 
     public GeoMapOverlayMovedEvent(GeoCoordinate center, double radius, int ref) {
         _points.add(center);
@@ -31,10 +40,21 @@ public class GeoMapOverlayMovedEvent {
         _radius = radius;
     }
 
+    public GeoMapOverlayMovedEvent(GeoCoordinate center, double radius, int ref, Mode mode) {
+        this( center, radius, ref);
+        _mode = mode;
+    }
+
+
     public GeoMapOverlayMovedEvent(List<GeoCoordinate>  points, int ref) {
         _points.addAll(points);
         _overlayType = OverlayType.Polygon;
         _ref = ref;
+    }
+
+    public GeoMapOverlayMovedEvent(List<GeoCoordinate>  points, int ref, Mode mode) {
+        this(points, ref);
+        _mode = mode;
     }
 
     // for Marker and Circle
@@ -57,5 +77,9 @@ public class GeoMapOverlayMovedEvent {
 
     public double getRadius() {
         return _radius;
+    }
+
+    public Mode getMode() {
+        return _mode;
     }
 }

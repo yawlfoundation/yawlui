@@ -3,15 +3,16 @@ package org.yawlfoundation.yawl.ui.dynform;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.yawlfoundation.yawl.schema.internal.YInternalTypeUtil;
 import org.yawlfoundation.yawl.ui.listener.DynFormContentChangeListener;
 import org.yawlfoundation.yawl.ui.listener.DynFormContentChangedEvent;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -31,8 +32,10 @@ public class DynFormLayout extends FormLayout {
 
     private final List<DynFormContentChangeListener> _listeners = new ArrayList<>();
     private final String _name;
+    private final String _id = UUID.randomUUID().toString();
     private String _varName;
     private String _dataType;
+    private String _referencedInternalType;
 
 
     // called from DynFormFactory to create outer container
@@ -61,7 +64,7 @@ public class DynFormLayout extends FormLayout {
     public void add(Collection<Component> components) {
         super.add(components);
         components.forEach(c -> {
-            setColspan(c, components.size());
+            setColspan(c);
             addListenersForGeoTypes(c);
         });
     }
@@ -96,6 +99,9 @@ public class DynFormLayout extends FormLayout {
     }
 
 
+    public String getID() { return _id; }
+    
+
     public String getName() { return _name; }
 
 
@@ -117,10 +123,11 @@ public class DynFormLayout extends FormLayout {
     }
 
 
-    public boolean hasGeoTypeInTree() {
-        if (isGeoDataType()) return true;
+    public boolean hasGeoTypeInTree(Map<String, Map<String, String>> geoTypes) {
+        if (isGeoDataType() || isGeoReferencedType(geoTypes)) return true;
+
         for (SubPanel subPanel : getChildSubPanels(this)) {
-             if (subPanel.getForm().hasGeoTypeInTree()) return true;
+            if (subPanel.getForm().hasGeoTypeInTree(geoTypes)) return true;
         }
         return false;
     }
@@ -141,7 +148,7 @@ public class DynFormLayout extends FormLayout {
             _listeners.forEach(listener -> {
                     addedSubPanel.getForm().addGeoTypeChangeListenerToTree(listener);
                     listener.formContentChanged(
-                            new DynFormContentChangedEvent(addedSubPanel,
+                            new DynFormContentChangedEvent(_id, addedSubPanel,
                                     DynFormContentChangedEvent.EventType.SUB_PANEL_ADDED));
             });
         }
@@ -186,14 +193,46 @@ public class DynFormLayout extends FormLayout {
 
     public String getDataType() { return _dataType; }
 
+    public String getDerivedDataType() {
+        return _referencedInternalType != null ? _referencedInternalType : _dataType;
+    }
+
     
     public boolean isGeoDataType() {
-        return _dataType != null && _dataType.startsWith("YGeo");
+        return YInternalTypeUtil.isGeoTypeName(_dataType) ||
+                YInternalTypeUtil.isGeoTypeName(_referencedInternalType);
     }
 
 
     public boolean isGeoDataListType() {
-        return isGeoDataType() && _dataType.endsWith("ListType");
+        return YInternalTypeUtil.isGeoListTypeName(_dataType) ||
+                YInternalTypeUtil.isGeoListTypeName(_referencedInternalType);
+    }
+
+
+    public void addColorIndicator(String color) {
+        Icon indicator = new Icon(VaadinIcon.CIRCLE);
+        indicator.setSize("12px");
+        indicator.getStyle().set("margin-left", "4px");
+        indicator.setColor(color);
+        addComponentAsFirst(new HorizontalLayout(indicator));
+    }
+
+
+    private boolean isGeoReferencedType(Map<String, Map<String, String>> geoTypes) {
+        if (_referencedInternalType != null) {
+            return true;
+        }
+        Map<String, String> refTypes = geoTypes.get(_dataType);
+        if (refTypes != null) {
+            String type = refTypes.get(_name);
+            if (type != null && YInternalTypeUtil.isGeoTypeName(type)) {
+                _referencedInternalType = type;
+                collectTextFields(this).forEach(this::addListenersForGeoTypes);
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -372,7 +411,7 @@ public class DynFormLayout extends FormLayout {
                     String oldValue = e.getOldValue();
                     String newValue = e.getValue();
                     DynFormContentChangedEvent event = new DynFormContentChangedEvent(
-                            _varName, _name, fieldName, _dataType, oldValue, newValue);
+                            _id, _varName, _name, fieldName, _dataType, oldValue, newValue);
                     _listeners.forEach(l ->
                             l.formContentChanged(event));
                 });
@@ -384,12 +423,26 @@ public class DynFormLayout extends FormLayout {
     private void announceRemovedComponent(Component c) {
         if (isGeoDataType()) {
             if (c instanceof SubPanel) {
-                DynFormContentChangedEvent event = new DynFormContentChangedEvent(
+                DynFormContentChangedEvent event = new DynFormContentChangedEvent(_id,
                         (SubPanel) c, DynFormContentChangedEvent.EventType.SUB_PANEL_REMOVED);
                 _listeners.forEach(l ->
                         l.formContentChanged(event));
             }
         }
+    }
+
+
+    private List<TextField> collectTextFields(DynFormLayout layout) {
+        List<TextField> fieldList = new ArrayList<>();
+        for (Component c : layout.getChildren().collect(Collectors.toList())) {
+            if (c instanceof SubPanel) {
+                fieldList.addAll(collectTextFields(((SubPanel) c).getForm()));
+            }
+            else if (c instanceof TextField) {
+                fieldList.add((TextField) c);
+            }
+        }
+        return fieldList;
     }
 
 }

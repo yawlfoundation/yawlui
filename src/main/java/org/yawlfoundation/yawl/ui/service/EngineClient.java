@@ -129,6 +129,14 @@ public class EngineClient extends AbstractClient {
         else throw new IOException(xml);
     }
 
+    public String getSpecificationDataSchema(YSpecificationID specID) throws IOException {
+        String xml = _ibClient.getSpecificationDataSchema(specID, getHandle());
+        if (successful(xml)) {
+            return xml;
+        }
+        else throw new IOException(StringUtil.unwrap(xml));
+    }
+
 
     public TaskInformation getTaskInformation(WorkItemRecord wir) throws IOException {
         return getTaskInformation(new YSpecificationID(wir), wir.getTaskID());

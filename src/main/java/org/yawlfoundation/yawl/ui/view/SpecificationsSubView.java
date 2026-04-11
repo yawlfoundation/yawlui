@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Michael Adams
@@ -148,7 +149,9 @@ public class SpecificationsSubView extends AbstractGridView<SpecificationData> {
                             long delay)
             throws ResourceGatewayException, IOException {
         String schema = getResourceClient().getCaseParamsDataSchema(spec.getID());
-        DynForm dynForm = new DynForm(inputParams, schema);
+        Map<String, Map<String, String>> geoTypes = getGeoReferencingTypeMap(spec.getID());
+
+        DynForm dynForm = new DynForm(inputParams, schema, geoTypes);
         dynForm.addOkListener(e -> {
             if (dynForm.validate()) {
                 String caseData = dynForm.generateOutputData();

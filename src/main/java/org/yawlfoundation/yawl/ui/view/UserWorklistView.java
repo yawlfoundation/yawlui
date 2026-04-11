@@ -6,6 +6,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import org.jdom2.Element;
 import org.yawlfoundation.yawl.elements.data.YParameter;
+import org.yawlfoundation.yawl.engine.YSpecificationID;
 import org.yawlfoundation.yawl.engine.interfce.TaskInformation;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.QueueSet;
@@ -28,10 +29,7 @@ import org.yawlfoundation.yawl.util.JDOMUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Michael Adams
@@ -457,7 +455,10 @@ public class UserWorklistView extends AbstractWorklistView {
                 Announcement.warn("Missing or invalid custom form, defaulting to dynamic form");
             }
             String schema = getResourceClient().getWorkItemDataSchema(wir.getID());
-            DynForm dynForm = new DynForm(getParticipant(), wir, schema);
+            Map<String, Map<String, String>> geoTypes = getGeoReferencingTypeMap(
+                    new YSpecificationID(wir));
+
+            DynForm dynForm = new DynForm(getParticipant(), wir, schema, geoTypes);
             dynForm.addOkListener(e -> {
                 if (dynForm.validate()) {                                // completion
                     String outputData = dynForm.generateOutputData();

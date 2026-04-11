@@ -17,6 +17,7 @@ import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Michael Adams
@@ -36,16 +37,18 @@ public class DynForm extends AbstractDialog {
     private ShortcutRegistration _registeredShortcutKey;
 
     // work item edit
-    public DynForm(Participant p, WorkItemRecord wir, String schema) {
+    public DynForm(Participant p, WorkItemRecord wir, String schema,
+                   Map<String, Map<String, String>> geoTypes) {
         super();
-        createContent(p, wir, schema);
+        createContent(p, wir, schema,  geoTypes);
     }
 
 
     // case start
-    public DynForm(List<YParameter> parameters, String schema) {
+    public DynForm(List<YParameter> parameters, String schema,
+                   Map<String, Map<String, String>> geoTypes) {
         super();
-        createContent(parameters, schema);
+        createContent(parameters, schema, geoTypes);
     }
 
 
@@ -95,10 +98,11 @@ public class DynForm extends AbstractDialog {
     }
 
 
-    private void createContent(Participant p, WorkItemRecord wir, String schema) {
+    private void createContent(Participant p, WorkItemRecord wir, String schema,
+                               Map<String, Map<String, String>> geoTypes) {
         try {
             _dynFormLayout = _factory.createForm(schema, wir, p);
-            configureForm(_dynFormLayout, "Edit Work Item");
+            configureForm(_dynFormLayout, "Edit Work Item", geoTypes);
             createButtonsForWorkItem();
         }
         catch (DynFormException dfe) {
@@ -107,10 +111,11 @@ public class DynForm extends AbstractDialog {
     }
 
 
-    private void createContent(List<YParameter> parameters, String schema) {
+    private void createContent(List<YParameter> parameters, String schema,
+                               Map<String, Map<String, String>> geoTypes) {
         try {
             _dynFormLayout = _factory.createForm(schema, parameters, null);
-            configureForm(_dynFormLayout, "Case Start");
+            configureForm(_dynFormLayout, "Case Start", geoTypes);
             createButtonsForCaseStart();
         }
         catch (DynFormException dfe) {
@@ -119,8 +124,9 @@ public class DynForm extends AbstractDialog {
     }
 
 
-    private void configureForm(DynFormLayout form, String header) {
-        _hasGeoType = form.hasGeoTypeInTree();
+    private void configureForm(DynFormLayout form, String header,
+                               Map<String, Map<String, String>> geoTypes) {
+        _hasGeoType = form.hasGeoTypeInTree(geoTypes);
         setFormHeight(form);
         setWidth(form.getAppropriateWidth());
         setHeader(header);

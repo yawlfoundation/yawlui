@@ -380,8 +380,8 @@ public class DynFormComponentBuilder {
 
     private Hr makeHLine() {
         Hr hr = new Hr();
-        setStyles(hr, Map.of("background-color", "blue","flex", "0 0 2px",
-                "align-self", "stretch"));
+        setStyles(hr, Map.of("margin-left", "0px","margin-right", "0",
+                "height", "3px", "width", "calc(99.9% + 0rem)"));
         return hr;
     }
 

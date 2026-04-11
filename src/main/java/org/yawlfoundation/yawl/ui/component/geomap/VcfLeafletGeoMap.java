@@ -4,6 +4,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.VaadinSession;
+import org.apache.commons.lang3.StringUtils;
 import org.vaadin.addons.componentfactory.leaflet.LeafletMap;
 import org.vaadin.addons.componentfactory.leaflet.layer.InteractiveLayer;
 import org.vaadin.addons.componentfactory.leaflet.layer.groups.LayerGroup;
@@ -11,6 +12,7 @@ import org.vaadin.addons.componentfactory.leaflet.layer.map.options.DefaultMapOp
 import org.vaadin.addons.componentfactory.leaflet.layer.map.options.MapOptions;
 import org.vaadin.addons.componentfactory.leaflet.layer.raster.TileLayer;
 import org.vaadin.addons.componentfactory.leaflet.layer.ui.marker.Marker;
+import org.vaadin.addons.componentfactory.leaflet.layer.ui.popup.Popup;
 import org.vaadin.addons.componentfactory.leaflet.layer.vectors.Circle;
 import org.vaadin.addons.componentfactory.leaflet.layer.vectors.Path;
 import org.vaadin.addons.componentfactory.leaflet.layer.vectors.Polygon;
@@ -56,6 +58,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     private final Map<InteractiveLayer, Marker> _dragMarkerMap = new HashMap<>();
     private final Map<InteractiveLayer, Marker> _resizeMarkerMap = new HashMap<>();
     private final Map<InteractiveLayer, List<Marker>> _vertexMarkerMap = new HashMap<>();
+    private final Map<Marker, String> _markerColorMap = new HashMap<>();
     private final List<GeoMapOverlayMoveListener> _moveListeners = new ArrayList<>();
     private final List<GeoMapDoubleClickListener> _dblClickListeners = new ArrayList<>();
 
@@ -133,6 +136,20 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
         return layer;
     }
 
+
+    public String getOverlayColor(int ref) {
+        InteractiveLayer overlay = getOverlay(ref);
+        if (overlay != null) {
+            if (overlay instanceof Path) {
+                return ((Path) overlay).getColor();
+            }
+            else if (overlay instanceof Marker) {
+                return _markerColorMap.get((Marker) overlay);
+            }
+        }
+        return DEFAULT_COLOR;
+    }
+
     
     public void addMoveListener(GeoMapOverlayMoveListener listener) {
         _moveListeners.add(listener);
@@ -161,14 +178,17 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
 
     @Override
-    public int drawMarker(GeoCoordinate coordinate, boolean draggable) {
+    public int drawMarker(GeoCoordinate coordinate, boolean draggable, String popup) {
         LatLng point = toLatLng(coordinate);
         Marker marker = new Marker(point);
         marker.setDraggable(draggable);
-        marker.setIcon(getNextMarkerIcon());
+        marker.setIcon(getNextMarkerIcon(marker));
+        if (StringUtils.isNotEmpty(popup)) {
+            marker.bindPopup(popup);
+        }
 
         marker.onMouseMove(event -> announceMove(marker, event.getLatLng()));
-        marker.onMouseUp(event -> announceMove(marker, event.getLatLng()));
+        marker.onMouseUp(event -> announceMoveCompleted(marker, event.getLatLng()));
 
         marker.addTo(_markers);
         int ref = addOverlay(marker);
@@ -178,10 +198,27 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
 
     @Override
-    public synchronized void updateMarker(int ref, GeoCoordinate coordinate) {
+    public synchronized void updateMarker(int ref, GeoCoordinate coordinate, String popup) {
         Marker marker = (Marker) getOverlay(ref);
-        marker.setLatLng(toLatLng(coordinate));
-        centerAndZoom();
+        if (popupChanged(marker, popup)) {
+            marker.remove();
+            Marker newMarker = new Marker(toLatLng(coordinate));
+            newMarker.setDraggable(marker.isDraggable());
+            newMarker.setIcon(marker.getIcon());
+            if (StringUtils.isNotEmpty(popup)) {
+                newMarker.bindPopup(popup);
+            }
+
+            newMarker.onMouseMove(event -> announceMove(newMarker, event.getLatLng()));
+            newMarker.onMouseUp(event -> announceMoveCompleted(newMarker, event.getLatLng()));
+
+            newMarker.addTo(_markers);
+            updateOverlay(marker, newMarker);
+        }
+        else {
+            marker.setLatLng(toLatLng(coordinate));
+            centerAndZoom();
+        }
     }
 
     
@@ -190,10 +227,14 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
     
     @Override
-    public int drawCircle(GeoCoordinate coordinate, double radius, boolean draggable) {
+    public int drawCircle(GeoCoordinate coordinate, double radius, boolean draggable, String popup) {
         LatLng center = toLatLng(coordinate);
         Circle circle = drawCircle(center, radius, getNextColour());
         final int ref = addOverlay(circle);
+        
+        if (StringUtils.isNotEmpty(popup)) {
+            circle.bindPopup(popup);
+        }
         circle.addTo(_map);
         _map.getUI().ifPresent(ui -> ui.access(_map::invalidateSize));
 
@@ -254,21 +295,22 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
 
     @Override
-    public synchronized void updateCircle(int ref, GeoCoordinate coordinate, double radius) {
+    public synchronized void updateCircle(int ref, GeoCoordinate coordinate, double radius, String popup) {
         Circle oldCircle = (Circle) getOverlay(ref);
         LatLng oldCenter = oldCircle.getLatlng();
         LatLng updatedCenter = toLatLng(coordinate);
 
-        if (Objects.equals(updatedCenter.getLat(), oldCenter.getLat()) &&
-                Objects.equals(updatedCenter.getLng(), oldCenter.getLng())) {
-
-            // center unchanged, must be a radius update
+        if (oldCircle.getRadius() != radius) {
             resize(oldCircle, oldCenter, radius);
+            finaliseCircleMove(ref, false);
         }
-        else {
+        else if (! latLngEquals(oldCenter, updatedCenter)) {
             drag(oldCircle, updatedCenter);
+            finaliseCircleMove(ref, false);
         }
-        finaliseCircleMove(ref, false);
+        else if (popupChanged(oldCircle, popup)) {
+            updatePopup(oldCircle, popup);
+        }
     }
 
 
@@ -279,7 +321,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     private void finaliseCircleMove(int ref, boolean announce) {
         Circle circle = (Circle) getOverlay(ref);
         if (announce) {
-            announceMove(circle, circle.getLatlng(), ref);
+            announceMoveCompleted(circle, circle.getLatlng(), ref);
         }
 
         // update final marker positions
@@ -294,7 +336,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
                                      List<Marker> resizeMarkers, boolean announce) {
         Polygon polygon = (Polygon) getOverlay(ref);
         if (announce) {
-            announceMove(polygon, vertices, ref);
+            announceMoveCompleted(polygon, vertices, ref);
         }
 
         _dragMarkerMap.get(polygon).setLatLng(getCentroid(vertices));
@@ -304,14 +346,14 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
 
     @Override
-    public int drawRectangle(GeoCoordinate topLeft, GeoCoordinate bottomRight, boolean draggable) {
-        return drawPolygon(toRectangleVertices(topLeft, bottomRight), true, draggable);
+    public int drawRectangle(GeoCoordinate topLeft, GeoCoordinate bottomRight, boolean draggable, String popup) {
+        return drawPolygon(toRectangleVertices(topLeft, bottomRight), true, draggable, popup);
     }
 
     
     @Override
-    public void updateRectangle(int ref, GeoCoordinate topLeft, GeoCoordinate bottomRight) {
-        updatePolygon(ref, toRectangleVertices(topLeft, bottomRight));
+    public void updateRectangle(int ref, GeoCoordinate topLeft, GeoCoordinate bottomRight, String popup) {
+        updatePolygon(ref, toRectangleVertices(topLeft, bottomRight), popup);
     }
 
 
@@ -320,15 +362,20 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
 
     @Override
-    public int drawPolygon(List<GeoCoordinate> coordinates, boolean draggable) {
-        return drawPolygon(coordinates, false, draggable);
+    public int drawPolygon(List<GeoCoordinate> coordinates, boolean draggable, String popup) {
+        return drawPolygon(coordinates, false, draggable, popup);
     }
 
 
-    private int drawPolygon(List<GeoCoordinate> coordinates, boolean isRectangle, boolean draggable) {
+    private int drawPolygon(List<GeoCoordinate> coordinates, boolean isRectangle,
+                            boolean draggable, String popup) {
         List<LatLng> vertices = sortClockwise(toLatLngList(coordinates));
         Polygon polygon = drawPolygon(vertices, getNextColour());
         int ref = addOverlay(polygon);
+        if (StringUtils.isNotEmpty(popup)) {
+            polygon.bindPopup(popup);
+        }
+        
         polygon.addTo(_map);
         _map.getUI().ifPresent(ui -> ui.access(_map::invalidateSize));
 
@@ -427,12 +474,17 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     }
 
 
-    public synchronized void updatePolygon(int ref, List<GeoCoordinate> coordinates) {
-       Polygon polygon = (Polygon) getOverlay(ref);
-       List<LatLng> vertices = sortClockwise(toLatLngList(coordinates));
-       resize(polygon, vertices);
-       finalisePolygonMove(ref, vertices, _vertexMarkerMap.get(getOverlay(ref)), false);
-   }
+    public synchronized void updatePolygon(int ref, List<GeoCoordinate> coordinates, String popup) {
+        Polygon polygon = (Polygon) getOverlay(ref);
+        if (popupChanged(polygon, popup)) {
+            updatePopup(polygon, popup);
+        }
+        else {
+            List<LatLng> vertices = sortClockwise(toLatLngList(coordinates));
+            resize(polygon, vertices);
+            finalisePolygonMove(ref, vertices, _vertexMarkerMap.get(getOverlay(ref)), false);
+        }
+    }
 
 
     @Override
@@ -480,21 +532,51 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
         if (hasMoved(marker.getLatLng(), movedTo)) {
             GeoMapOverlayMovedEvent moveEvent = new GeoMapOverlayMovedEvent(
                     toGeoCoordinate(movedTo), getOverlayRef(marker));
-            _moveListeners.forEach(l -> l.overlayMoved(moveEvent));
+            announceMove(moveEvent);
         }
     }
 
     private void announceMove(Circle circle, LatLng movedTo, int ref) {
         GeoMapOverlayMovedEvent moveEvent = new GeoMapOverlayMovedEvent(
                 toGeoCoordinate(movedTo), circle.getRadius(), ref);
-        _moveListeners.forEach(l -> l.overlayMoved(moveEvent));
+        announceMove(moveEvent);
     }
 
 
     private void announceMove(Polygon polygon, List<LatLng> movedTo, int ref) {
         GeoMapOverlayMovedEvent moveEvent = new GeoMapOverlayMovedEvent(
                toGeoCoordinateList(movedTo), ref);
-        _moveListeners.forEach(l -> l.overlayMoved(moveEvent));
+        announceMove(moveEvent);
+    }
+
+
+    private void announceMoveCompleted(Marker marker, LatLng movedTo) {
+        if (hasMoved(marker.getLatLng(), movedTo)) {
+            GeoMapOverlayMovedEvent moveEvent = new GeoMapOverlayMovedEvent(
+                    toGeoCoordinate(movedTo), getOverlayRef(marker),
+                    GeoMapOverlayMovedEvent.Mode.COMPLETED);
+            announceMove(moveEvent);
+        }
+    }
+
+
+    private void announceMoveCompleted(Circle circle, LatLng movedTo, int ref) {
+        GeoMapOverlayMovedEvent moveEvent = new GeoMapOverlayMovedEvent(
+                toGeoCoordinate(movedTo), circle.getRadius(), ref,
+                GeoMapOverlayMovedEvent.Mode.COMPLETED);
+        announceMove(moveEvent);
+    }
+
+
+    private void announceMoveCompleted(Polygon polygon, List<LatLng> movedTo, int ref) {
+        GeoMapOverlayMovedEvent moveEvent = new GeoMapOverlayMovedEvent(
+               toGeoCoordinateList(movedTo), ref, GeoMapOverlayMovedEvent.Mode.COMPLETED);
+        announceMove(moveEvent);
+    }
+
+
+    private void announceMove(GeoMapOverlayMovedEvent event) {
+        _moveListeners.forEach(l -> l.overlayMoved(event));
     }
 
 
@@ -653,6 +735,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
         synchronized (MOUSE_EVENT_MUTEX) {
             circle.remove();
             Circle resizedCircle = drawCircle(center, radius, circle.getColor());
+            movePopup(circle, resizedCircle);
             resizedCircle.addTo(_map);
             int ref = updateOverlay(circle, resizedCircle);
             centerAndZoom();
@@ -666,6 +749,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
         synchronized (MOUSE_EVENT_MUTEX) {
             polygon.remove();
             Polygon resizedPolygon = drawPolygon(vertices, polygon.getColor());
+            movePopup(polygon, resizedPolygon);
             resizedPolygon.addTo(_map);
             int ref = updateOverlay(polygon, resizedPolygon);
             centerAndZoom();
@@ -679,6 +763,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
         synchronized (MOUSE_EVENT_MUTEX) {
             circle.remove();
             Circle draggedCircle = drawCircle(movedTo, circle.getRadius(), circle.getColor());
+            movePopup(circle, draggedCircle);
             draggedCircle.addTo(_map);
             int ref = updateOverlay(circle, draggedCircle);
             centerAndZoom();
@@ -692,6 +777,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
         synchronized (MOUSE_EVENT_MUTEX) {
             polygon.remove();
             Polygon draggedPolygon = drawPolygon(vertices, polygon.getColor());
+            movePopup(polygon, draggedPolygon);
             draggedPolygon.addTo(_map);
             int ref = updateOverlay(polygon, draggedPolygon);
             centerAndZoom();
@@ -710,6 +796,45 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
             overlay.setFill(true);
         }
         overlay.setWeight(getLineWeight());
+    }
+
+
+    private void movePopup(InteractiveLayer oldLayer, InteractiveLayer newLayer) {
+        Popup popup = oldLayer.getPopup();
+        if (popup != null) {
+            newLayer.bindPopup(popup);
+        }
+    }
+
+
+    private boolean popupChanged(InteractiveLayer layer, String content) {
+        if (! (layer == null || content == null)) {
+            Popup popup = layer.getPopup();
+            if (popup == null) return true;        // no prev popup, new content
+            return !content.equals(popup.getContent());
+        }
+        return false;
+    }
+
+
+    private void updatePopup(Circle circle, String newContent) {
+        circle.remove();
+        Circle newCircle = drawCircle(circle.getLatlng(),
+                circle.getRadius(), circle.getColor());
+        newCircle.bindPopup(newContent);
+        newCircle.addTo(_map);                
+        updateOverlay(circle, newCircle);
+        updateMarkerMaps(circle, newCircle);
+    }
+
+
+    private void updatePopup(Polygon polygon, String newContent) {
+        polygon.remove();
+        Polygon newPolygon = drawPolygon(getPolygonVertices(polygon), polygon.getColor());
+        newPolygon.bindPopup(newContent);
+        newPolygon.addTo(_map);
+        updateOverlay(polygon, newPolygon);
+        updateMarkerMaps(polygon, newPolygon);
     }
 
     
@@ -824,7 +949,22 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     }
 
 
-    private Icon getNextMarkerIcon() {
+//    private Icon getNextMarkerIcon(Marker marker) {
+//        String nextColour = getNextColour();
+//        if (Objects.equals(nextColour, DEFAULT_COLOR)) {
+//            return new Icon("icons/marker-icon.png");
+//        }
+//        _markerColorMap.put(marker, nextColour);
+//        DivIcon icon = new DivIcon("transparent-div-icon");
+//        icon.setIconAnchor(new Point(16, 32));
+//        icon.setHtml(
+//            "<vaadin-icon icon=\"vaadin:map-marker\" " +
+//            "style=\"color:" + nextColour + ";width:32px;height:32px;\"></vaadin-icon>"
+//        );
+//        return icon;
+//    }
+
+    private Icon getNextMarkerIcon(Marker marker) {
         Icon defaultIcon = new Icon("icons/marker-icon.png");
         try {
             String nextColour = getNextColour();
@@ -840,6 +980,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
             for (int y = 0; y < img.getHeight(); y++) {
                 for (int x = 0; x < img.getWidth(); x++) {
                     int rgb = img.getRGB(x, y);
+                    if (rgb == -1) continue;         // ignore white
                     Color color = new Color(rgb, true);
                     if (color.getAlpha() > 0) {
                         Color pixelColor = new Color(targetColor.getRed(),
@@ -867,8 +1008,10 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
                     .getResourceRegistry()
                     .registerResource(iconResource).getResourceUri();
 
-            return new Icon(uri.toString());
-            
+            _markerColorMap.put(marker, nextColour);
+
+            return new Icon(uri.toString(), uri.toString(), null);
+
         }
         catch (Exception e) {
             return defaultIcon;
@@ -986,6 +1129,11 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
                                                GeoCoordinate targetCenter) {
         List<LatLng> result = recenterPolygon(toLatLngList(points), toLatLng(targetCenter));
         return toGeoCoordinateList(result);
+    }
+
+
+    private boolean latLngEquals(LatLng a, LatLng b) {
+        return Objects.equals(a.getLat(), b.getLat()) && Objects.equals(a.getLng(), b.getLng());
     }
     
 }

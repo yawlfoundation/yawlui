@@ -10,4 +10,14 @@
   max-width: 250px;
 }
 
+.transparent-div-icon {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}
+
 

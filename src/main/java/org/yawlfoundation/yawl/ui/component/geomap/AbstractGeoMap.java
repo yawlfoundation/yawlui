@@ -1,9 +1,11 @@
 package org.yawlfoundation.yawl.ui.component.geomap;
 
-import com.vaadin.flow.component.Component;
 import org.yawlfoundation.yawl.ui.util.ApplicationProperties;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -11,10 +13,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Michael Adams
  * @date 15/12/2025
  */
-abstract class AbstractGeoMap<T> {
+abstract class AbstractGeoMap<T> implements GeoMap {
 
     private static final double LAT_DEGREE_PER_METRE = 0.00001;
-    protected static final String DEFAULT_COLOR = "#FF0000";    // red
+    public static final String DEFAULT_COLOR = "#FF0000";    // red
     private static final GeoCoordinate DEFAULT_ORIGIN =
             new GeoCoordinate(48.8575, 2.3514);  // Paris
 
@@ -34,36 +36,6 @@ abstract class AbstractGeoMap<T> {
 
     public AbstractGeoMap() { }
 
-    public abstract Component getMap();
-
-
-    public abstract int drawMarker(GeoCoordinate coordinate, boolean draggable);
-
-    public abstract void updateMarker(int ref, GeoCoordinate coordinate);
-
-    public abstract void removeMarker(int ref);
-
-
-    public abstract int drawCircle(GeoCoordinate coordinate, double radius, boolean draggable);
-
-    public abstract void updateCircle(int ref, GeoCoordinate coordinate, double radius);
-
-    public abstract void removeCircle(int ref);
-
-
-    public abstract int drawRectangle(GeoCoordinate topLeft, GeoCoordinate bottomRight, boolean draggable);
-
-    public abstract void updateRectangle(int ref, GeoCoordinate topLeft, GeoCoordinate bottomRight);
-
-    public abstract void removeRectangle(int ref);
-
-
-    public abstract int drawPolygon(List<GeoCoordinate> coordinates, boolean draggable);
-
-    public abstract void updatePolygon(int ref, List<GeoCoordinate> coordinates);
-
-    public abstract void removePolygon(int ref);
-    
 
     protected GeoCoordinate getDefaultOrigin() {
         List<Double> defOrigin = ApplicationProperties.getGeoOrigin();
@@ -93,7 +65,7 @@ abstract class AbstractGeoMap<T> {
     }
 
 
-    protected int updateOverlay(T oldOverlay, T newOverlay) {
+    public int updateOverlay(T oldOverlay, T newOverlay) {
         int ref = getOverlayRef(oldOverlay);
         overlays.put(ref, newOverlay);
         return ref;
