@@ -11,6 +11,7 @@ import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.ClientEvent;
 import org.yawlfoundation.yawl.ui.service.RunningCase;
+import org.yawlfoundation.yawl.ui.util.CaseIdComparator;
 import org.yawlfoundation.yawl.ui.util.InstalledServices;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.worklet.admin.AdministrationTask;
@@ -18,6 +19,7 @@ import org.yawlfoundation.yawl.worklet.selection.WorkletRunner;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -55,7 +57,9 @@ public class CasesSubView extends AbstractGridView<RunningCase>
 
     @Override
     void addColumns(Grid<RunningCase> grid) {
-        grid.addColumn(RunningCase::getCaseID).setHeader(UiUtil.bold("Case ID"));
+        grid.addColumn(RunningCase::getCaseID).setHeader(UiUtil.bold("Case ID"))
+                .setSortable(true)
+                .setComparator(Comparator.comparing(RunningCase::getCaseID, new CaseIdComparator()));
         grid.addColumn(RunningCase::getSpecName).setHeader(UiUtil.bold("Specification"));
         grid.addColumn(RunningCase::getSpecVersion).setHeader(UiUtil.bold("Version"));
     }

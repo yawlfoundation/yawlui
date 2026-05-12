@@ -147,7 +147,7 @@ public class CalendarDialog extends AbstractDialog {
     private void configWorkloadField() {
         _workloadField.setMin(1);
         _workloadField.setMax(100);
-        _workloadField.setHasControls(true);
+        _workloadField.setStepButtonsVisible(true);
 
         Div suffix = new Div();
         suffix.setText("%");

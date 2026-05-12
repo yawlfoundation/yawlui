@@ -27,6 +27,7 @@ import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H5;
 import com.vaadin.flow.component.textfield.TextField;
+import org.yawlfoundation.yawl.schema.internal.YInternalTypeUtil;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.util.ArrayList;
@@ -67,6 +68,8 @@ public class SubPanelCloner {
                 newPanel.addOccursButtons();
                 newPanel.getController().setOccursButtonsEnablement();
             }
+            cloneGeoType(newPanel, panel.getForm().getInternalTypeReference());
+
             return newPanel;
         }
         catch (CloneNotSupportedException e) {
@@ -91,9 +94,22 @@ public class SubPanelCloner {
         if (component instanceof SubPanel) {
             return cloneSubPanel((SubPanel) component);               // recurse
         }
+        else if (component instanceof DocComponent) {
+            return cloneDocComponent((DocComponent) component);
+        }
         else {
             return cloneSimpleComponent(component);
         }
+    }
+
+
+    private Component cloneDocComponent(DocComponent component) {
+        TextField textField = cloneTextField(component.getTextField());
+        boolean inputOnly = component.isInputOnly();
+        DocComponent clone = new DocComponent(_factory.getCaseID(), null,
+                textField, inputOnly);
+        _factory.addClonedFieldToTable(component, clone);      // for later validation
+        return clone;
     }
 
     
@@ -127,6 +143,7 @@ public class SubPanelCloner {
     public TextField cloneTextField(TextField oldField) {
         TextField clonedField = new TextField(oldField.getLabel()) ;
 //        clonedField.setValue(oldField.getValue());
+        clonedField.setReadOnly(oldField.isReadOnly());
         clonedField.setRequired(oldField.isRequired());
         clonedField.setEnabled(oldField.isEnabled());
         UiUtil.copyTooltip(oldField, clonedField);
@@ -145,6 +162,7 @@ public class SubPanelCloner {
         clonedField.setMax(oldField.getMax());
         UiUtil.copyTooltip(oldField, clonedField);
         cloneStyles(oldField, clonedField);
+        _factory.addClonedFieldToTable(oldField, clonedField);      // for later validation
         return clonedField;
     }
 
@@ -157,6 +175,7 @@ public class SubPanelCloner {
         clonedField.setMax(oldField.getMax());
         UiUtil.copyTooltip(oldField, clonedField);
         cloneStyles(oldField, clonedField);
+        _factory.addClonedFieldToTable(oldField, clonedField);      // for later validation
         return clonedField;
     }
 
@@ -209,6 +228,15 @@ public class SubPanelCloner {
             return clonedHeader;
         }
         return null;
+    }
+
+
+    private void cloneGeoType(SubPanel panel, String type) {
+        if (type != null && YInternalTypeUtil.isGeoTypeName(type)) {
+            DynFormLayout layout = panel.getForm();
+            layout.setInternalTypeReference(type);
+            layout.collectTextFields().forEach(layout::addListenersForGeoTypes);
+        }
     }
 
 

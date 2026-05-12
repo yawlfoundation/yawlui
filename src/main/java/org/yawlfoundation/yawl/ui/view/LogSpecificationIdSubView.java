@@ -55,12 +55,12 @@ public class LogSpecificationIdSubView extends AbstractGridView<YSpecificationID
 
     @Override
     void addFooterActions(ActionRibbon ribbon) {
-        ribbon.add(VaadinIcon.FILE_TABLE, "Download as CSV",
-              event -> {
-                  String fileName = "specification_identifiers.csv";
-                  _parent.downloadFile(fileName, getAsCSV());
-              });
+        ribbon.addDownloadAction(VaadinIcon.FILE_TABLE,
+                () -> "specification_identifiers.csv",
+                "Download as CSV", this::getAsCSV,
+                null);
     }
+
 
     @Override
     String getTitle() {

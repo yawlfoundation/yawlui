@@ -25,7 +25,7 @@ import java.util.Map;
  */
 public class AboutView extends AbstractView {
 
-    private static final String DEFAULT_VERSION = "5.2";
+    private static final String DEFAULT_VERSION = "6.0";
 
     public AboutView() {
         super();
@@ -63,29 +63,21 @@ public class AboutView extends AbstractView {
 
     private List<BuildDetails> getItems(BuildInformation buildInformation) {
         List<BuildDetails> items = new ArrayList<>();
-        items.add(getBuildDetails(getEngineClient(), "YAWL Engine"));
-        items.add(getBuildDetails(getResourceClient(), "Resource Service"));
-
-        BuildDetails workletDetails = getBuildDetails(getWorkletClient(), "Worklet Service");
-        if (workletDetails != null) {
-            items.add(getBuildDetails(getWorkletClient(), "Worklet Service"));
-        }
-        addStaticItems(items, buildInformation);
-        return items;
-    }
-
-
-    private void addStaticItems(List<BuildDetails> items, BuildInformation buildInformation) {
         items.add(new BuildDetails("YAWL UI (this component)",
                 buildInformation.getUIProperties().asMap()));
+        items.add(new BuildDetails("YAWL Engine",
+                 buildInformation.getEngineProperties().asMap()));
+        items.add(new BuildDetails("Resource Service",
+                 buildInformation.getResourceProperties().asMap()));
+        items.add(new BuildDetails("Worklet Service",
+                 buildInformation.getWorkletProperties().asMap()));
         items.add(new BuildDetails("Mail Service",
-                buildInformation.getMailServiceProperties().asMap()));
-        items.add(new BuildDetails("Web Service Invoker",
-                buildInformation.getInvokerServiceProperties().asMap()));
+                 buildInformation.getMailServiceProperties().asMap()));
         items.add(new BuildDetails("Document Store",
-                buildInformation.getDocStoreProperties().asMap()));
+                 buildInformation.getDocStoreProperties().asMap()));
+        return items;
     }
-
+    
 
     private VerticalLayout getCopyright(BuildInformation buildInformation) {
         VerticalLayout layout = new VerticalLayout();

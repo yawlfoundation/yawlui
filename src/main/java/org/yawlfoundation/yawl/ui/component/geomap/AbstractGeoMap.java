@@ -29,6 +29,7 @@ abstract class AbstractGeoMap<T> implements GeoMap {
     private final List<String> _colours = ApplicationProperties.getGeoColors();
     protected final double _fillOpacity = ApplicationProperties.getGeoFillOpacity();
     protected final int _lineWeight = ApplicationProperties.getGeoLineWeight();
+    protected final boolean _labelPermanent = ApplicationProperties.getGeoLabelPermanence();
 
     private int _nextColour = 0;
     private String _pushedColour = null;
@@ -104,6 +105,8 @@ abstract class AbstractGeoMap<T> implements GeoMap {
     protected int getLineWeight() {
         return _lineWeight;
     }
+
+    protected boolean isLabelPermanent() { return _labelPermanent; }
 
     protected void pushColour(String colour) {
         _pushedColour = colour;

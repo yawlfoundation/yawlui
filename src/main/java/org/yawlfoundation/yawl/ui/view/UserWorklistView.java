@@ -25,11 +25,15 @@ import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
 import org.yawlfoundation.yawl.ui.service.ChainedCase;
 import org.yawlfoundation.yawl.ui.service.PiledTask;
 import org.yawlfoundation.yawl.ui.util.InstalledServices;
+import org.yawlfoundation.yawl.ui.util.TNode;
 import org.yawlfoundation.yawl.util.JDOMUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Michael Adams
@@ -455,10 +459,12 @@ public class UserWorklistView extends AbstractWorklistView {
                 Announcement.warn("Missing or invalid custom form, defaulting to dynamic form");
             }
             String schema = getResourceClient().getWorkItemDataSchema(wir.getID());
-            Map<String, Map<String, String>> geoTypes = getGeoReferencingTypeMap(
-                    new YSpecificationID(wir));
+//            Map<String, Map<String, String>> geoTypes = getInternalTypeMap(
+//                    new YSpecificationID(wir));
 
-            DynForm dynForm = new DynForm(getParticipant(), wir, schema, geoTypes);
+            TNode typeTree = getInternalTypeTree(new YSpecificationID(wir));
+
+            DynForm dynForm = new DynForm(getParticipant(), wir, schema, typeTree);
             dynForm.addOkListener(e -> {
                 if (dynForm.validate()) {                                // completion
                     String outputData = dynForm.generateOutputData();

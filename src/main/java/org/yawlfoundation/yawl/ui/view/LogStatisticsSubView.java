@@ -58,12 +58,11 @@ public class LogStatisticsSubView extends AbstractGridView<Pair<String, String>>
 
     @Override
     void addFooterActions(ActionRibbon ribbon) {
-        ribbon.add(VaadinIcon.FILE_TABLE, "Download as CSV",
-               event -> {
-                   String fileName = String.format("%s_%s_statistics.csv",
-                           _specID.getUri(), _specID.getVersionAsString());
-                   _parent.downloadFile(fileName, getAsCSV());
-               });
+        ribbon.addDownloadAction(VaadinIcon.FILE_TABLE,
+                () -> String.format("%s_%s_statistics.csv",
+                        _specID.getUri(), _specID.getVersionAsString()),
+                "Download as CSV", this::getAsCSV,
+                null);
     }
 
     @Override

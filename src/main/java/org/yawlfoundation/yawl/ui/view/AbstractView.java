@@ -1,27 +1,23 @@
 package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayoutVariant;
-import com.vaadin.flow.dom.Element;
-import com.vaadin.flow.server.InputStreamFactory;
-import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.streams.DownloadHandler;
 import org.jdom2.Document;
-import org.jdom2.Namespace;
 import org.yawlfoundation.yawl.engine.YSpecificationID;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.service.*;
+import org.yawlfoundation.yawl.ui.util.TNode;
+import org.yawlfoundation.yawl.ui.util.TNodeParser;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.util.JDOMUtil;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author Michael Adams
@@ -96,54 +92,28 @@ public abstract class AbstractView extends VerticalLayout {
 
 
     protected void downloadFile(String fileName, String content) {
-        InputStreamFactory isFactory = () -> new ByteArrayInputStream(
-                content.getBytes(StandardCharsets.UTF_8));
-        StreamResource resource = new StreamResource(fileName, isFactory);
-        resource.setContentType("text/xml");
-        resource.setCacheTime(0);
-        resource.setHeader("Content-Disposition",
-                "attachment;filename=\"" + fileName + "\"");
+        DownloadHandler handler = event -> {
+            event.setFileName(fileName);
+            event.setContentType("text/xml");
 
-        Anchor downloadAnchor = new Anchor(resource, "");
-        Element element = downloadAnchor.getElement();
-        element.setAttribute("download", true);
-        element.getStyle().set("display", "none");
-        add(downloadAnchor);
-
-        // simulate a click & remove anchor after file downloaded
-        element.executeJs("return new Promise(resolve =>{this.click(); " +
-                "setTimeout(() => resolve(true), 150)})", element)
-                .then(jsonValue -> remove(downloadAnchor));
+            // Write the content to the output stream
+            try (OutputStream os = event.getOutputStream()) {
+                os.write(content.getBytes(StandardCharsets.UTF_8));
+            } catch (Exception e) {
+                // Handle IO error (logging, etc.)
+            }
+        };
     }
 
 
-    protected Map<String, Map<String, String>> getGeoReferencingTypeMap(YSpecificationID specID)
-            throws IOException {
-        Map<String, Map<String, String>> result = new HashMap<>();
+    protected TNode getInternalTypeTree(YSpecificationID specID) throws IOException {
         String specSchema = getEngineClient().getSpecificationDataSchema(specID);
-        Document doc = JDOMUtil.stringToDocument(specSchema);
-        org.jdom2.Element root = doc.getRootElement();
-        Namespace ns = Namespace.getNamespace("xs", "http://www.w3.org/2001/XMLSchema");
-        for (org.jdom2.Element complexType : root.getChildren("complexType", ns)) {
-            String complexTypeName = complexType.getAttributeValue("name");
-            if (complexTypeName == null) continue;
-
-            org.jdom2.Element sequence = complexType.getChild("sequence", ns);
-            if (sequence == null) continue;
-
-            Map<String, String> refs = new HashMap<>();
-            for (org.jdom2.Element el : sequence.getChildren("element", ns)) {
-                String elementName = el.getAttributeValue("name");
-                String type = el.getAttributeValue("type");
-                if (type != null && type.startsWith("yawl:")) {
-                    refs.put(elementName, type.substring("yawl:".length()));
-                }
-            }
-            if (!refs.isEmpty()) {
-                result.put(complexTypeName, refs);
-            }
+        if (specSchema == null || ! specSchema.contains("yawl:")) {  // short circuit
+            return null;
         }
-        return result;
+        Document doc = JDOMUtil.stringToDocument(specSchema);
+        TNode node = new TNodeParser().parse(doc.getRootElement());
+        return node.hasInternalTypeInTree() ? node : null;
     }
 
 }

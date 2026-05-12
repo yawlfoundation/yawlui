@@ -30,12 +30,13 @@ public class DynFormLayout extends FormLayout {
     private static final int SIMPLE_FIELD_LAYOUT_THRESHOLD = 3;
     private static final int BASE_WIDTH = 350;
 
-    private final List<DynFormContentChangeListener> _listeners = new ArrayList<>();
+    private final Set<DynFormContentChangeListener> _listeners = new HashSet<>();
     private final String _name;
     private final String _id = UUID.randomUUID().toString();
     private String _varName;
     private String _dataType;
-    private String _referencedInternalType;
+    private String _impliedDataType;
+    private DynFormField _input;
 
 
     // called from DynFormFactory to create outer container
@@ -49,6 +50,7 @@ public class DynFormLayout extends FormLayout {
     public DynFormLayout(DynFormField field) {
         this(field.getName());
         _dataType = field.getParam().getDataTypeName();
+        _impliedDataType = field.getImpliedDataType();
         if (field.hasParent()) {
             _varName = field.getParent().getName();
         }
@@ -63,10 +65,7 @@ public class DynFormLayout extends FormLayout {
     @Override
     public void add(Collection<Component> components) {
         super.add(components);
-        components.forEach(c -> {
-            setColspan(c);
-            addListenersForGeoTypes(c);
-        });
+        components.forEach(this::setColspan);
     }
 
 
@@ -79,7 +78,6 @@ public class DynFormLayout extends FormLayout {
             super.add(component);
         }
         setColspan(component);
-        addListenersForGeoTypes(component);
     }
 
 
@@ -87,8 +85,7 @@ public class DynFormLayout extends FormLayout {
     public void addComponentAsFirst(Component component) {
         super.addComponentAsFirst(component);
         setColspan(component);
-        addListenersForGeoTypes(component);
-    }
+   }
 
     @Override
     public void remove(Component... components) {
@@ -123,19 +120,39 @@ public class DynFormLayout extends FormLayout {
     }
 
 
-    public boolean hasGeoTypeInTree(Map<String, Map<String, String>> geoTypes) {
-        if (isGeoDataType() || isGeoReferencedType(geoTypes)) return true;
+    public void applyInternalTypeReference() {
+        if (isGeoDataType()) {
+            collectTextFields().forEach(this::addListenersForGeoTypes);
+        }
 
-        for (SubPanel subPanel : getChildSubPanels(this)) {
-            if (subPanel.getForm().hasGeoTypeInTree(geoTypes)) return true;
+        for (SubPanel subPanel : getChildSubPanels()) {
+            subPanel.getForm().applyInternalTypeReference();
+        }
+    }
+
+
+    public void setInternalTypeReference(String type) { _impliedDataType = type; }
+
+    public String getInternalTypeReference() {
+        return _impliedDataType;
+    }
+
+    public String getImpliedDataType() { return _impliedDataType; }
+    
+    public boolean hasGeoTypeInTree() {
+        if (isGeoDataType()) return true;
+
+        for (SubPanel subPanel : getChildSubPanels()) {
+            DynFormLayout child = subPanel.getForm();
+            if (child.hasGeoTypeInTree()) return true;
         }
         return false;
     }
 
 
     public void addGeoTypeChangeListenerToTree(DynFormContentChangeListener listener) {
-        if (isGeoDataType()) {
-            if (! _listeners.contains(listener)) _listeners.add(listener);
+        if (hasGeoTypeInTree()) {
+            _listeners.add(listener);
         }
         for (SubPanel subPanel : getChildSubPanels(this)) {
             subPanel.getForm().addGeoTypeChangeListenerToTree(listener);
@@ -144,7 +161,7 @@ public class DynFormLayout extends FormLayout {
 
 
     public void addGeoTypeListener(SubPanel addedSubPanel) {
-        if (isGeoDataType()) {
+        if (hasGeoTypeInTree()) {
             _listeners.forEach(listener -> {
                     addedSubPanel.getForm().addGeoTypeChangeListenerToTree(listener);
                     listener.formContentChanged(
@@ -154,8 +171,8 @@ public class DynFormLayout extends FormLayout {
         }
     }
 
-
-    private int getComponentCount() {
+    
+    public int getComponentCount() {
         return Math.toIntExact(getChildren().count());
     }
 
@@ -194,19 +211,19 @@ public class DynFormLayout extends FormLayout {
     public String getDataType() { return _dataType; }
 
     public String getDerivedDataType() {
-        return _referencedInternalType != null ? _referencedInternalType : _dataType;
+        return _impliedDataType != null ? _impliedDataType : _dataType;
     }
 
     
     public boolean isGeoDataType() {
         return YInternalTypeUtil.isGeoTypeName(_dataType) ||
-                YInternalTypeUtil.isGeoTypeName(_referencedInternalType);
+                YInternalTypeUtil.isGeoTypeName(_impliedDataType);
     }
 
 
     public boolean isGeoDataListType() {
         return YInternalTypeUtil.isGeoListTypeName(_dataType) ||
-                YInternalTypeUtil.isGeoListTypeName(_referencedInternalType);
+                YInternalTypeUtil.isGeoListTypeName(_impliedDataType);
     }
 
 
@@ -219,27 +236,15 @@ public class DynFormLayout extends FormLayout {
     }
 
 
-    private boolean isGeoReferencedType(Map<String, Map<String, String>> geoTypes) {
-        if (_referencedInternalType != null) {
-            return true;
-        }
-        Map<String, String> refTypes = geoTypes.get(_dataType);
-        if (refTypes != null) {
-            String type = refTypes.get(_name);
-            if (type != null && YInternalTypeUtil.isGeoTypeName(type)) {
-                _referencedInternalType = type;
-                collectTextFields(this).forEach(this::addListenersForGeoTypes);
-                return true;
-            }
-        }
-        return false;
+    private boolean isGeoReferencedType() {
+        return _impliedDataType != null;
     }
 
 
     private boolean isSimpleContentSubPanel(SubPanel subPanel) {
         DynFormLayout content = getSubPanelContent(subPanel);
 
-        for (Component c : content.getChildren().collect(Collectors.toList())) {
+        for (Component c : content.getChildren().toList()) {
              if (c instanceof SubPanel) {
                  if (! isSimpleContentSubPanel((SubPanel) c)) {
                      return false;
@@ -403,25 +408,27 @@ public class DynFormLayout extends FormLayout {
     }
 
 
-    private void addListenersForGeoTypes(Component c) {
+    protected void addListenersForGeoTypes(TextField textfield) {
         if (isGeoDataType()) {
-            if (c instanceof TextField) {
-                ((TextField) c).addValueChangeListener(e -> {
-                    String fieldName = e.getSource().getLabel();
-                    String oldValue = e.getOldValue();
-                    String newValue = e.getValue();
-                    DynFormContentChangedEvent event = new DynFormContentChangedEvent(
-                            _id, _varName, _name, fieldName, _dataType, oldValue, newValue);
-                    _listeners.forEach(l ->
-                            l.formContentChanged(event));
-                });
-            }
+            textfield.addValueChangeListener(e -> {
+                String fieldName = e.getSource().getLabel();
+                String oldValue = e.getOldValue();
+                String newValue = e.getValue();
+                DynFormLayout parent = getParentLayout();
+                String parentId = parent != null ? parent.getID() : null;
+                DynFormContentChangedEvent event = new DynFormContentChangedEvent(
+                        _id, parentId, _varName, _name, fieldName,
+                        _dataType, oldValue, newValue);
+
+                _listeners.forEach(l ->
+                        l.formContentChanged(event));
+            });
         }
     }
 
     
     private void announceRemovedComponent(Component c) {
-        if (isGeoDataType()) {
+        if (hasGeoTypeInTree()) {
             if (c instanceof SubPanel) {
                 DynFormContentChangedEvent event = new DynFormContentChangedEvent(_id,
                         (SubPanel) c, DynFormContentChangedEvent.EventType.SUB_PANEL_REMOVED);
@@ -431,10 +438,13 @@ public class DynFormLayout extends FormLayout {
         }
     }
 
+    protected List<TextField> collectTextFields() {
+        return collectTextFields(this);
+    }
 
     private List<TextField> collectTextFields(DynFormLayout layout) {
         List<TextField> fieldList = new ArrayList<>();
-        for (Component c : layout.getChildren().collect(Collectors.toList())) {
+        for (Component c : layout.getChildren().toList()) {
             if (c instanceof SubPanel) {
                 fieldList.addAll(collectTextFields(((SubPanel) c).getForm()));
             }

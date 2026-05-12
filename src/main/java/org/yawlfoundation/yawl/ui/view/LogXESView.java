@@ -134,16 +134,15 @@ public class LogXESView extends AbstractGridView<LogXESView.EventRecord> {
 
     @Override
     void addFooterActions(ActionRibbon ribbon) {
-        ribbon.add(VaadinIcon.FILE_CODE, "Download as XES",
-                event -> {
-                    String fileName = getSpecLabel().replaceAll(" - ", "_" ) + ".xes";
-                    _parent.downloadFile(fileName, getAsXES());
-                });
-        ribbon.add(VaadinIcon.FILE_TABLE, "Download as CSV",
-                event -> {
-                    String fileName = getSpecLabel().replaceAll(" - ", "_" ) + ".csv";
-                    _parent.downloadFile(fileName, getAsCSV());
-                });
+        ribbon.addDownloadAction(VaadinIcon.FILE_CODE,
+                () -> getSpecLabel().replaceAll(" - ", "_" ) + ".xes",
+                "Download as XES", this::getAsXES,
+                null);
+
+        ribbon.addDownloadAction(VaadinIcon.FILE_TABLE,
+                () -> getSpecLabel().replaceAll(" - ", "_" ) + ".csv",
+                "Download as CSV", this::getAsCSV,
+                null);
     }
     
 

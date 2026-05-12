@@ -5,6 +5,9 @@ import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import org.yawlfoundation.yawl.ui.component.DownloadIconWrapper;
+
+import java.util.function.Supplier;
 
 /**
  * @author Michael Adams
@@ -45,7 +48,24 @@ public class ActionRibbon extends HorizontalLayout {
         return icon;
     }
 
+    public ActionIcon addDownloadAction(Supplier<String> fileName, String tooltip,
+                                        Supplier<String> contentSupplier,
+                                        Runnable downloadCallback) {
+        return addDownloadAction(VaadinIcon.DOWNLOAD_ALT, fileName, tooltip,
+                contentSupplier, downloadCallback);
+    }
 
+        public ActionIcon addDownloadAction(VaadinIcon vaadinicon,
+                                            Supplier<String> fileName,
+                                            String tooltip,
+                                            Supplier<String> contentSupplier,
+                                            Runnable downloadCallback) {
+        ActionIcon icon = new ActionIcon(vaadinicon, ActionIcon.DEFAULT_HOVER,
+                tooltip, null);
+        this.add(new DownloadIconWrapper(icon, fileName, contentSupplier, downloadCallback));
+        return icon;
+    }
+    
     // adds a disabled icon
     public ActionIcon add(VaadinIcon iconName) {
         ActionIcon icon = new ActionIcon(iconName);

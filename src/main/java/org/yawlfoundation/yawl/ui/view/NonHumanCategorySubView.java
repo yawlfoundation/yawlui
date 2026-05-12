@@ -3,7 +3,7 @@ package org.yawlfoundation.yawl.ui.view;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanCategory;
 import org.yawlfoundation.yawl.resourcing.resource.nonhuman.NonHumanResource;
@@ -137,10 +137,10 @@ public class NonHumanCategorySubView extends AbstractGridView<NonHumanCategory> 
             return buildMemberCombo(resList);
         }
         if (resList.size() == 1) {
-            return new Label(resList.get(0).getName());
+            return new Span(resList.get(0).getName());
         }
         else {
-            return new Label();
+            return new Span();
         }
     }
 
@@ -151,10 +151,10 @@ public class NonHumanCategorySubView extends AbstractGridView<NonHumanCategory> 
              return buildSubCategoryCombo(subCatList);
          }
          if (subCatList.size() == 1) {
-             return new Label(subCatList.get(0).getName());
+             return new Span(subCatList.get(0).getName());
          }
          else {
-             return new Label();
+             return new Span();
          }
     }
 

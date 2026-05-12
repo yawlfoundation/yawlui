@@ -55,36 +55,36 @@ public class GeoMapSubView extends AbstractView
     @Override
     public void formContentChanged(DynFormContentChangedEvent event) {
         if (event.eventType() == DynFormContentChangedEvent.EventType.SUB_PANEL_ADDED) {
-            SubPanel subPanel = event.getSubPanel();
-            if (subPanel.getForm().isGeoDataType()) {
-                _layout2OverlayMap.put(event.getSubPanel().getForm(), -1);
-                _geoPanels.add(subPanel);
+            for (SubPanel geoPanel : extractGeoPanels(event.getSubPanel())) {
+                _layout2OverlayMap.put(geoPanel.getForm(), -1);
+                _geoPanels.add(geoPanel);
             }
         }
         else if (event.eventType() == DynFormContentChangedEvent.EventType.SUB_PANEL_REMOVED) {
-            SubPanel subPanel = event.getSubPanel();
-            DynFormLayout layout = subPanel.getForm();
-            if (isVertexPanel(subPanel)) {
+            for (SubPanel geoPanel : extractGeoPanels(event.getSubPanel())) {
+                 DynFormLayout layout = geoPanel.getForm();
+                 if (isVertexPanel(geoPanel)) {
 
-                // required because when we get the change event the subpanel is
-                // already detached
-                for (DynFormLayout key : _layout2ChildPanelMap.keySet()) {
-                    List<SubPanel> childPanels = _layout2ChildPanelMap.get(key);
-                    if (childPanels.contains(subPanel)) {
-                        childPanels.remove(subPanel);
-                        layout = key;
-                        break;
-                    }
-                }
-            }
-            int ref = _layout2OverlayMap.remove(layout);
-            if (ref != -1) {
-                _map.removeOverlay(ref);
-                _geoPanels.remove(subPanel);
-            }
-            if (isVertexPanel(subPanel)) {
-                drawPolygon(layout);
-            }
+                     // required because when we get the change event the subpanel is
+                     // already detached
+                     for (DynFormLayout key : _layout2ChildPanelMap.keySet()) {
+                         List<SubPanel> childPanels = _layout2ChildPanelMap.get(key);
+                         if (childPanels.contains(geoPanel)) {
+                             childPanels.remove(geoPanel);
+                             layout = key;
+                             break;
+                         }
+                     }
+                 }
+                 int ref = _layout2OverlayMap.remove(layout);
+                 if (ref != -1) {
+                     _map.removeOverlay(ref);
+                     _geoPanels.remove(geoPanel);
+                 }
+                 if (isVertexPanel(geoPanel)) {
+                     drawPolygon(layout);
+                 }
+             }
         }
         else {                          // value change
             boolean labelChange = event.getFieldName().equals("label");  // user action
@@ -97,7 +97,9 @@ public class GeoMapSubView extends AbstractView
             }
 
             for (DynFormLayout layout : _layout2OverlayMap.keySet()) {
-                if (layout.getID().equals(event.getLayoutId())) {
+                String layoutID = layout.getID();
+                if (layoutID.equals(event.getLayoutId()) ||
+                        layoutID.equals(event.getParentLayoutId())) {
                     drawOverlay(layout);
                     break;
                 }
@@ -119,7 +121,7 @@ public class GeoMapSubView extends AbstractView
                 }
             }
         }
-        _updatingOverlays = event.getMode() == GeoMapOverlayMovedEvent.Mode.MOVING;
+        _updatingOverlays = false;
     }
 
     
@@ -262,7 +264,7 @@ public class GeoMapSubView extends AbstractView
                 });
             }
             else {     // new vertex
-                double offset = _map.getEdgeToleranceMeters();
+                double offset = _map.getEdgeToleranceMeters() * 10;
                 updateForm(layout, offsetByMeters(coordinate, offset, offset));
                 _layout2OverlayMap.remove(layout);
                 drawPolygon(layout.getParentLayout());
@@ -411,6 +413,18 @@ public class GeoMapSubView extends AbstractView
             else {
                 geoPanels.addAll(gatherGeoPanels(layout.getChildSubPanels()));
             }
+        }
+        return geoPanels;
+    }
+
+
+    private List<SubPanel> extractGeoPanels(SubPanel subPanel) {
+        List<SubPanel> geoPanels = new ArrayList<>();
+        if (subPanel.getForm().isGeoDataType()) {
+            geoPanels.add(subPanel);
+        }
+        for (SubPanel child : extractSubPanels(subPanel.getForm())) {
+            geoPanels.addAll(extractGeoPanels(child));
         }
         return geoPanels;
     }

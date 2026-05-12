@@ -19,21 +19,17 @@
 package org.yawlfoundation.yawl.ui.dynform;
 
 
-import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.dom.Element;
-import com.vaadin.flow.server.InputStreamFactory;
-import com.vaadin.flow.server.StreamResource;
 import org.yawlfoundation.yawl.documentStore.YDocument;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
+import org.yawlfoundation.yawl.ui.component.DownloadIconWrapper;
 import org.yawlfoundation.yawl.ui.dialog.upload.UploadDocumentDialog;
 import org.yawlfoundation.yawl.ui.menu.ActionIcon;
 import org.yawlfoundation.yawl.ui.service.Clients;
 import org.yawlfoundation.yawl.util.StringUtil;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 /**
@@ -73,6 +69,11 @@ public class DocComponent extends HorizontalLayout {
     }
 
 
+    protected TextField getTextField() { return _textField; }
+
+    protected boolean isInputOnly() { return ! _btnUp.isEnabled(); }
+    
+
     private void buildComponent(boolean inputOnly) {
         _textField.setReadOnly(true);                         // can't be edited directly
         _textField.setWidthFull();
@@ -83,13 +84,17 @@ public class DocComponent extends HorizontalLayout {
         _btnUp.setEnabled(! inputOnly);       // no upload if var readonly
 
         _btnDown = new ActionIcon(VaadinIcon.DOWNLOAD_ALT, null, "Download File",
-                e -> download());
+                null);
         _btnDown.setEnabled(_docID > -1);
 
         setIconStyle(_btnUp);
         setIconStyle(_btnDown);
-        
-        add(_textField, _btnUp, _btnDown);
+        setDefaultVerticalComponentAlignment(Alignment.BASELINE);
+        setAlignItems(Alignment.END);
+
+        add(_textField, _btnUp,
+                new DownloadIconWrapper(_btnDown, () -> _docName, this::getDocContent,
+                        null, true));
         setSpacing(false);
     }
 
@@ -134,38 +139,18 @@ public class DocComponent extends HorizontalLayout {
     }
 
 
-    private void download() {
+    private byte[] getDocContent() {
         try {
             YDocument doc = Clients.getDocStoreClient().getStoredDocument(_docID);
-            if (doc.getDocument() != null) {
-                downloadFile(_docName, doc.getDocument());
+            if (doc.getDocumentSize() > 0) {
+                return doc.getDocument();
             }
             else Announcement.error("Unable to locate document: unknown document id.");
         }
         catch (IOException ioe) {
             Announcement.error("Unable to download document: " + ioe.getMessage());
         }
+        return null;
     }
 
-
-    protected void downloadFile(String fileName, byte[] content) {
-        InputStreamFactory isFactory = () -> new ByteArrayInputStream(content);
-        StreamResource resource = new StreamResource(fileName, isFactory);
-        resource.setContentType("multipart/form-data");
-        resource.setCacheTime(0);
-        resource.setHeader("Content-Disposition",
-                "attachment;filename=\"" + fileName + "\"");
-
-        Anchor downloadAnchor = new Anchor(resource, "");
-        Element element = downloadAnchor.getElement();
-        element.setAttribute("download", true);
-        element.getStyle().set("display", "none");
-        add(downloadAnchor);
-
-        // simulate a click & remove anchor after file downloaded
-        element.executeJs("return new Promise(resolve =>{this.click(); " +
-                "setTimeout(() => resolve(true), 150)})", element)
-                .then(jsonValue -> remove(downloadAnchor));
-    }
-    
 }

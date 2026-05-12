@@ -3,7 +3,7 @@ package org.yawlfoundation.yawl.ui.view;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.FooterRow;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import org.apache.commons.lang3.StringUtils;
 import org.yawlfoundation.yawl.resourcing.resource.AbstractResourceAttribute;
@@ -168,10 +168,10 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
         }
 
         if (pList.size() == 1) {
-            return new Label(pList.get(0).getFullName());
+            return new Span(pList.get(0).getFullName());
         }
         else {
-            return new Label();
+            return new Span();
         }
     }
 
@@ -186,10 +186,11 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
             });
             dialog.open();
         });
-        ribbon.add(VaadinIcon.DOWNLOAD_ALT, "Download to backup file", e -> {
-            download();
-            ribbon.reset();
-        });
+
+        ribbon.addDownloadAction(() -> "YAWLOrgDataExport.ybkp",
+                "Download to backup file", this::getExportedData,
+                ribbon::reset);
+
         return ribbon;
     }
 
@@ -222,16 +223,26 @@ public abstract class AbstractOrgDataView<T extends AbstractResourceAttribute>
     }
 
 
-    protected void download() {
+    protected String getExportedData() {
         try {
-            String content = getResourceClient().exportOrgData();
-            downloadFile("YAWLOrgDataExport.ybkp", content);
-            Announcement.success("Org data successfully downloaded");
+            return getResourceClient().exportOrgData();
         }
         catch (IOException e) {
-            Announcement.error("Failed to download org data: %s", e.getMessage());
+            Announcement.error("Failed to gather org data: %s", e.getMessage());
+            return null;
         }
     }
+
+//    protected void download() {
+//        try {
+//            String content = getResourceClient().exportOrgData();
+//            downloadFile("YAWLOrgDataExport.ybkp", content);
+//            Announcement.success("Org data successfully downloaded");
+//        }
+//        catch (IOException e) {
+//            Announcement.error("Failed to download org data: %s", e.getMessage());
+//        }
+//    }
 
 
     protected List<Participant> notInOther(List<Participant> master,

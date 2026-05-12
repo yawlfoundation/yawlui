@@ -36,6 +36,7 @@ public class DynFormField implements Cloneable {
 
     private String _name;                               // the parameter name
     private String _datatype;
+    private String _impliedDataType;            // internal type field refers to, if any
     private String _value;
     private long _minoccurs = 1;
     private long _maxoccurs = 1;
@@ -110,6 +111,12 @@ public class DynFormField implements Cloneable {
     public void setDatatype(String datatype) {
         this._datatype = datatype;
     }
+
+    public void setImpliedDataType(String impliedDataType) {
+        this._impliedDataType = impliedDataType;
+    }
+
+    public String getImpliedDataType() { return _impliedDataType; }
 
     public String getDataTypeUnprefixed() {
         String datatype = getDatatype();
@@ -201,6 +208,10 @@ public class DynFormField implements Cloneable {
 
     public boolean hasZeroMinimum() {
         return  (hasParent() && _parent.hasZeroMinimum()) || _minoccurs == 0;
+    }
+
+    public boolean allowsMultiOccurs() {
+        return _minoccurs > 1 || _maxoccurs > 1;
     }
     
 
@@ -455,7 +466,8 @@ public class DynFormField implements Cloneable {
     }
 
     public boolean isYDocument() {
-        return getDataTypeUnprefixed().equals("YDocumentType");
+        return getDataTypeUnprefixed().equals("YDocumentType") ||
+                "YDocumentType".equals(_impliedDataType);
     }
 
     public String getImageAbove() {

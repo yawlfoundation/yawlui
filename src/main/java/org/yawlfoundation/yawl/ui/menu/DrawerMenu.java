@@ -23,8 +23,7 @@ public class DrawerMenu extends Tabs {
         addItems(p);
     }
 
-
-
+    
     public void insertWorkletItem() {
         int insertionIndex = getComponentCount() - 2;
         this.addComponentAtIndex(insertionIndex,

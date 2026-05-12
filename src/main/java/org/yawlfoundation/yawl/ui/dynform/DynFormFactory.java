@@ -27,27 +27,32 @@ package org.yawlfoundation.yawl.ui.dynform;
 
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.textfield.TextField;
 import org.jdom2.Element;
 import org.yawlfoundation.yawl.elements.data.YParameter;
 import org.yawlfoundation.yawl.engine.interfce.TaskInformation;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
 import org.yawlfoundation.yawl.resourcing.jsf.dynform.FormParameter;
 import org.yawlfoundation.yawl.resourcing.resource.Participant;
+import org.yawlfoundation.yawl.schema.internal.YInternalType;
 import org.yawlfoundation.yawl.ui.dynform.dynattributes.DynAttributeFactory;
 import org.yawlfoundation.yawl.ui.service.Clients;
+import org.yawlfoundation.yawl.ui.util.TNode;
 import org.yawlfoundation.yawl.util.JDOMUtil;
 
 import java.awt.*;
 import java.io.IOException;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class DynFormFactory {
 
     // the set of generated subpanels on the current form
     private final Map<String, SubPanelController> _subPanelTable = new HashMap<>();
+
+    // a map of user-defined data type names to a map of element names and 
+    // the internal types they reference
+    Map<String, Map<String, String>> _internalTypeMap = new HashMap<>();
 
     // a map of inputs to the textfields they generated (required for validation)
     private Map<Component, DynFormField> _componentFieldTable;
@@ -76,11 +81,12 @@ public class DynFormFactory {
      * @param wir the work item record
      * @return the generated form
      */
-    public DynFormLayout createForm(String schema, WorkItemRecord wir, Participant p)
+    public DynFormLayout createForm(String schema, WorkItemRecord wir, Participant p,
+                                    TNode typeTree)
             throws DynFormException {
         _wir = wir;
         _userAttributes.set(wir.getAttributeTable());
-        return buildForm(schema, getWorkItemData(wir), getParamInfo(wir), p);
+        return buildForm(schema, getWorkItemData(wir), getParamInfo(wir), p, typeTree);
     }
 
 
@@ -91,9 +97,10 @@ public class DynFormFactory {
      * @param parameters a list of the root net's input parameters
      * @return the generated form
      */
-    public DynFormLayout createForm(String schema, List<YParameter> parameters, Participant p)
+    public DynFormLayout createForm(String schema, List<YParameter> parameters, Participant p,
+                                    TNode typeTree)
             throws DynFormException {
-        return buildForm(schema, null, getCaseParamMap(parameters), p);
+        return buildForm(schema, null, getCaseParamMap(parameters), p, typeTree);
     }
 
 
@@ -148,7 +155,7 @@ public class DynFormFactory {
     }
 
 
-    protected void addClonedFieldToTable(TextField orig, TextField clone) {
+    protected void addClonedFieldToTable(Component orig, Component clone) {
         DynFormField field = _componentFieldTable.get(orig);
         if (field != null) {
             _componentFieldTable.put(clone, field);
@@ -170,6 +177,10 @@ public class DynFormFactory {
         return _wir != null ? _wir.getRootCaseID() : null;
     }
 
+    protected Map<String, Map<String, String>> getInternalTypeMap() {
+        return _internalTypeMap;
+    }
+
 
     protected String getFormName() {
         if (_wir != null) {
@@ -188,22 +199,19 @@ public class DynFormFactory {
 
     private DynFormLayout buildForm(String schema, String data,
                                     Map<String, FormParameter> paramMap,
-                                    Participant participant) throws DynFormException {
+                                    Participant participant,
+                                    TNode typeTree) throws DynFormException {
         _fieldAssembler = new DynFormFieldAssembler(schema, data, paramMap);
-        buildForm(participant);
-        return _container;
-    }
-
-
-    private void buildForm(Participant participant) {
-        DynFormComponentBuilder builder = new DynFormComponentBuilder(this);
         List<DynFormField> fieldList = _fieldAssembler.getFieldList();
+        assignImpliedTypes(fieldList, new ArrayList<>(), typeTree);
         DynAttributeFactory.adjustFields(fieldList, _wir, participant);   // 1st pass
         _container = new DynFormLayout(getDefaultFormName());
+        DynFormComponentBuilder builder = new DynFormComponentBuilder(this);
         _container.add(buildInnerForm(builder, fieldList));
         setFormBackgroundColour();
         DynAttributeFactory.applyAttributes(_container, _wir, participant);  // 2nd pass
         _componentFieldTable = builder.getComponentFieldMap();
+        return _container;
     }
 
 
@@ -221,7 +229,7 @@ public class DynFormFactory {
             else if (!field.isEmptyOptionalInputOnly()) {  // create the field (inside a panel)
 
                 // if min and/or max defined at the field level, enclose it in a subpanel
-                if (field.isGroupedField()) {
+                if (field.allowsMultiOccurs()) {
                     componentList.addAll(buildSubPanel(builder, field));
                 }
                 else {
@@ -319,6 +327,29 @@ public class DynFormFactory {
         }
         return new String(chars);
     }
+
+
+    private void assignImpliedTypes(List<DynFormField> fieldList, List<String> path, TNode typeTree) {
+        if (typeTree == null || fieldList == null) return;
+
+        for (DynFormField field : fieldList) {
+            String type;
+            if (field.getLevel() == 0) {
+                type = typeTree.getLabel();
+            }
+            else {
+                path.add(field.getName());
+                type = typeTree.findTypeByPath(path);
+            }
+            if (YInternalType.isType(type)) {
+                field.setImpliedDataType(type);
+            }
+
+            assignImpliedTypes(field.getSubFieldList(), path, typeTree);
+            if (! path.isEmpty()) path.removeLast();
+        }
+    }
+
 
     
     // support for decomposition extended attributes

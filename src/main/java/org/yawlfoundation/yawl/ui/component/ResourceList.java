@@ -1,7 +1,7 @@
 package org.yawlfoundation.yawl.ui.component;
 
 import com.vaadin.flow.component.*;
-import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.listbox.ListBox;
@@ -80,7 +80,7 @@ public class ResourceList<T> extends UnpaddedVerticalLayout {
     }
 
 
-    protected Label createTitle(List<T> items) {
+    protected Span createTitle(List<T> items) {
         heading = new Prompt(buildLabelText(items));
         return heading;
     }

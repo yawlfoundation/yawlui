@@ -1,0 +1,14 @@
+.transparent-div-icon {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}
+
+:root {
+  --lumo-size-m: 1.75rem;
+  --lumo-space-m: 0.5rem;
+}

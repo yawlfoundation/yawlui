@@ -7,7 +7,7 @@ import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.login.AbstractLogin;
 import com.vaadin.flow.component.login.LoginForm;
@@ -18,6 +18,11 @@ import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.yawlfoundation.yawl.elements.YAWLServiceReference;
 import org.yawlfoundation.yawl.engine.interfce.ServletUtils;
 import org.yawlfoundation.yawl.engine.interfce.WorkItemRecord;
@@ -32,11 +37,6 @@ import org.yawlfoundation.yawl.ui.service.Clients;
 import org.yawlfoundation.yawl.ui.service.ResourceClient;
 import org.yawlfoundation.yawl.ui.util.BuildInformation;
 
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.security.NoSuchAlgorithmException;
@@ -115,7 +115,7 @@ public class MainView extends AppLayout implements HasDynamicTitle,
         logo.setWidth("370px");
         layout.add(logo);
 
-        Label version = new Label("version " + new BuildInformation().getUIProperties().version);
+        Span version = new Span("version " + new BuildInformation().getUIProperties().version);
         version.getStyle().set("color", "gray");
         version.getStyle().set("font-size", "12px");
         version.getStyle().set("font-style", "italic");
@@ -123,7 +123,7 @@ public class MainView extends AppLayout implements HasDynamicTitle,
         layout.add(version);
 
         LoginI18n i18n = LoginI18n.createDefault();
-        i18n.getForm().setTitle(null);
+        i18n.getForm().setTitle("");
         LoginForm login = new LoginForm(i18n);
         login.setForgotPasswordButtonVisible(false);
         login.addLoginListener(e -> authenticate(e, login));
@@ -215,7 +215,7 @@ public class MainView extends AppLayout implements HasDynamicTitle,
     // add a logout 'button' on the right side of the nav bar
     private void addLogout(String userName) {
         Div div = new Div();
-        Label userLabel = new Label(userName);
+        Span userLabel = new Span(userName);
         userLabel.getStyle().set("padding-right", "15px");
         ActionIcon logout = new ActionIcon(VaadinIcon.SIGN_OUT_ALT, null,
                 "Logout", e -> exit());

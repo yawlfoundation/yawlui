@@ -16,11 +16,11 @@ public enum DynFormEnterKeyAction {
             return COMPLETE;
         }
 
-        switch (action.toUpperCase()) {
-            case "SAVE" : return SAVE;
-            case "NONE" : return NONE;
-            default : return COMPLETE;
-        }
+        return switch (action.toUpperCase()) {
+            case "SAVE" -> SAVE;
+            case "NONE" -> NONE;
+            default -> COMPLETE;
+        };
     }
 
 }

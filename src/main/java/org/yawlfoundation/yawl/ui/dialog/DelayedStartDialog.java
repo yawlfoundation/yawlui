@@ -105,8 +105,12 @@ public class DelayedStartDialog extends AbstractDialog {
 //        dateField.addFocusListener(e -> focussedField = e.getSource());
 
         // this workaround sets a focus listener for each subcomponent
-        dateField.getChildren().forEach(f -> ((FocusNotifier) f).addFocusListener(e ->
-                focussedField = dateField));
+        dateField.getChildren().forEach(f -> {
+            if (f instanceof FocusNotifier<?>) {
+                ((FocusNotifier<?>) f).addFocusListener(e ->
+                        focussedField = dateField);
+            }
+        });
     }
 
 

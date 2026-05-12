@@ -1,0 +1,26 @@
+.leaflet-tooltip {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: black !important;
+    font-weight: bold !important;
+}
+
+/* Effectively hides the native browser title hover */
+.leaflet-marker-icon[title] {
+    pointer-events: auto; /* ensure marker is still clickable */
+}
+
+/* Remove the triangle/arrow from all Leaflet tooltips */
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+    display: none !important;
+}
+
+/* Add space between a shape and its bottom-aligned tooltip */
+.leaflet-tooltip-bottom {
+    margin-top: 10px !important;
+}
+

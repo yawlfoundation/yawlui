@@ -108,7 +108,7 @@ public class DynFormComponentBuilder {
             else if (type.equals("dateTime")) {
                 field = makeDateTimePicker(input);
             }
-            else if (type.equals("YDocumentType")) {
+            else if (input.isYDocument()) {
                 field = makeDocumentField(input);
             }
             else if (input.hasEnumeratedValues()) {

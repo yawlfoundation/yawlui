@@ -1,12 +1,12 @@
 package org.yawlfoundation.yawl.ui.component;
 
-import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.Span;
 
 /**
  * @author Michael Adams
  * @date 15/9/2022
  */
-public class Prompt extends Label {
+public class Prompt extends Span {
 
     public Prompt() {
         getStyle().set("color", "var(--lumo-secondary-text-color)");

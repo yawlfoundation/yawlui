@@ -22,6 +22,18 @@ public class BuildInformation {
         return BUILD_PROPS.getProperty(key);
     }
 
+    public BuildProperties getEngineProperties() {
+        return getProperties("yawl");
+    }
+
+    public BuildProperties getResourceProperties() {
+        return getProperties("resource");
+    }
+
+    public BuildProperties getWorkletProperties() {
+        return getProperties("worklet");
+    }
+    
     public BuildProperties getUIProperties() {
         return getProperties("ui");
     }

@@ -6,22 +6,22 @@
     <groupId>org.yawlfoundation.yawl</groupId>
     <artifactId>yawlui</artifactId>
     <name>YAWL UI</name>
-    <version>5.2.630</version>
+    <version>6.0.876</version>
     <packaging>war</packaging>
 
     <properties>  
-        <java.version>11</java.version>
-        <vaadin.version>23.2.9</vaadin.version>
-        <log4j2.version>2.17.2</log4j2.version>
+        <java.version>21</java.version>
+        <vaadin.version>24.10.1</vaadin.version>
+        <log4j2.version>2.25.4</log4j2.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <jetty.version>9.4.31.v20200723</jetty.version>
         <timestamp>${maven.build.timestamp}</timestamp>
-        <maven.build.timestamp.format>yyyy/MM/dd HH:mm</maven.build.timestamp.format>
+        <maven.build.timestamp.format>yyyy-MM-dd HH:mm.ss</maven.build.timestamp.format>
     </properties>
 
     <repositories>
-        <!-- The order of definitions matters. Explicitly defining central here to make sure it has the highest priority. -->
+        <!-- The order of definitions matters. Explicitly defining central here
+        to make sure it has the highest priority. -->
 
         <!-- Main Maven repository -->
         <repository>
@@ -31,6 +31,7 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        
         <!-- Repository used by many Vaadin add-ons -->
         <repository>
             <id>Vaadin Directory</id>
@@ -42,6 +43,7 @@
     </repositories>
      
     <pluginRepositories>
+        
          <!-- Maven Central repository requires https:// to access -->
         <pluginRepository>
             <id>central</id>
@@ -61,6 +63,40 @@
                 <scope>import</scope>
                 <version>${vaadin.version}</version>
             </dependency>
+
+            <!-- Align core libs with modern versions -->
+<!--            <dependency>-->
+<!--                <groupId>commons-io</groupId>-->
+<!--                <artifactId>commons-io</artifactId>-->
+<!--                <version>2.20.0</version>-->
+<!--            </dependency>-->
+
+<!--            <dependency>-->
+<!--                <groupId>org.apache.commons</groupId>-->
+<!--                <artifactId>commons-compress</artifactId>-->
+<!--                <version>1.27.1</version>-->
+<!--            </dependency>-->
+
+<!--            <dependency>-->
+<!--                <groupId>org.apache.maven.shared</groupId>-->
+<!--                <artifactId>maven-shared-utils</artifactId>-->
+<!--                <version>3.4.2</version>-->
+<!--            </dependency>-->
+
+<!--            <dependency>-->
+<!--                <groupId>com.google.code.findbugs</groupId>-->
+<!--                <artifactId>jsr305</artifactId>-->
+<!--                <version>3.0.2</version>-->
+<!--            </dependency>-->
+
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>2.21.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
         </dependencies>
     </dependencyManagement>
 
@@ -99,24 +135,38 @@
             </exclusions>
         </dependency>
 
-        <!-- Added to provide logging output as Vaadin uses -->
-        <!-- the unbound SLF4J no-operation (NOP) logger implementation -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
+            <groupId>io.github.bonigarcia</groupId>
+            <artifactId>webdrivermanager</artifactId>
+            <version>6.1.0</version>
+            <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-testbench</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-          <dependency>
+        <!-- Added to provide logging output as Vaadin uses -->
+        <!-- the unbound SLF4J no-operation (NOP) logger implementation -->
+<!--        <dependency>-->
+<!--            <groupId>org.slf4j</groupId>-->
+<!--            <artifactId>slf4j-simple</artifactId>-->
+<!--        </dependency>-->
+
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>2.18.0</version>
-          </dependency>
-          <dependency>
+            <version>2.25.4</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.18.0</version>
-          </dependency>
+            <version>2.25.4</version>
+        </dependency>
+
         <dependency>
             <groupId>xerces</groupId>
             <artifactId>xercesImpl</artifactId>
@@ -130,47 +180,27 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>4.0.1</version>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.1.0</version>
             <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-testbench</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/io.github.bonigarcia/webdrivermanager -->
-        <dependency>
-            <groupId>io.github.bonigarcia</groupId>
-            <artifactId>webdrivermanager</artifactId>
-            <version>5.3.0</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.yawlfoundation</groupId>
             <artifactId>yawl</artifactId>
-            <version>5.2</version>
+            <version>6.0</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/yawl-lib-5.2.jar</systemPath>
+            <systemPath>${project.basedir}/lib/yawl-lib-6.0.jar</systemPath>
         </dependency>
 
         <dependency>
-             <groupId>net.sf.saxon</groupId>
-             <artifactId>s9api</artifactId>
-             <version>1</version>
-             <scope>system</scope>
-             <systemPath>${project.basedir}/lib/saxon9-s9api.jar</systemPath>
-         </dependency>
-
-        <dependency>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-war-plugin</artifactId>
-            <version>3.3.2</version>
+            <groupId>net.sf.saxon</groupId>
+            <artifactId>Saxon-HE</artifactId>
+            <version>12.9</version>
+            <scope>provided</scope>
         </dependency>
+        
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -181,42 +211,33 @@
         <dependency>
             <groupId>org.vaadin.addons.componentfactory</groupId>
             <artifactId>vcf-leaflet</artifactId>
-            <version>1.0.1</version>
+            <version>24.0.2</version>
         </dependency>
+
         <dependency>
             <groupId>de.grundid.opendatalab</groupId>
             <artifactId>geojson-jackson</artifactId>
             <version>1.13</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.20.0</version>
+            <scope>compile</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
         <finalName>${project.artifactId}</finalName>
-        <defaultGoal>jetty:run</defaultGoal>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.10.1</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
-                </configuration>
-            </plugin>
-            <!-- Jetty plugin for easy testing without a server -->
-            <plugin>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-maven-plugin</artifactId>
-                <version>${jetty.version}</version>
-                <configuration>
-                    <!-- If using IntelliJ IDEA with autocompilation, this
-                    might cause lots of unnecessary compilations in the
-                    background.-->
-                    <scanIntervalSeconds>2</scanIntervalSeconds>
-                    <!-- Use war output directory to get the webpack files -->
-                    <webAppConfig>
-                        <allowDuplicateFragmentNames>true</allowDuplicateFragmentNames>
-                    </webAppConfig>
+                    <release>21</release>
                 </configuration>
             </plugin>
 
@@ -265,17 +286,16 @@
                             <goal>install-file</goal>
                         </goals>
                         <configuration>
-                            <file>../yawl/output/yawl-lib-5.2.jar</file>
+                            <file>../yawl6/output/yawl-lib-6.0.jar</file>
                             <groupId>org.yawlfoundation</groupId>
                             <artifactId>yawl</artifactId>
-                            <version>5.2</version>
+                            <version>6.0</version>
                             <packaging>jar</packaging>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
-
+            
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -293,35 +313,7 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <groupId>com.github.eirslett</groupId>
-                <artifactId>frontend-maven-plugin</artifactId>
-                <!-- Use the latest released version:
-                https://repo1.maven.org/maven2/com/github/eirslett/frontend-maven-plugin/ -->
-                <version>1.9.1</version>
-
-                <executions>
-                    <execution>
-                        <!-- optional: you don't really need execution ids, but it looks nice in your build log. -->
-                        <id>install node and npm</id>
-                        <goals>
-                            <goal>install-node-and-npm</goal>
-                        </goals>
-                        <!-- optional: default phase is "generate-resources" -->
-                        <phase>generate-resources</phase>
-                    </execution>
-                </executions>
-                <configuration>
-                    <nodeVersion>v16.14.0</nodeVersion>
-
-                    <!-- optional: with node version greater than 4.0.0 will use npm provided by node distribution -->
-                    <!--                    <npmVersion>2.15.9</npmVersion>-->
-
-                    <!-- optional: where to download node and npm from. Defaults to https://nodejs.org/dist/ -->
-                    <!--                    <downloadRoot>http://myproxy.example.org/nodejs/</downloadRoot>-->
-                </configuration>
-            </plugin>
+            
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
@@ -335,18 +327,24 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
                 <version>2.13.0</version>
             </plugin>
         </plugins>
+        
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
         </resources>
+
+        <filters>
+            <filter>../yawl6/build/build.properties</filter>
+        </filters>
     </build>
 
     <profiles>
@@ -356,14 +354,7 @@
             <properties>
                 <vaadin.productionMode>true</vaadin.productionMode>
             </properties>
-
-<!--            <dependencies>-->
-<!--                <dependency>-->
-<!--                    <groupId>com.vaadin</groupId>-->
-<!--                    <artifactId>flow-server-production-mode</artifactId>-->
-<!--                </dependency>-->
-<!--            </dependencies>-->
-
+            
             <build>
                 <plugins>
                     <plugin>
@@ -386,33 +377,6 @@
             <id>it</id>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>org.eclipse.jetty</groupId>
-                        <artifactId>jetty-maven-plugin</artifactId>
-                        <version>${jetty.version}</version>
-                        <configuration>
-                            <scanIntervalSeconds>0</scanIntervalSeconds>
-                            <stopPort>8081</stopPort>
-                            <stopWait>5</stopWait>
-                            <stopKey>${project.artifactId}</stopKey>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>start-jetty</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>deploy-war</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>stop-jetty</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
 
                     <!-- Runs the integration tests (*IT) after the server is started -->
                     <plugin>
@@ -435,6 +399,7 @@
                 </plugins>
             </build>
         </profile>
+        
         <profile>
             <id>bump-patch</id>
             <activation>
@@ -464,4 +429,5 @@
             </build>
           </profile>
     </profiles>
+    
 </project>

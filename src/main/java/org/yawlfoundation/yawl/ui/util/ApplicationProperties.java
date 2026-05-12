@@ -60,6 +60,12 @@ public class ApplicationProperties {
         return StringUtil.strToInt(get("geo.line.weight"), 3);
     }
 
+    public static boolean getGeoLabelPermanence() {
+        String permanent = get("geo.label.permanence");
+        return StringUtil.isNullOrEmpty(permanent) ||
+                Boolean.parseBoolean(permanent);
+    }
+
 
     public static List<Double> getGeoOrigin() {
         List<String> values = StringUtil.splitToList(get("geo.default.origin"), ",");

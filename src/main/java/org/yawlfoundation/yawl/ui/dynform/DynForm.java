@@ -13,11 +13,11 @@ import org.yawlfoundation.yawl.ui.dialog.AbstractDialog;
 import org.yawlfoundation.yawl.ui.listener.DynFormContentChangeListener;
 import org.yawlfoundation.yawl.ui.service.Clients;
 import org.yawlfoundation.yawl.ui.util.ApplicationProperties;
+import org.yawlfoundation.yawl.ui.util.TNode;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Michael Adams
@@ -33,22 +33,19 @@ public class DynForm extends AbstractDialog {
 
     private DynFormLayout _dynFormLayout; // the content container of this form's components
     private Scroller _containingScroller; // the outer scroll component
-    private boolean _hasGeoType;
     private ShortcutRegistration _registeredShortcutKey;
 
     // work item edit
-    public DynForm(Participant p, WorkItemRecord wir, String schema,
-                   Map<String, Map<String, String>> geoTypes) {
+    public DynForm(Participant p, WorkItemRecord wir, String schema, TNode typeTree) {
         super();
-        createContent(p, wir, schema,  geoTypes);
+        createContent(p, wir, schema, typeTree);
     }
 
 
     // case start
-    public DynForm(List<YParameter> parameters, String schema,
-                   Map<String, Map<String, String>> geoTypes) {
+    public DynForm(List<YParameter> parameters, String schema, TNode typeTree) {
         super();
-        createContent(parameters, schema, geoTypes);
+        createContent(parameters, schema, typeTree);
     }
 
 
@@ -78,7 +75,7 @@ public class DynForm extends AbstractDialog {
 
 
     public boolean containsGeoType() {
-        return _hasGeoType;
+        return _dynFormLayout.hasGeoTypeInTree();
     }
 
 
@@ -99,10 +96,10 @@ public class DynForm extends AbstractDialog {
 
 
     private void createContent(Participant p, WorkItemRecord wir, String schema,
-                               Map<String, Map<String, String>> geoTypes) {
+                               TNode typeTree) {
         try {
-            _dynFormLayout = _factory.createForm(schema, wir, p);
-            configureForm(_dynFormLayout, "Edit Work Item", geoTypes);
+            _dynFormLayout = _factory.createForm(schema, wir, p, typeTree);
+            configureForm(_dynFormLayout, "Edit Work Item");
             createButtonsForWorkItem();
         }
         catch (DynFormException dfe) {
@@ -112,10 +109,10 @@ public class DynForm extends AbstractDialog {
 
 
     private void createContent(List<YParameter> parameters, String schema,
-                               Map<String, Map<String, String>> geoTypes) {
+                               TNode typeTree) {
         try {
-            _dynFormLayout = _factory.createForm(schema, parameters, null);
-            configureForm(_dynFormLayout, "Case Start", geoTypes);
+            _dynFormLayout = _factory.createForm(schema, parameters, null, typeTree);
+            configureForm(_dynFormLayout, "Case Start");
             createButtonsForCaseStart();
         }
         catch (DynFormException dfe) {
@@ -124,15 +121,14 @@ public class DynForm extends AbstractDialog {
     }
 
 
-    private void configureForm(DynFormLayout form, String header,
-                               Map<String, Map<String, String>> geoTypes) {
-        _hasGeoType = form.hasGeoTypeInTree(geoTypes);
+    private void configureForm(DynFormLayout form, String header) {
         setFormHeight(form);
         setWidth(form.getAppropriateWidth());
         setHeader(header);
         addFormName();
         addComponent(createScroller(form));
         applyUserDefinedStyles(form);
+        form.applyInternalTypeReference();
         UiUtil.setFocus(form);
     }
 
@@ -179,7 +175,7 @@ public class DynForm extends AbstractDialog {
         _containingScroller = new Scroller(form);
         _containingScroller.setScrollDirection(Scroller.ScrollDirection.VERTICAL);
         _containingScroller.getStyle().set("border-bottom", "1px solid var(--lumo-contrast-20pct)");
-        if (_hasGeoType) {
+        if (containsGeoType()) {
             _containingScroller.getStyle().set("height", "100%");
         }
         return _containingScroller;
@@ -215,7 +211,7 @@ public class DynForm extends AbstractDialog {
 
     public void cancelForm() {
         removeDocsOnCancel();
-        if (! _hasGeoType) {
+        if (! containsGeoType()) {
             close();
         }
     }

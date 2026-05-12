@@ -7,7 +7,7 @@ import com.vaadin.flow.component.grid.FooterRow;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.editor.Editor;
-import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -21,16 +21,14 @@ import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.component.MultiSelectParticipantList;
 import org.yawlfoundation.yawl.ui.component.SingleSelectParticipantList;
 import org.yawlfoundation.yawl.ui.menu.ActionRibbon;
+import org.yawlfoundation.yawl.ui.util.CaseIdComparator;
 import org.yawlfoundation.yawl.ui.util.UiUtil;
 import org.yawlfoundation.yawl.util.StringUtil;
 
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Michael Adams
@@ -78,7 +76,9 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
 
     @Override
     void addColumns(Grid<WorkItemRecord> grid) {
-        grid.addColumn(WorkItemRecord::getID).setHeader(UiUtil.bold("Item"));
+        grid.addColumn(WorkItemRecord::getID).setHeader(UiUtil.bold("Item"))
+                .setSortable(true)
+                .setComparator(Comparator.comparing(WorkItemRecord::getID, new CaseIdComparator()));;
         grid.addColumn(this::getSpecID).setHeader(UiUtil.bold("Specification"));
         grid.addColumn(WorkItemRecord::getDocumentation).setHeader(UiUtil.bold("Documentation"));
         grid.addColumn(this::getEnablementTime).setHeader(UiUtil.bold("Created"));
@@ -211,7 +211,7 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
                 Set<Participant> pSet = getResourceClient().getAssignedParticipants(
                         wir.getID(), queue);
                 if (pSet == null) {
-                    return new Label("Unknown");
+                    return new Span("Unknown");
                 }
 
                 List<Participant> pList = new ArrayList<>(pSet);
@@ -220,14 +220,14 @@ public abstract class AbstractWorklistView extends AbstractGridView<WorkItemReco
                 }
 
                 if (pList.size() == 1) {
-                    return new Label(pList.get(0).getFullName());
+                    return new Span(pList.get(0).getFullName());
                 }
             }
             catch (IOException |ResourceGatewayException e) {
                 // fall through to blank label
             }
         }
-        return new Label();
+        return new Span();
     }
 
 
