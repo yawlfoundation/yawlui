@@ -469,7 +469,7 @@ public class UserWorklistView extends AbstractWorklistView {
                 if (dynForm.validate()) {                                // completion
                     String outputData = dynForm.generateOutputData();
                     completeItem(wir, outputData);
-                    if (dynForm.containsGeoType()) {
+                    if (dynForm.hasGeoMap()) {
                         _mainView.closeGeoFormView();
                     }
                     else {
@@ -481,7 +481,7 @@ public class UserWorklistView extends AbstractWorklistView {
             dynForm.addSaveListener(e -> {           // save
                 String outputData = dynForm.generateOutputData();
                 saveWorkItemData(wir, outputData);
-                if (dynForm.containsGeoType()) {
+                if (dynForm.hasGeoMap()) {
                     _mainView.closeGeoFormView();
                 }
                 else {
@@ -489,7 +489,7 @@ public class UserWorklistView extends AbstractWorklistView {
                 }
                 refresh();
             });
-            if (dynForm.containsGeoType()) {
+            if (dynForm.hasGeoMap()) {
                 dynForm.removeShortcutKey();
                 dynForm.addCancelListener(e -> _mainView.closeGeoFormView());
                 _mainView.showGeoFormView(dynForm);

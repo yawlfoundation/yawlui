@@ -79,6 +79,11 @@ public class DynForm extends AbstractDialog {
     }
 
 
+    public boolean hasGeoMap() {
+        return _dynFormLayout.containsVisibleGeoMapComponentInTree();
+    }
+
+
     public void addGeoTypeChangeListener(DynFormContentChangeListener listener) {
         _dynFormLayout.addGeoTypeChangeListenerToTree(listener);
     }
@@ -175,7 +180,7 @@ public class DynForm extends AbstractDialog {
         _containingScroller = new Scroller(form);
         _containingScroller.setScrollDirection(Scroller.ScrollDirection.VERTICAL);
         _containingScroller.getStyle().set("border-bottom", "1px solid var(--lumo-contrast-20pct)");
-        if (containsGeoType()) {
+        if (hasGeoMap()) {
             _containingScroller.getStyle().set("height", "100%");
         }
         return _containingScroller;
@@ -211,7 +216,7 @@ public class DynForm extends AbstractDialog {
 
     public void cancelForm() {
         removeDocsOnCancel();
-        if (! containsGeoType()) {
+        if (! hasGeoMap()) {
             close();
         }
     }

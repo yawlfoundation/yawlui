@@ -3,6 +3,8 @@ package org.yawlfoundation.yawl.ui.dynform;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -13,6 +15,7 @@ import org.yawlfoundation.yawl.ui.listener.DynFormContentChangeListener;
 import org.yawlfoundation.yawl.ui.listener.DynFormContentChangedEvent;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -23,6 +26,7 @@ public class DynFormLayout extends FormLayout {
 
     public static final double FIELD_HEIGHT = 64.5;
     public static final double CHECKBOX_HEIGHT = 22.8;
+    public static final double HR_HEIGHT = 25.0;
 
     private static final double PADDING_HEIGHT = 31.0;
     private static final double WINDOW_HEIGHT_FRACTION = 0.65;
@@ -145,6 +149,18 @@ public class DynFormLayout extends FormLayout {
         for (SubPanel subPanel : getChildSubPanels()) {
             DynFormLayout child = subPanel.getForm();
             if (child.hasGeoTypeInTree()) return true;
+        }
+        return false;
+    }
+
+
+    // if hide or hideIf attribute applied, don't use map to show component
+    // returns true if some component in the tree is visible and uses a geo map
+    public boolean containsVisibleGeoMapComponentInTree() {
+        if (isGeoDataType() && isVisible()) return true;
+        for (SubPanel subPanel : getChildSubPanels()) {
+             DynFormLayout child = subPanel.getForm();
+             if (child.containsVisibleGeoMapComponentInTree()) return true;
         }
         return false;
     }
@@ -273,14 +289,17 @@ public class DynFormLayout extends FormLayout {
 
 
     private void setColspan(Component component) {
-        int colspan = (component instanceof SubPanel || component instanceof ChoiceComponent) ?
+        int colspan = (component instanceof SubPanel ||
+                component instanceof ChoiceComponent ||
+                component instanceof Hr ||
+                component instanceof Div) ?
                 COLUMN_COUNT : 1;
         super.setColspan(component, colspan);
     }
 
 
     public double calculateHeight() {
-        double height = 0;
+        AtomicReference<Double> height = new AtomicReference<>((double) 0);
         
         // all simple fields < threshold
         if (isSimpleFieldsUnderThreshold()) {
@@ -289,32 +308,42 @@ public class DynFormLayout extends FormLayout {
 
         // some simple sub-panels in mix, but still < threshold
         if (getAppropriateWidthAsInt() < BASE_WIDTH * 2) {
-            for (Component c : getChildren().collect(Collectors.toList())) {
-                if (c instanceof SubPanel) {
-                    height += ((SubPanel) c).calculateHeight();
+            for (Component c : getChildren().toList()) {
+                if (c instanceof SubPanel subPanel) {
+                    height.updateAndGet(v -> v + subPanel.calculateHeight());
                 }
-                else if (c instanceof ChoiceComponent) {
-                    height += ((ChoiceComponent) c).calculateHeight();
+                else if (c instanceof ChoiceComponent choice) {
+                    height.updateAndGet(v -> v + choice.calculateHeight());
                 }
                 else {
-                    height += getSimpleFieldHeight(c);     // checkboxes are shorter
+                    height.updateAndGet(v -> v + getSimpleFieldHeight(c));  // checkboxes are shorter
                 }
             }
-            return height + PADDING_HEIGHT;
+            return height.get() + PADDING_HEIGHT;
         }
         
         for (ImmutablePair<Component, Component> row : collectFormIntoRows()) {
-            if (row.left instanceof SubPanel) {
-                height += ((SubPanel) row.left).calculateHeight();
+            if (row.left instanceof SubPanel subPanel) {
+                height.updateAndGet(v -> v + subPanel.calculateHeight());
             }
-            else if (row.left instanceof ChoiceComponent) {
-                height += ((ChoiceComponent) row.left).calculateHeight();
+            else if (row.left instanceof ChoiceComponent choice) {
+                height.updateAndGet(v -> v + choice.calculateHeight());
+            }
+            else if (row.left instanceof Hr) {
+                height.updateAndGet(v -> v + HR_HEIGHT);
+            }
+            else if (row.left instanceof Div textDiv) {
+                textDiv.getElement().executeJs("return $0.offsetHeight;", textDiv)
+                    .then(Integer.class, h -> {
+                        System.out.println("The calculated height of the Div is: " + h + "px");
+                        height.updateAndGet(v -> v + h);
+                    });
             }
             else {
-                height += getMaxRowHeight(row);           // checkboxes are shorter
+                height.updateAndGet(v -> v + getMaxRowHeight(row));   // checkboxes are shorter
             }
         }
-        return height + PADDING_HEIGHT;
+        return height.get() + PADDING_HEIGHT;
     }
 
 
@@ -349,7 +378,7 @@ public class DynFormLayout extends FormLayout {
     private List<ImmutablePair<Component, Component>> collectFormIntoRows() {
         List<ImmutablePair<Component, Component>> rows = new ArrayList<>();
         Component left = null;
-        for (Component c : getChildren().collect(Collectors.toList())) {
+        for (Component c : getChildren().toList()) {
 
             // don't include hidden fields
             if (! c.isVisible()) {

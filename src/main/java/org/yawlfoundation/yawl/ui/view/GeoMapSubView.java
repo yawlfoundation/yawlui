@@ -396,6 +396,7 @@ public class GeoMapSubView extends AbstractView
     private List<SubPanel> gatherGeoPanels(List<SubPanel> subPanels) {
         List<SubPanel> geoPanels = new ArrayList<>();
         for (SubPanel subPanel : subPanels) {
+            if (! subPanel.isVisible()) continue;
             DynFormLayout layout = subPanel.getForm();
             if (layout.isGeoDataType()) {
                 if (layout.isGeoDataListType()) {
