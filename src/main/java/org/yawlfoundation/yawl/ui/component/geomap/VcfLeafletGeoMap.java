@@ -1,9 +1,12 @@
 package org.yawlfoundation.yawl.ui.component.geomap;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.server.VaadinService;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.vaadin.addons.componentfactory.leaflet.LeafletMap;
 import org.vaadin.addons.componentfactory.leaflet.layer.InteractiveLayer;
 import org.vaadin.addons.componentfactory.leaflet.layer.groups.LayerGroup;
@@ -48,7 +51,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     private static final int MOUSE_MOVE_STEP = 4;
     private static final long MOUSE_MOVE_MIN_MS = 40;
     private static final String DEFAULT_MARKER_ICON_PATH = "icons/marker-icon.png";
-    
+
     private final LeafletMap _map;
     private final LayerGroup _markers;
     private final Map<InteractiveLayer, Marker> _dragMarkerMap = new HashMap<>();
@@ -57,6 +60,9 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     private final Map<Marker, String> _markerColorMap = new HashMap<>();
     private final List<GeoMapOverlayMoveListener> _moveListeners = new ArrayList<>();
     private final List<GeoMapDoubleClickListener> _dblClickListeners = new ArrayList<>();
+
+    private final Logger _log =  LogManager.getLogger(VcfLeafletGeoMap.class);
+
 
     private double edgeToleranceMeters = 5;
 
@@ -178,7 +184,13 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
         Marker marker = drawMarker(toLatLng(coordinate), draggable, label);
         marker.setIcon(getNextMarkerIcon(marker));
 
-        marker.onDragEnd(event -> announceMoveCompleted(marker, event.getLatLng()));
+        marker.onDragEnd(event -> {
+            UI.getCurrent().access(() -> {
+                marker.setLatLng(event.getLatLng());
+                announceMoveCompleted(marker, event.getLatLng());
+                centerAndZoom();
+            });
+        });
 
         marker.addTo(_markers);
         int ref = addOverlay(marker);
@@ -199,7 +211,13 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
             currentMarker.remove();
             Marker newMarker = drawMarker(updatedPos, draggable, label);
             newMarker.setIcon(icon);
-            newMarker.onDragEnd(event -> announceMoveCompleted(newMarker, event.getLatLng()));
+            newMarker.onDragEnd(event -> {
+                UI.getCurrent().access(() -> {
+                    newMarker.setLatLng(event.getLatLng());
+                    announceMoveCompleted(newMarker, event.getLatLng());
+                    centerAndZoom();
+                });
+            });
             newMarker.addTo(_markers);
             
             updateOverlay(currentMarker, newMarker);
@@ -241,15 +259,19 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
             _map.getElement().executeJs(getCircleScript(ref));
             
             dragMarker.onDragEnd(event -> {
-                Circle refCircle = (Circle) getOverlay(ref);
-                drag(refCircle, event.getLatLng());           // one last time
-                finaliseCircleMove(ref, true);
+                UI.getCurrent().access(() -> {
+                    Circle refCircle = (Circle) getOverlay(ref);
+                    drag(refCircle, event.getLatLng());           // one last time
+                    finaliseCircleMove(ref, true);
+                });
             });
 
             resizeMarker.onDragEnd(event -> {
-                Circle refCircle = (Circle) getOverlay(ref);
-                resize(refCircle, event.getLatLng());
-                finaliseCircleMove(ref, true);
+                UI.getCurrent().access(() -> {
+                    Circle refCircle = (Circle) getOverlay(ref);
+                    resize(refCircle, event.getLatLng());
+                    finaliseCircleMove(ref, true);
+                });
             });
 
             dragMarker.addTo(_markers);
@@ -361,29 +383,35 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
             _map.getElement().executeJs(getPolygonScript(ref, isRectangle));
 
             dragMarker.onDragEnd(event -> {
-                Polygon currentPolygon = (Polygon) getOverlay(ref);
-                List<LatLng> currentVertices = getPolygonVertices(currentPolygon);
-                LatLng newCentroid = event.getLatLng();
-                List<LatLng> moved = updateVerticesOnMove(currentVertices,
-                        new AtomicReference<>(getCentroid(currentVertices)), newCentroid);
-                drag(currentPolygon, moved, ref); // Your existing drag method that removes/redraws
-                vertices.clear();
-                vertices.addAll(moved);
-                finalisePolygonMove(ref, vertices, resizeMarkers, true);
+                UI.getCurrent().access(() -> {
+                    Polygon currentPolygon = (Polygon) getOverlay(ref);
+                    List<LatLng> currentVertices = getPolygonVertices(currentPolygon);
+                    LatLng newCentroid = event.getLatLng();
+                    List<LatLng> moved = updateVerticesOnMove(currentVertices,
+                            new AtomicReference<>(getCentroid(currentVertices)), newCentroid);
+                    drag(currentPolygon, moved, ref);
+                    vertices.clear();
+                    vertices.addAll(moved);
+                    finalisePolygonMove(ref, vertices, resizeMarkers, true);
+                });
             });
 
             for (int i = 0; i < resizeMarkers.size(); i++) {
                 int index = i;
                 resizeMarkers.get(i).onDragEnd(event -> {
-                    Polygon currentPolygon = (Polygon) getOverlay(ref);
-                    List<LatLng> currentVertices = getPolygonVertices(currentPolygon);
-                    List<LatLng> updated = updateVerticesOnResize(currentVertices, index,
-                            event.getLatLng(), isRectangle);
-                    resize(currentPolygon, updated, ref);
-                    vertices.clear();
-                    vertices.addAll(updated);
-                    finalisePolygonMove(ref, vertices, resizeMarkers, true);
+                    UI.getCurrent().access(() -> {
+
+                        Polygon currentPolygon = (Polygon) getOverlay(ref);
+                        List<LatLng> currentVertices = getPolygonVertices(currentPolygon);
+                        List<LatLng> updated = updateVerticesOnResize(currentVertices, index,
+                                event.getLatLng(), isRectangle);
+                        resize(currentPolygon, updated, ref);
+                        vertices.clear();
+                        vertices.addAll(updated);
+                        finalisePolygonMove(ref, vertices, resizeMarkers, true);
+                    });
                 });
+                
             }
 
             dragMarker.addTo(_markers);
@@ -482,12 +510,12 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
 
 
     private void announceMoveCompleted(Marker marker, LatLng movedTo) {
-        if (hasMoved(marker.getLatLng(), movedTo)) {
+ //       if (hasMoved(marker.getLatLng(), movedTo)) {
             GeoMapOverlayMovedEvent moveEvent = new GeoMapOverlayMovedEvent(
                     toGeoCoordinate(movedTo), getOverlayRef(marker),
                     GeoMapOverlayMovedEvent.Mode.COMPLETED);
             announceMove(moveEvent);
-        }
+ //       }
     }
 
 
@@ -599,7 +627,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
     }
 
     private Marker createDraggableMarker(LatLng location, int ref, String iconName) {
-        return createDraggableMarker(location, String.valueOf(ref), iconName);
+        return createDraggableMarker(location, java.lang.String.valueOf(ref), iconName);
     }
 
     
@@ -853,7 +881,13 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
            }
         }
 
-        GeoBounds geoBounds = getBounds(points);
+        GeoBounds geoBounds;
+        if (points.size() == 1) {         // a single marker
+            geoBounds = getBounds(points.getFirst());
+        }
+        else {
+            geoBounds = getBounds(points);
+        }
         LatLngBounds bounds = new LatLngBounds(toLatLng(geoBounds.getTopLeft()),
                 toLatLng(geoBounds.getBottomRight())); 
         _map.fitBounds(bounds);
@@ -872,7 +906,7 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
         int n = points.size();
         return new LatLng(lat / n, lon / n);
     }
-
+    
 
     // scale edge click tolerance to map size
     private void scaleEdgeTolerance() {

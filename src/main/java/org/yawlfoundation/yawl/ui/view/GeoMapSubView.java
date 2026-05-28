@@ -2,6 +2,8 @@ package org.yawlfoundation.yawl.ui.view;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.textfield.TextField;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.yawlfoundation.yawl.schema.internal.YInternalType;
 import org.yawlfoundation.yawl.ui.announce.Announcement;
 import org.yawlfoundation.yawl.ui.component.geomap.GeoCoordinate;
@@ -30,6 +32,7 @@ public class GeoMapSubView extends AbstractView
     private final List<SubPanel> _geoPanels;
     private final Map<DynFormLayout, Integer> _layout2OverlayMap = new HashMap<>();
     private final Map<DynFormLayout, List<SubPanel>> _layout2ChildPanelMap = new HashMap<>();
+    private final Logger _log =  LogManager.getLogger(GeoMapSubView.class);
 
     private boolean _updatingOverlays = false;
 
@@ -110,6 +113,7 @@ public class GeoMapSubView extends AbstractView
 
     @Override
     public void overlayMoved(GeoMapOverlayMovedEvent event) {
+        System.out.println("MapView received overlay moved event at coordinate: " + event.getPoint());
         _updatingOverlays = true;
         for (DynFormLayout layout : _layout2OverlayMap.keySet()) {
             int ref = _layout2OverlayMap.get(layout);
@@ -127,6 +131,8 @@ public class GeoMapSubView extends AbstractView
     
     @Override
     public void mapDoubleClick(GeoMapDoubleClickEvent event) {
+        System.out.println("MapView received double click event at coordinate: " +
+                event.getLatitude() + "," + event.getLongitude());
         _updatingOverlays = true;
         DynFormLayout layout = findFirstEmptyLayout();
         if (layout != null) {

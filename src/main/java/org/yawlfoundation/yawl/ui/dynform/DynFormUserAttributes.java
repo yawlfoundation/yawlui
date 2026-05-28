@@ -39,6 +39,7 @@ import java.util.Map;
 public class DynFormUserAttributes {
 
     private Map<String, String> _attributeMap ;
+    private Boolean _hideIfEvaluated = null;
 
 
     public DynFormUserAttributes() {
@@ -114,18 +115,23 @@ public class DynFormUserAttributes {
     }
 
     public boolean isHideIf(String data) {
-        String query = getValue("hideIf");
-        if (query != null) {
-            try {
-                Document dataDoc = JDOMUtil.stringToDocument(data);
-                String queryResult = SaxonUtil.evaluateQuery(query, dataDoc);
-                return queryResult.equalsIgnoreCase("true");
+        if (_hideIfEvaluated == null) {                           // not yet evaluated
+            String query = getValue("hideIf");
+            if (query != null) {
+                try {
+                    Document dataDoc = JDOMUtil.stringToDocument(data);
+                    String queryResult = SaxonUtil.evaluateQuery(query, dataDoc);
+                    _hideIfEvaluated = queryResult.equalsIgnoreCase("true");
+                }
+                catch (SaxonApiException saxonEx) {
+                    _hideIfEvaluated = false;                    // bad query, no hide
+                }
             }
-            catch (SaxonApiException saxonEx) {
-                // nothing to do, will default to false
+            else {
+                _hideIfEvaluated = false;                        // no query, no hide
             }
         }
-        return false;
+        return _hideIfEvaluated;
     }
 
 

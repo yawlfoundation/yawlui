@@ -144,6 +144,16 @@ abstract class AbstractGeoMap<T> implements GeoMap {
     }
 
 
+    // for a single marker
+    protected GeoBounds getBounds(GeoCoordinate coordinate) {
+        List<GeoCoordinate> points = new ArrayList<>();
+        double delta = 0.01;          // approx. 1 km depending on latitude
+        points.add(new GeoCoordinate(coordinate.lat() - delta, coordinate.lon() - delta));
+        points.add(new GeoCoordinate(coordinate.lat() + delta, coordinate.lon() + delta));
+        return getBounds(points);
+    }
+
+
     protected String getNextColour() {
         if (_pushedColour != null) {
             String colour = _pushedColour;

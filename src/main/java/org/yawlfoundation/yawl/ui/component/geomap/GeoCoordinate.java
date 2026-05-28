@@ -47,4 +47,8 @@ public class GeoCoordinate {
         }
     }
 
+    public String toString() {
+        return latitude + "," + longitude;
+    }
+
 }
