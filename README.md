@@ -1,3 +1,3 @@
-YAWL UI Component for YAWL version 5.0
+YAWL UI Component for YAWL version 6.0
 
 (see yawlfoundation/yawl)
