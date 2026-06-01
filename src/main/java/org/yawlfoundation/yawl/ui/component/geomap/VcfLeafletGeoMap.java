@@ -1,7 +1,6 @@
 package org.yawlfoundation.yawl.ui.component.geomap;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.server.VaadinService;
 import org.apache.commons.lang3.StringUtils;
@@ -35,6 +34,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -185,11 +185,10 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
         marker.setIcon(getNextMarkerIcon(marker));
 
         marker.onDragEnd(event -> {
-            UI.getCurrent().access(() -> {
-                marker.setLatLng(event.getLatLng());
-                announceMoveCompleted(marker, event.getLatLng());
-                centerAndZoom();
-            });
+            pause(100);          // debounce event for browser
+            marker.setLatLng(event.getLatLng());
+            announceMoveCompleted(marker, event.getLatLng());
+            centerAndZoom();
         });
 
         marker.addTo(_markers);
@@ -212,11 +211,10 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
             Marker newMarker = drawMarker(updatedPos, draggable, label);
             newMarker.setIcon(icon);
             newMarker.onDragEnd(event -> {
-                UI.getCurrent().access(() -> {
-                    newMarker.setLatLng(event.getLatLng());
-                    announceMoveCompleted(newMarker, event.getLatLng());
-                    centerAndZoom();
-                });
+                pause(100);          // debounce event for browser
+                newMarker.setLatLng(event.getLatLng());
+                announceMoveCompleted(newMarker, event.getLatLng());
+                centerAndZoom();
             });
             newMarker.addTo(_markers);
             
@@ -257,21 +255,19 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
             Marker resizeMarker = createDraggableMarker(resizePos, ref,"resize");
 
             _map.getElement().executeJs(getCircleScript(ref));
-            
+
             dragMarker.onDragEnd(event -> {
-                UI.getCurrent().access(() -> {
-                    Circle refCircle = (Circle) getOverlay(ref);
-                    drag(refCircle, event.getLatLng());           // one last time
-                    finaliseCircleMove(ref, true);
-                });
+                pause(100);          // debounce event for browser
+                Circle refCircle = (Circle) getOverlay(ref);
+                drag(refCircle, event.getLatLng());           // one last time
+                finaliseCircleMove(ref, true);
             });
 
             resizeMarker.onDragEnd(event -> {
-                UI.getCurrent().access(() -> {
-                    Circle refCircle = (Circle) getOverlay(ref);
-                    resize(refCircle, event.getLatLng());
-                    finaliseCircleMove(ref, true);
-                });
+                pause(100);          // debounce event for browser
+                Circle refCircle = (Circle) getOverlay(ref);
+                resize(refCircle, event.getLatLng());
+                finaliseCircleMove(ref, true);
             });
 
             dragMarker.addTo(_markers);
@@ -383,35 +379,31 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
             _map.getElement().executeJs(getPolygonScript(ref, isRectangle));
 
             dragMarker.onDragEnd(event -> {
-                UI.getCurrent().access(() -> {
-                    Polygon currentPolygon = (Polygon) getOverlay(ref);
-                    List<LatLng> currentVertices = getPolygonVertices(currentPolygon);
-                    LatLng newCentroid = event.getLatLng();
-                    List<LatLng> moved = updateVerticesOnMove(currentVertices,
-                            new AtomicReference<>(getCentroid(currentVertices)), newCentroid);
-                    drag(currentPolygon, moved, ref);
-                    vertices.clear();
-                    vertices.addAll(moved);
-                    finalisePolygonMove(ref, vertices, resizeMarkers, true);
-                });
+                pause(100);          // debounce event for browser
+                Polygon currentPolygon = (Polygon) getOverlay(ref);
+                List<LatLng> currentVertices = getPolygonVertices(currentPolygon);
+                LatLng newCentroid = event.getLatLng();
+                List<LatLng> moved = updateVerticesOnMove(currentVertices,
+                        new AtomicReference<>(getCentroid(currentVertices)), newCentroid);
+                drag(currentPolygon, moved, ref);
+                vertices.clear();
+                vertices.addAll(moved);
+                finalisePolygonMove(ref, vertices, resizeMarkers, true);
             });
 
             for (int i = 0; i < resizeMarkers.size(); i++) {
                 int index = i;
                 resizeMarkers.get(i).onDragEnd(event -> {
-                    UI.getCurrent().access(() -> {
-
-                        Polygon currentPolygon = (Polygon) getOverlay(ref);
-                        List<LatLng> currentVertices = getPolygonVertices(currentPolygon);
-                        List<LatLng> updated = updateVerticesOnResize(currentVertices, index,
-                                event.getLatLng(), isRectangle);
-                        resize(currentPolygon, updated, ref);
-                        vertices.clear();
-                        vertices.addAll(updated);
-                        finalisePolygonMove(ref, vertices, resizeMarkers, true);
-                    });
+                    pause(100);          // debounce event for browser
+                    Polygon currentPolygon = (Polygon) getOverlay(ref);
+                    List<LatLng> currentVertices = getPolygonVertices(currentPolygon);
+                    List<LatLng> updated = updateVerticesOnResize(currentVertices, index,
+                            event.getLatLng(), isRectangle);
+                    resize(currentPolygon, updated, ref);
+                    vertices.clear();
+                    vertices.addAll(updated);
+                    finalisePolygonMove(ref, vertices, resizeMarkers, true);
                 });
-                
             }
 
             dragMarker.addTo(_markers);
@@ -1143,6 +1135,16 @@ public class VcfLeafletGeoMap extends AbstractGeoMap<InteractiveLayer> {
             "map.eachLayer(l => { if(l.options && l.options.className === 'polygon-" +
                     ref + "') map.removeLayer(l); });"
         );
+    }
+
+
+    private void pause(int msecs) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(msecs);
+        }
+        catch (InterruptedException e) {
+            // nothing to do
+        }
     }
 
 

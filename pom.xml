@@ -6,7 +6,7 @@
     <groupId>org.yawlfoundation.yawl</groupId>
     <artifactId>yawlui</artifactId>
     <name>YAWL UI</name>
-    <version>6.0.894</version>
+    <version>6.1.897</version>
     <packaging>war</packaging>
 
     <properties>  
@@ -189,9 +189,9 @@
         <dependency>
             <groupId>org.yawlfoundation</groupId>
             <artifactId>yawl</artifactId>
-            <version>6.0</version>
+            <version>6.1</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/yawl-lib-6.0.jar</systemPath>
+            <systemPath>${project.basedir}/lib/yawl-lib-6.1.jar</systemPath>
         </dependency>
 
         <dependency>
@@ -286,10 +286,10 @@
                             <goal>install-file</goal>
                         </goals>
                         <configuration>
-                            <file>../yawl6/output/yawl-lib-6.0.jar</file>
+                            <file>../yawl6/output/yawl-lib-6.1.jar</file>
                             <groupId>org.yawlfoundation</groupId>
                             <artifactId>yawl</artifactId>
-                            <version>6.0</version>
+                            <version>6.1</version>
                             <packaging>jar</packaging>
                         </configuration>
                     </execution>
