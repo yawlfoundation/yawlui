@@ -17,6 +17,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm.ss</maven.build.timestamp.format>
+	<yawl.project.relative.path>../yawl6</yawl.project.relative.path>
     </properties>
 
     <repositories>
@@ -286,7 +287,7 @@
                             <goal>install-file</goal>
                         </goals>
                         <configuration>
-                            <file>../yawl6/output/yawl-lib-6.1.jar</file>
+                            <file>${yawl.project.relative.path}/output/yawl-lib-6.1.jar</file>
                             <groupId>org.yawlfoundation</groupId>
                             <artifactId>yawl</artifactId>
                             <version>6.1</version>
@@ -343,7 +344,7 @@
         </resources>
 
         <filters>
-            <filter>../yawl6/build/build.properties</filter>
+            <filter>${yawl.project.relative.path}/build/build.properties</filter>
         </filters>
     </build>
 
